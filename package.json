@@ -9,16 +9,43 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@floating-ui/react": "^0.27.11",
+    "@luomus/leaflet-smooth-wheel-zoom": "^1.0.0",
+    "@tiptap/extension-color": "^2.13.0",
+    "@tiptap/extension-font-family": "^2.12.0",
+    "@tiptap/extension-font-size": "^3.0.0-next.3",
+    "@tiptap/extension-hard-break": "^2.12.0",
+    "@tiptap/extension-heading": "^2.12.0",
+    "@tiptap/extension-highlight": "^2.13.0",
+    "@tiptap/extension-image": "^2.13.0",
+    "@tiptap/extension-link": "^2.13.0",
+    "@tiptap/extension-mention": "^2.12.0",
+    "@tiptap/extension-text-align": "^2.13.0",
+    "@tiptap/extension-text-style": "^2.13.0",
+    "@tiptap/extension-underline": "^2.13.0",
+    "@tiptap/react": "^2.13.0",
+    "@tiptap/starter-kit": "^2.13.0",
+    "@tiptap/suggestion": "^2.12.0",
+    "@types/leaflet": "^1.9.18",
+    "@types/leaflet-draw": "^1.0.12",
+    "leaflet": "^1.9.4",
+    "leaflet-draw": "^1.0.4",
+    "lucide-react": "^0.513.0",
+    "next": "15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.3.3"
+    "react-icons": "^5.5.0",
+    "react-leaflet": "^5.0.0",
+    "react-toastify": "^11.0.5",
+    "tippy.js": "^6.3.7"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "sass": "^1.89.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }

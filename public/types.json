@@ -1,0 +1,25 @@
+{
+  "locations": [
+    "City",
+    "Town",
+    "Village",
+    "Castle",
+    "Ruin",
+    "Landmark",
+    "Shadow Palace",
+    "City State",
+    "Hidden Garden",
+    "Hidden Kingdom"
+  ],
+  "regions": [
+    "Region",
+    "Island",
+    "Continent",
+    "Kingdom",
+    "Forest",
+    "Mountains",
+    "Lake",
+    "Sea",
+    "Desert"
+  ]
+}

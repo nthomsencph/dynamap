@@ -1,0 +1,68 @@
+.confirm-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-dialog {
+  background: #1a1a1a;
+  color: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.confirm-dialog h2 {
+  margin: 0 0 16px 0;
+  color: #fff;
+  font-size: 20px;
+}
+
+.confirm-dialog p {
+  margin: 0 0 24px 0;
+  color: #ccc;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.confirm-dialog .dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.confirm-dialog .dialog-cancel {
+  background: #333;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.confirm-dialog .dialog-cancel:hover {
+  background: #444;
+}
+
+.confirm-dialog .dialog-delete {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.confirm-dialog .dialog-delete:hover {
+  background: #b91c1c;
+} 

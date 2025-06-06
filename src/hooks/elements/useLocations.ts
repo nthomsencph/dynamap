@@ -1,0 +1,95 @@
+import { useCallback, useEffect, useState } from "react";
+import type { Location } from "@/types/locations";
+
+// Default values for required MapElement properties
+const DEFAULT_PROMINENCE = 5;
+
+export function useLocations() {
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch all locations
+  const fetchLocations = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/locations");
+      if (!res.ok) throw new Error("Failed to fetch locations");
+      const data = await res.json();
+      // Add default prominence to locations that don't have it
+      const locationsWithDefaults = data.map((loc: Location) => ({
+        ...loc,
+        prominence: loc.prominence ?? DEFAULT_PROMINENCE,
+      }));
+      setLocations(locationsWithDefaults);
+    } catch (err: any) {
+      setError(err.message || "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Add a new location
+  const addLocation = useCallback(async (location: Location) => {
+    // Default showLabel to true if not set
+    if (typeof location.showLabel === 'undefined') {
+      location.showLabel = true;
+    }
+    // Add default prominence if not set
+    if (typeof location.prominence === 'undefined') {
+      location.prominence = DEFAULT_PROMINENCE;
+    }
+    const res = await fetch("/api/locations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(location),
+    });
+    if (!res.ok) throw new Error("Failed to add location");
+    const newLocation = await res.json();
+    setLocations((prev) => [...prev, newLocation]);
+    return newLocation;
+  }, []);
+
+  // Update a location
+  const updateLocation = useCallback(async (location: Location) => {
+    const res = await fetch("/api/locations", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(location),
+    });
+    if (!res.ok) throw new Error("Failed to update location");
+    const updated = await res.json();
+    setLocations(prev => {
+      // Ensure we don't have duplicate IDs
+      const filtered = prev.filter(loc => loc.id !== updated.id);
+      return [...filtered, updated];
+    });
+    return updated;
+  }, []);
+
+  // Delete a location
+  const deleteLocation = useCallback(async (id: string) => {
+    const res = await fetch("/api/locations", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) throw new Error("Failed to delete location");
+    setLocations((prev) => prev.filter((loc) => loc.id !== id));
+  }, []);
+
+  useEffect(() => {
+    fetchLocations();
+  }, [fetchLocations]);
+
+  return {
+    locations,
+    loading,
+    error,
+    fetchLocations,
+    addLocation,
+    updateLocation,
+    deleteLocation,
+  };
+} 

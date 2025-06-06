@@ -1,0 +1,119 @@
+[
+  {
+    "position": [
+      1470.5590909532764,
+      1485.4817385552008
+    ],
+    "showLabel": true,
+    "label": "Hello there",
+    "description": "<p>Hello there </p><p>Hello there </p><p>Hello there </p><p>Hello there </p><p>Hello there </p><p>Hello there </p><p>Hello there </p>",
+    "color": "#ffffff",
+    "icon": "MdCastle",
+    "name": "Hello there",
+    "type": "City",
+    "id": "53d5cf31-b496-42a0-86e5-0f5e1aa8ce5f",
+    "prominence": 5,
+    "fields": {}
+  },
+  {
+    "position": [
+      777.0357603388126,
+      710.5858056615624
+    ],
+    "showLabel": true,
+    "label": "Some place yo",
+    "description": "<p>Home to <span class=\"mention\" data-type=\"mention\" data-id=\"b8449d7d-48b4-4183-ac04-83a859e74c5a\" data-label=\"Hello there 222\">@Hello there 222</span>'s cousin yo</p>",
+    "color": "#ffffff",
+    "icon": "MdCastle",
+    "name": "Some place yo",
+    "type": "Village",
+    "id": "c3e9dbd7-6b7a-4b3d-bb9d-5ca8b2189169",
+    "prominence": 5,
+    "fields": {
+      "Population": "50,000"
+    }
+  },
+  {
+    "position": [
+      667.5352567821607,
+      856.4437897257662
+    ],
+    "showLabel": true,
+    "label": "Hello there",
+    "description": "<p>Whats up. This is close to <span class=\"mention\" data-type=\"mention\" data-id=\"b8449d7d-48b4-4183-ac04-83a859e74c5a\" data-label=\"Hello there 222\">@Hello there 222</span> !</p>",
+    "color": "#ffffff",
+    "icon": "MdCastle",
+    "name": "Hello there",
+    "type": "Town",
+    "id": "f97c9e3b-79bd-4ed0-af6d-13e0c7086ac2",
+    "prominence": 5,
+    "iconSize": 22,
+    "fields": {}
+  },
+  {
+    "position": [
+      710.0875472352186,
+      810.6832830935413
+    ],
+    "showLabel": true,
+    "label": "<p>Hello there 222</p>",
+    "description": "<p>Whats up</p>",
+    "color": "#ffffff",
+    "icon": "MdCastle",
+    "name": "Hello there 222",
+    "type": "Town",
+    "id": "b8449d7d-48b4-4183-ac04-83a859e74c5a",
+    "prominence": 5,
+    "fields": {}
+  },
+  {
+    "position": [
+      770.6089018775041,
+      936.0128662420694
+    ],
+    "showLabel": true,
+    "label": "<p>A location in a region</p>",
+    "description": "",
+    "color": "#ffffff",
+    "icon": "Md24Mp",
+    "name": "A location in a region",
+    "type": "City",
+    "id": "5a3a285f-bb00-412a-9b3a-130c592e65db",
+    "prominence": 5,
+    "fields": {}
+  },
+  {
+    "position": [
+      764.4001889875826,
+      792.0132692090377
+    ],
+    "showLabel": true,
+    "label": "Hello there",
+    "description": "<p>Whats up. This is close to <span class=\"mention\" data-type=\"mention\" data-id=\"b8449d7d-48b4-4183-ac04-83a859e74c5a\" data-label=\"Hello there 222\">@Hello there 222</span> !</p>",
+    "color": "#ffffff",
+    "icon": "MdCastle",
+    "name": "Hello there (Copy)",
+    "type": "Town",
+    "id": "0f24cb54-3ea2-45b9-9aea-e8312ae212b9",
+    "prominence": 5,
+    "iconSize": 23,
+    "fields": {}
+  },
+  {
+    "position": [
+      708.9748932555312,
+      706.9258328703996
+    ],
+    "showLabel": true,
+    "label": "<p><span style=\"font-family: fantasy; font-size: 1em\">fdfdfdfd</span></p>",
+    "description": "<p>fdfdfdfdf</p>",
+    "color": "#ffffff",
+    "icon": "MdOutlineCastle",
+    "name": "Some place yo (Copy)",
+    "iconSize": 24,
+    "type": "Castle",
+    "id": "e2160c01-92fd-447a-882e-e0a59e041bfd",
+    "prominence": 5,
+    "fields": {}
+  }
+]

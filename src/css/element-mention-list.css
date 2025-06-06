@@ -1,0 +1,53 @@
+.element-mention-list {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0px 10px 20px rgba(0, 0, 0, 0.1);
+  padding: 0.2rem;
+  position: relative;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.element-mention-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: transparent;
+  border: none;
+  border-radius: 0.4rem;
+  color: #0d0d0d;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1;
+  padding: 0.5rem 0.7rem;
+  text-align: left;
+  width: 100%;
+}
+
+.element-mention-item:hover {
+  background: #f1f1f1;
+}
+
+.element-mention-item.is-selected {
+  background: #f1f1f1;
+}
+
+.element-mention-name {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.element-mention-type {
+  color: #666;
+  font-size: 0.8rem;
+  font-weight: normal;
+}
+
+.element-mention-empty {
+  color: #666;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.7rem;
+  text-align: center;
+} 

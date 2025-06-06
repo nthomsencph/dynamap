@@ -1,0 +1,36 @@
+/* Drawing mode styles */
+.drawing-mode {
+  cursor: crosshair !important;
+}
+
+.drawing-mode .leaflet-container {
+  cursor: crosshair !important;
+}
+
+.drawing-mode .leaflet-container * {
+  cursor: crosshair !important;
+}
+
+/* Override cursor for specific elements that should remain clickable */
+.drawing-mode .leaflet-control-container *,
+.drawing-mode .leaflet-control-zoom *,
+.drawing-mode .leaflet-control-scale *,
+.drawing-mode .leaflet-control-attribution * {
+  cursor: pointer !important;
+}
+
+/* Add a tooltip to indicate drawing mode */
+.drawing-mode::after {
+  content: "Click to draw polygon points. Click near the start point to complete.";
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  z-index: 1000;
+  pointer-events: none;
+} 

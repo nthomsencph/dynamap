@@ -1,0 +1,21 @@
+.context-menu {
+  position: fixed;
+  background: #222;
+  color: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 1500;
+  min-width: 120px;
+  padding: 0;
+}
+
+.context-menu button {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #fff;
+  padding: 10px 16px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 15px;
+} 

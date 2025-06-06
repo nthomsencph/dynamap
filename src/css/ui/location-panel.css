@@ -1,0 +1,65 @@
+.location-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.2);
+  z-index: 2000;
+}
+
+.location-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 350px;
+  height: 100vh;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  box-shadow: -2px 0 12px rgba(0,0,0,0.15);
+  padding: 24px;
+  overflow-y: auto;
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.location-panel h2 {
+  margin: 0;
+  font-size: 1.5em;
+  color: #fff;
+}
+
+.location-panel-type {
+  font-size: 1.1em;
+  color: #2563eb;
+  margin-bottom: 8px;
+}
+
+.location-panel-description {
+  line-height: 1.5;
+  color: #ccc;
+}
+
+.location-panel-image {
+  width: 100%;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.location-panel-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+} 

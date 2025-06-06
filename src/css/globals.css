@@ -1,0 +1,36 @@
+/* Base imports */
+@import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
+@import "tailwindcss";
+
+/* Base styles */
+body {
+  background: url('/media/parchment.jpeg') repeat center center fixed;
+  background-size: cover;
+  color: #171717;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utility classes */
+.font-medieval {
+  font-family: 'MedievalSharp', cursive;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.leaflet-container {
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-image-layer {
+  border-radius: 50% !important;
+  box-shadow: 0 0 24px #0006;
+  border: 3px solid #fffbe6;
+  overflow: hidden;
+}
