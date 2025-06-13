@@ -1,0 +1,257 @@
+/* Base styles for all ProseMirror instances in the editor */
+.tiptap-editor .ProseMirror {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 8px 12px !important;
+  margin: 0 !important;
+  text-align: center !important;
+  border-radius: 4px !important;
+  min-height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  user-select: none;
+}
+
+/* Base styles for all paragraphs */
+.tiptap-editor .ProseMirror p {
+  background: transparent !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: center !important;
+}
+
+.transparent-toggle {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #222;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.transparent-toggle.active {
+  background: #444;
+  border-color: #666;
+  color: #fff;
+}
+
+.transparent-toggle:hover {
+  background: #333;
+}
+
+/* Center text in editor content */
+.tiptap-editor .ProseMirror {
+  text-align: center;
+}
+
+.tiptap-editor .ProseMirror p {
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure toolbar stays left-aligned */
+.tiptap-editor .rte-toolbar {
+  text-align: left;
+}
+
+/* Editor content centering */
+.tiptap.ProseMirror.label-preview {
+  text-align: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 80px !important;
+}
+
+.tiptap.ProseMirror.label-preview p {
+  text-align: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* --- Toolbar and Editor Wrapper Styles --- */
+.tiptap-editor-wrapper {
+  border-radius: 6px;
+  padding: 2px;
+  transition: background-color 0.2s;
+}
+
+.rte-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rte-loading {
+  padding: 16px;
+  color: #666;
+  text-align: center;
+  font-style: italic;
+}
+
+.rte-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  width: 100%;
+  overflow: visible !important;
+  padding: 2px;
+  background: #222;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.rte-toolbar > * {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+
+.rte-toolbar button,
+.rte-toolbar input[type='color'] {
+  height: 32px;
+  width: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  max-width: 32px;
+  max-height: 32px;
+  box-sizing: border-box;
+  border: none;
+  background: #222;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+}
+
+.rte-toolbar input[type='color'] {
+  border: 2px solid #222 !important;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.rte-toolbar input[type='color']::-webkit-color-swatch-wrapper {
+  border: none !important;
+  padding: 0 !important;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.rte-toolbar input[type='color']::-webkit-color-swatch {
+  border: none !important;
+  border-radius: 4px !important;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.rte-toolbar input[type='color']:focus {
+  outline: 2px solid #2563eb;
+}
+
+.rte-toolbar button {
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  max-width: 32px;
+  max-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.rte-toolbar button.active,
+.rte-toolbar button:focus {
+  background: #2563eb;
+  color: #fff;
+}
+
+.rte-toolbar button:hover:not(.active) {
+  background: #333;
+  color: #fff;
+}
+
+/* --- Dropdown Menu Styles --- */
+.rte-dropdown-menu button {
+  width: auto !important;
+  min-width: 120px !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+  display: block !important;
+  padding-left: 16px;
+}
+
+/* --- Prevent text highlight on toolbar button press --- */
+.tiptap-editor .ProseMirror ::selection {
+  background: transparent;
+} 
+
+.tiptap.ProseMirror:focus,
+.tiptap.ProseMirror:focus-visible,
+.tiptap.ProseMirror.label-preview:focus,
+.tiptap.ProseMirror.label-preview:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.rte-dropdown-menu .overflow-y-auto {
+  overflow-y: scroll !important;
+  scrollbar-width: auto;
+  scrollbar-color: #444 #222;
+}
+
+/* For Webkit browsers */
+.rte-dropdown-menu .overflow-y-auto::-webkit-scrollbar {
+  width: 8px;
+}
+.rte-dropdown-menu .overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+.rte-dropdown-menu .overflow-y-auto::-webkit-scrollbar-track {
+  background: #222;
+}
+
+/* Style for text with background color */
+.tiptap-editor-wrapper.has-background .ProseMirror span[style*="background-color"] {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  border: 1px solid rgba(0,0,0,0.1);
+  text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}

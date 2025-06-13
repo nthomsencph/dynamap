@@ -3,7 +3,7 @@ import type { Region } from './regions';
 import type { Map as LeafletMap } from 'leaflet';
 
 export type DialogMode = 'create' | 'edit';
-export type DialogTab = 'content' | 'styling' | 'custom';
+export type DialogTab = 'Content' | 'Styling' | 'Fields';
 
 export interface BaseDialogProps {
   open: boolean;

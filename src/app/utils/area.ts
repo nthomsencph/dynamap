@@ -2,8 +2,7 @@ import L from 'leaflet';
 
 // Constants from ScaleBar component
 const BASE_PIXELS = 115;
-const BASE_KM = 4000;
-const BASE_ZOOM = 0;
+const BASE_KM = 2000;
 
 /**
  * Calculates the area of a polygon in screen pixels

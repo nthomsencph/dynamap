@@ -1,294 +1,312 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Bold from '@tiptap/extension-bold';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Underline from '@tiptap/extension-underline';
 import FontFamily from '@tiptap/extension-font-family';
 import FontSize from '@tiptap/extension-font-size';
-import {
-  Bold,
-  Italic,
-  Underline as UnderlineIcon,
-  Type,
-} from 'lucide-react';
+import { Bold as BoldIcon, Italic, Underline as UnderlineIcon} from 'lucide-react';
+import { AiOutlineFontSize } from 'react-icons/ai';
+import { RxEyeNone, RxFontFamily } from 'react-icons/rx';
+import { MdOutlineFormatClear } from 'react-icons/md';
+import { RiLineHeight } from 'react-icons/ri';
 import { getFontSizeForArea } from '@/app/utils/area';
-import '@/css/rich-text-editor.css';
+import '@/css/label-editor.css';
+import Dropdown from './Dropdown';
+import { FaFont } from 'react-icons/fa';
+import { BackColor } from './extensions/backgroundColorExtension';
+import { LineHeight } from './extensions/lineHeightExtension';
 
-// Type definitions
 interface LabelEditorProps {
   value: string;
   onChange: (html: string) => void;
+  text?: string; // The label text (from name)
   isRegion?: boolean;
   regionArea?: number;
-  rows?: number;
   className?: string;
 }
 
-const LabelEditor: React.FC<LabelEditorProps> = ({
-  value,
-  onChange,
-  isRegion = false,
-  regionArea,
-  rows = 1,
-  className = '',
+const LabelEditor: React.FC<LabelEditorProps> = ({ 
+  value, 
+  onChange, 
+  text, 
+  isRegion = false, 
+  regionArea, 
+  className = '' 
 }) => {
-  const [isTransparent, setIsTransparent] = useState(false);
-  const [bgColor, setBgColor] = useState('#ffffff');
+  const lastTextRef = useRef(text);
 
-  // Custom Background Color extension that properly saves to HTML
-  const BackgroundColor = TextStyle.extend({
-    addGlobalAttributes() {
-      return [
-        {
-          types: ['textStyle'],
-          attributes: {
-            backgroundColor: {
-              default: null,
-              parseHTML: element => {
-                const style = (element as HTMLElement).style;
-                return style.backgroundColor || null;
-              },
-              renderHTML: attributes => {
-                if (!attributes.backgroundColor) return {};
-                return {
-                  style: `background-color: ${attributes.backgroundColor}; padding: 4px 8px; border-radius: 4px; display: inline-block;`,
-                };
-              },
-            },
-          },
-        },
-      ];
-    },
-  });
-
-  // Initialize editor with label-specific extensions
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      TextStyle,
-      FontFamily,
+      StarterKit.configure({
+        bold: false, // Disable bold from StarterKit to use our own
+      }),
+      Bold, // Add Bold explicitly
+      FontFamily.configure({ types: ['textStyle'] }),
       FontSize,
       Color,
+      BackColor,
       Underline,
-      BackgroundColor,
+      TextStyle,
+      LineHeight.configure({
+        heights: ['50%', '75%', '80%', '100%', '125%', '150%', '175%', '200%']
+      }),
     ],
-    content: value,
+    immediatelyRender: false,
+    content: text ? `<p><span>${text}</span></p>` : value,
+    editable: true,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      const htmlContent = editor.getHTML();
+      
+      // If text prop is provided, prevent text content changes but allow styling
+      if (text) {
+        const currentText = editor.getText();
+        if (currentText !== text) {
+          // Text was changed, revert to original text but preserve styles
+          const html = editor.getHTML();
+          const styledHTML = html.replace(/(<[^>]*>)(.*?)(<\/[^>]*>)/g, (match, openTag, content, closeTag) => {
+            if (content.trim() && content !== text) {
+              return `${openTag}${text}${closeTag}`;
+            }
+            return match;
+          });
+          editor.commands.setContent(styledHTML, false);
+          return;
+        }
+      }
+      
+      // Only call onChange for non-text props or when content actually changes
+      if (!text && htmlContent !== value) {
+        onChange(htmlContent);
+      } else if (text) {
+        onChange(htmlContent);
+      }
     },
     editorProps: {
       attributes: {
-        class: 'region-label-preview',
+        class: 'label-preview',
         role: 'textbox',
         'aria-label': 'Label editor',
       },
+      // Prevent text selection and editing when text prop is provided
+      handleKeyDown: (view, event) => {
+        if (text) {
+          // Allow only styling shortcuts, prevent text input
+          const isStyleShortcut = (event.ctrlKey || event.metaKey) && 
+            ['b', 'i', 'u'].includes(event.key.toLowerCase());
+          
+          if (!isStyleShortcut) {
+            event.preventDefault();
+            return true;
+          }
+        }
+        return false;
+      },
+      handleTextInput: (view, from, to, inputText) => {
+        // Prevent text input when text prop is provided
+        if (text) {
+          return true;
+        }
+        return false;
+      }
     },
   });
 
-  // Sync content with value prop
+  // Sync label text with name
   useEffect(() => {
-    if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value, false);
-    }
-  }, [value, editor]);
-
-  // Update editor styling when background changes
-  useEffect(() => {
-    if (editor?.view?.dom) {
-      const editorDom = editor.view.dom as HTMLElement;
-      editorDom.style.background = isTransparent ? 'transparent' : bgColor;
-      
-      // Remove all ProseMirror default styling
-      editorDom.style.border = 'none';
-      editorDom.style.outline = 'none';
-      editorDom.style.boxShadow = 'none';
-      editorDom.style.padding = '0';
-      editorDom.style.margin = '0';
-      
-      editor.view.updateState(editor.state);
-    }
-  }, [editor, bgColor, isTransparent]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (editor) {
-        editor.destroy();
-      }
-    };
-  }, [editor]);
-
-  // Apply style to entire document
-  const applyGlobalStyle = useCallback((command: () => void) => {
-    if (!editor) return;
-    
-    try {
-      editor
-        .chain()
-        .focus()
-        .selectAll()
-        .run();
-      
-      command();
-    } catch (error) {
-      console.warn('Failed to apply global style:', error);
-    }
-  }, [editor]);
-
-  // Background color handlers - use custom backgroundColor attribute
-  const handleBackgroundColorChange = useCallback((color: string) => {
-    setBgColor(color);
-    if (editor && !isTransparent) {
-      applyGlobalStyle(() => {
-        editor.chain().setMark('textStyle', { backgroundColor: color }).run();
+    if (editor && text && lastTextRef.current !== text) {
+      const html = editor.getHTML();
+      // Replace the text content but keep the styles
+      const styledHTML = html.replace(/(<[^>]*>)(.*?)(<\/[^>]*>)/g, (match, openTag, content, closeTag) => {
+        if (content.trim()) {
+          return `${openTag}${text}${closeTag}`;
+        }
+        return match;
       });
-    }
-  }, [editor, isTransparent, applyGlobalStyle]);
-
-  const handleTransparencyToggle = useCallback((transparent: boolean) => {
-    setIsTransparent(transparent);
-    if (editor) {
-      if (transparent) {
-        applyGlobalStyle(() => {
-          editor.chain().setMark('textStyle', { backgroundColor: null }).run();
-        });
-      } else {
-        handleBackgroundColorChange(bgColor);
+      
+      if (html !== styledHTML) {
+        editor.commands.setContent(styledHTML, false);
       }
+      lastTextRef.current = text;
     }
-  }, [editor, bgColor, handleBackgroundColorChange, applyGlobalStyle]);
+  }, [text, editor]);
 
-  if (!editor) {
-    return <div className="rte-loading">Loading editor...</div>;
-  }
+  if (!editor) return <div className="rte-loading">Loading editor...</div>;
+
+  // Helper to apply style to all text
+  const applyToAll = (command: string, options?: any) => {
+    if (command === 'toggleBold') {
+      editor.chain().focus().selectAll().toggleBold().run();
+    } else if (command === 'toggleItalic') {
+      editor.chain().focus().selectAll().toggleItalic().run();
+    } else if (command === 'toggleUnderline') {
+      editor.chain().focus().selectAll().toggleUnderline().run();
+    } else if (command === 'setFontFamily') {
+      editor.chain().focus().selectAll().setFontFamily(options).run();
+    } else if (command === 'setFontSize') {
+      editor.chain().focus().selectAll().setFontSize(options).run();
+    } else if (command === 'setColor') {
+      editor.chain().focus().selectAll().setColor(options).run();
+    } else if (command === 'setBackgroundColor') {
+      editor.chain().focus().selectAll().setBackColor(options).run();
+    } else if (command === 'setLineHeight') {
+      editor.chain().focus().selectAll().setLineHeight(options).run();
+    } else if (command === 'clearFormatting') {
+      // Remove all styling: bold, italic, underline, color, background color, font family, font size
+      editor.chain().focus().selectAll()
+        .unsetBold()
+        .unsetItalic()
+        .unsetUnderline()
+        .unsetColor()
+        .unsetBackColor()
+        .unsetFontFamily()
+        .unsetFontSize()
+        .unsetLineHeight()
+        .run();
+    }
+    // Collapse selection to end after applying style
+    editor.commands.setTextSelection(editor.state.doc.content.size);
+  };
 
   return (
-    <div className={`rte-wrapper ${className}`} data-rows={rows}>
+    <div className={`rte-wrapper ${className}`}>
       <div className="tiptap-editor-wrapper">
-        {/* Toolbar */}
-        <div className="rte-toolbar" role="toolbar" aria-label="Label formatting">
-          {/* Text Formatting */}
-          <button
-            type="button"
-            onClick={() => applyGlobalStyle(() => editor.chain().toggleBold().run())}
+        <div
+          className="rte-toolbar"
+          role="toolbar"
+          aria-label="Label formatting"
+        >
+          <button 
+            type="button" 
+            onClick={(e) => {
+              e.preventDefault();
+              applyToAll('toggleBold');
+            }}
             className={editor.isActive('bold') ? 'active' : ''}
-            title="Bold (Apply to All)"
-            aria-label="Bold"
           >
-            <Bold size={16} />
+            <span style={{ fontWeight: 'bold', fontSize: 16, fontFamily: 'inherit', letterSpacing: 1 }}>B</span>
           </button>
           
-          <button
-            type="button"
-            onClick={() => applyGlobalStyle(() => editor.chain().toggleItalic().run())}
+          <button 
+            type="button" 
+            onClick={(e) => {
+              e.preventDefault();
+              applyToAll('toggleItalic');
+            }}
             className={editor.isActive('italic') ? 'active' : ''}
-            title="Italic (Apply to All)"
-            aria-label="Italic"
           >
             <Italic size={16} />
           </button>
           
-          <button
-            type="button"
-            onClick={() => applyGlobalStyle(() => editor.chain().toggleUnderline().run())}
+          <button 
+            type="button" 
+            onClick={(e) => {
+              e.preventDefault();
+              applyToAll('toggleUnderline');
+            }}
             className={editor.isActive('underline') ? 'active' : ''}
-            title="Underline (Apply to All)"
-            aria-label="Underline"
           >
             <UnderlineIcon size={16} />
           </button>
+          {/* Font family dropdown */}
+          <Dropdown
+            icon={<RxFontFamily size={20} style={{ color: '#fff', fontWeight: 'bold' }} />}
+            options={[
+              { label: 'Arial', value: 'Arial, sans-serif' },
+              { label: 'Georgia', value: 'Georgia, serif' },
+              { label: 'Times', value: "'Times New Roman', serif" },
+              { label: 'Courier', value: "'Courier New', monospace" },
+              { label: 'Fantasy', value: 'fantasy' },
+              { label: 'Serif', value: 'serif' },
+              { label: 'Sans-serif', value: 'sans-serif' },
+              { label: 'Monospace', value: 'monospace' },
+              { label: 'UnifrakturMaguntia', value: "'UnifrakturMaguntia', cursive" },
+              { label: 'Passions Conflict', value: "'Passions Conflict', cursive" },
+              { label: 'Festive', value: "'Festive', cursive" },
+              { label: 'Arizonia', value: "'Arizonia', cursive" },
+              { label: 'Petemoss', value: "'Petemoss', cursive" },
+              { label: 'Kaushan Script', value: "'Kaushan Script', cursive" },
+              { label: 'Fredericka the Great', value: "'Fredericka the Great', cursive" },
+              { label: 'Meddon', value: "'Meddon', cursive" },
+              { label: 'Jim Nightshade', value: "'Jim Nightshade', cursive" },
+              { label: 'Felipa', value: "'Felipa', cursive" },
+              { label: 'MedievalSharp', value: "'MedievalSharp', cursive" },
+            ]}
+            selected={undefined}
+            onSelect={font => applyToAll('setFontFamily', font)}
+            placeholder="Font"
+            buttonClassName="rte-dropdown-btn"
+            dropdownClassName="rte-dropdown-menu"
+          />
 
-          <div className="rte-toolbar-separator"></div>
-
-          {/* Font Settings */}
-          <select
+          {/* Font size dropdown */}
+          <Dropdown
+            icon={<AiOutlineFontSize size={20} style={{ color: '#fff' }} />}
+            options={[
+              { label: '12px', value: '12px' },
+              { label: '16px', value: '16px' },
+              { label: '20px', value: '20px' },
+              { label: '24px', value: '24px' },
+              ...(isRegion && regionArea != null ? [{ label: 'Area', value: `${getFontSizeForArea(regionArea)}px` }] : [])
+            ]}
+            selected={undefined}
+            onSelect={size => applyToAll('setFontSize', size)}
+            placeholder="Size"
+            buttonClassName="rte-dropdown-btn"
+            dropdownClassName="rte-dropdown-menu"
+          />
+          
+          {/* Line height dropdown */}
+          <Dropdown
+            icon={<RiLineHeight size={20} style={{ color: '#fff' }} />}
+            options={[
+              { label: '50%', value: '50%' },
+              { label: '75%', value: '75%' },
+              { label: '80%', value: '80%' },
+              { label: '100%', value: '100%' },
+              { label: '125%', value: '125%' },
+              { label: '150%', value: '150%' },
+              { label: '175%', value: '175%' },
+              { label: '200%', value: '200%' },
+            ]}
+            selected={undefined}
+            onSelect={height => applyToAll('setLineHeight', height)}
+            placeholder="Line Height"
+            buttonClassName="rte-dropdown-btn"
+            dropdownClassName="rte-dropdown-menu"
+          />
+          
+          <input 
+            type="color" 
             onChange={(e) => {
-              if (e.target.value) {
-                applyGlobalStyle(() => editor.chain().setFontFamily(e.target.value).run());
-                e.target.value = '';
-              }
+              applyToAll('setColor', e.target.value);
             }}
-            className="font-family-select"
-            title="Font Family (Apply to All)"
-            aria-label="Font Family"
+            title="Text Color"
+          />
+          
+          <input
+            type="color"
+            onChange={(e) => {
+              applyToAll('setBackgroundColor', e.target.value);
+            }}
+            aria-label="Background Color"
+            title="Background Color"
+          />
+          <button 
+            type="button" 
+            onClick={(e) => {
+              e.preventDefault();
+              applyToAll('clearFormatting');
+            }}
+            title="Clear formatting"
           >
-            <option value="">Font</option>
-            <option value="Arial, sans-serif">Arial</option>
-            <option value="Georgia, serif">Georgia</option>
-            <option value="'Times New Roman', serif">Times</option>
-            <option value="'Courier New', monospace">Courier</option>
-            <option value="fantasy">Fantasy</option>
-            <option value="serif">Serif</option>
-            <option value="sans-serif">Sans-serif</option>
-            <option value="monospace">Monospace</option>
-          </select>
-
-          <div className="font-size-icon-select-wrapper">
-            <Type className="font-size-icon" size={16} />
-            <select
-              onChange={(e) => {
-                if (e.target.value) {
-                  applyGlobalStyle(() => editor.chain().setFontSize(e.target.value).run());
-                  e.target.value = '';
-                }
-              }}
-              className="font-size-select"
-              title="Font Size (Apply to All)"
-              aria-label="Font Size"
-            >
-              <option value="">Size</option>
-              <option value="12px">12px</option>
-              <option value="16px">16px</option>
-              <option value="20px">20px</option>
-              <option value="24px">24px</option>
-              {isRegion && regionArea != null && (
-                <option value={`${getFontSizeForArea(regionArea)}px`}>
-                  Area
-                </option>
-              )}
-            </select>
-          </div>
-
-          <div className="rte-toolbar-separator"></div>
-
-          {/* Colors */}
-          <div className="rte-color-group">
-            <label title="Text Color (Apply to All)">
-              <input
-                type="color"
-                onChange={(e) => applyGlobalStyle(() => editor.chain().setColor(e.target.value).run())}
-                aria-label="Text Color"
-              />
-            </label>
-
-            <div className="background-color-wrapper">
-              <input
-                type="color"
-                className="background-color-picker"
-                disabled={isTransparent}
-                value={bgColor}
-                onChange={(e) => handleBackgroundColorChange(e.target.value)}
-                title="Background Color"
-                aria-label="Background Color"
-              />
-              <button
-                type="button"
-                className={`transparent-toggle ${isTransparent ? 'active' : ''}`}
-                onClick={() => handleTransparencyToggle(!isTransparent)}
-                title="Toggle Transparency"
-                aria-label="Toggle Background Transparency"
-              >
-                T
-              </button>
-            </div>
-          </div>
+            <MdOutlineFormatClear size={16} />
+          </button>
+          
         </div>
-
-        {/* Preview Editor Content */}
-        <div className="rte-preview-container">
-          <EditorContent editor={editor} />
-        </div>
+        <EditorContent editor={editor} style={{ borderRadius: 8 }} />
       </div>
     </div>
   );

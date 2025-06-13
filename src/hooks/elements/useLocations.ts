@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import type { Location } from "@/types/locations";
 
 // Default values for required MapElement properties
@@ -6,13 +6,12 @@ const DEFAULT_PROMINENCE = 5;
 
 export function useLocations() {
   const [locations, setLocations] = useState<Location[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch all locations
   const fetchLocations = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); // Set loading when we start fetching
     try {
       const res = await fetch("/api/locations");
       if (!res.ok) throw new Error("Failed to fetch locations");
@@ -22,10 +21,12 @@ export function useLocations() {
         ...loc,
         prominence: loc.prominence ?? DEFAULT_PROMINENCE,
       }));
+      // Combine state updates to reduce re-renders
       setLocations(locationsWithDefaults);
+      setLoading(false);
+      setError(null);
     } catch (err: any) {
       setError(err.message || "Unknown error");
-    } finally {
       setLoading(false);
     }
   }, []);
@@ -81,9 +82,10 @@ export function useLocations() {
 
   useEffect(() => {
     fetchLocations();
-  }, [fetchLocations]);
+  }, []);
 
-  return {
+  // Memoize the return value to prevent unnecessary re-renders
+  const result = useMemo(() => ({
     locations,
     loading,
     error,
@@ -91,5 +93,7 @@ export function useLocations() {
     addLocation,
     updateLocation,
     deleteLocation,
-  };
+  }), [locations, loading, error]); // Remove callback functions from dependencies
+
+  return result;
 } 

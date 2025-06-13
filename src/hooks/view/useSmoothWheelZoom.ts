@@ -8,5 +8,5 @@ export function useSmoothWheelZoom(mapRef: React.RefObject<L.Map | null>, sensit
       (map as any).smoothWheelZoom.enable();
       (map as any).smoothWheelZoom.setSensitivity(sensitivity);
     }
-  }, [mapRef, sensitivity]);
+  }, [sensitivity]);
 } 

@@ -8,7 +8,8 @@ import L from 'leaflet';
  */
 export function flyToLocation(map: L.Map, position: [number, number], zoom?: number) {
   if (!map) return;
-  map.flyTo(L.latLng(position[0], position[1]), zoom ?? map.getZoom(), {
+  // Use panTo instead of flyTo to avoid zoom changes in simple CRS maps
+  map.panTo(L.latLng(position[0], position[1]), {
     animate: true,
     duration: 0.7,
   });
@@ -45,7 +46,9 @@ export function flyToLocationWithPanel(map: L.Map, position: [number, number], p
   // Move the location's point by this offset
   const newPoint = L.point(point.x + offsetX, point.y + offsetY);
   const newLatLng = map.containerPointToLatLng(newPoint);
-  map.flyTo(newLatLng, zoom ?? map.getZoom(), {
+  
+  // Use panTo instead of flyTo to avoid zoom changes in simple CRS maps
+  map.panTo(newLatLng, {
     animate: true,
     duration: 0.7,
   });

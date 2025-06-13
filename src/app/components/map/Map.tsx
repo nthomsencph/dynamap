@@ -1,18 +1,22 @@
-// external imports
+// External dependencies
 import { MapContainer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import '@luomus/leaflet-smooth-wheel-zoom';
+import React from "react";
 
-// types
+// Types
 import type { Location } from "@/types/locations";
 import type { Region } from "@/types/regions";
 
-// constants
+// Constants
 import { MAP_CENTER } from '@/constants/map';
 
-// hooks
+// Utils
+import { shouldShowElement } from '@/app/utils/zoom';
+
+// Hooks
 import { useFitZoom } from "@/hooks/view/useFitZoom";
 import { useSmoothWheelZoom } from "@/hooks/view/useSmoothWheelZoom";
 import { useMoveLocation } from "@/hooks/elements/useMoveLocation";
@@ -22,8 +26,10 @@ import { useLocations } from "@/hooks/elements/useLocations";
 import { useRegions } from "@/hooks/elements/useRegions";
 import { useContextMenu } from "@/hooks/ui/useContextMenu";
 import { usePolygonDraw } from "@/hooks/elements/usePolygonDraw";
+import { usePanelStack, type PanelEntry } from "@/hooks/ui/usePanelStack";
+import { useLabelCollisionHandling } from "@/hooks/ui/useLabelCollisionHandling";
 
-// components
+// Components
 import { ContextMenu } from "../ui/ContextMenu";
 import { ScaleBar } from '../ui/ScaleBar';
 import { ProminenceLevel } from '../ui/ProminenceLevel';
@@ -33,40 +39,14 @@ import { ConfirmDialog } from "../dialogs/ConfirmDialog";
 import { MapImage } from "./MapImage";
 import { LocationMarkers } from "../markers/LocationMarkers";
 import { RegionMarkers } from "../markers/RegionMarkers";
+import { UnifiedPanel } from "../panels/UnifiedPanel";
 
-// styles
+// Styles
 import '@/css/markers/location-label.css';
-import '@/css/markers/region-label.css';
 import '@/css/ui/move-mode.css';
 
-// utils
-import { showProminenceToast } from '@/app/utils/toast';
-import { calculateProminenceLevel } from '@/app/utils/zoom';
-
-type DialogMode = 'create' | 'edit';
-
-interface LocationDialogState {
-  open: boolean;
-  mode: DialogMode;
-  position: { lat: number; lng: number };
-  location: Partial<Location> | null;
-}
-
-interface RegionDialogState {
-  open: boolean;
-  mode: DialogMode;
-  position: [number, number][];
-  region: Region | undefined;
-}
-
-interface DeleteConfirmationState {
-  open: boolean;
-  type: 'location' | 'region';
-  element: Location | Region | null;
-}
-
 export default function Map() {
-    const mapRef = useRef<L.Map>(null);
+    const mapRef = useRef<L.Map | null>(null);
     const fitZoom = useFitZoom();
     useSmoothWheelZoom(mapRef, 2);
 
@@ -75,224 +55,364 @@ export default function Map() {
     const { regions, addRegion, updateRegion, deleteRegion } = useRegions();
     const locationDialog = useLocationDialog();
     const regionDialog = useRegionDialog();
+    
+    // Unified panel stack
+    const { currentPanel, pushPanel, popPanel, clearStack, canGoBack } = usePanelStack();
+    
+    // Memoize the move location handlers to prevent re-renders
+    const moveLocationHandlers = useMemo(() => ({
+        updateLocation,
+        addLocation
+    }), [updateLocation, addLocation]);
+    
     const { moveMode, handleMoveLocation, resetMoveMode } = useMoveLocation(
-      mapRef as React.RefObject<L.Map>, 
-      updateLocation,
-      addLocation
+        mapRef as React.RefObject<L.Map>,
+        moveLocationHandlers.updateLocation,
+        moveLocationHandlers.addLocation
     );
 
-    // Add polygon drawing hook
-    const { isDrawing, startDrawing, stopDrawing } = usePolygonDraw(
-      mapRef as React.RefObject<L.Map>,
-      (points) => {
+    // Memoize the polygon draw callback to prevent re-renders
+    const handlePolygonComplete = useCallback((points: [number, number][]) => {
+        // When polygon drawing is complete, open the region dialog
         regionDialog.openCreate(points);
-        stopDrawing(); // Make sure to stop drawing when dialog opens
-      }
+    }, [regionDialog.openCreate]);
+
+    // Polygon drawing hook
+    const { startDrawing } = usePolygonDraw(
+        mapRef as React.RefObject<L.Map>,
+        handlePolygonComplete
     );
 
     // State for delete confirmation
-    const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmationState>({
-      open: false,
-      type: 'location',
-      element: null,
+    const [deleteConfirm, setDeleteConfirm] = useState<{ 
+        open: boolean; 
+        type: 'location' | 'region';
+        element: Location | Region | null;
+    }>({
+        open: false,
+        type: 'location',
+        element: null
     });
 
-    const { menu, handleContextMenu, closeMenu, getMenuItems } = useContextMenu({
-      onAddLocation: (position) => {
+    // Panel navigation handlers
+    const handleElementClick = useCallback((element: Location | Region) => {
+        const elementType = Array.isArray(element.position[0]) ? 'region' : 'location';
+        const entry: PanelEntry = {
+            id: element.id,
+            elementType,
+            element,
+            metadata: elementType === 'region' ? {
+                containingRegions: (element as any).containingRegions,
+                regionToDisplay: (element as any).regionToDisplay
+            } : {
+                containingRegions: (element as any).containingRegions
+            }
+        };
+        pushPanel(entry);
+    }, [pushPanel]);
+
+    const handlePanelClose = useCallback(() => {
+        clearStack();
+    }, [clearStack]);
+
+    const handlePanelBack = useCallback(() => {
+        popPanel();
+    }, [popPanel]);
+
+    // Context menu handlers - memoized to prevent re-renders
+    const handleAddLocation = useCallback((position: [number, number]) => {
+        // Center the map and open location dialog
+        if (mapRef.current) {
+            mapRef.current.setView(position, mapRef.current.getZoom());
+        }
         locationDialog.openCreate(position);
-      },
-      onEditLocation: (location) => {
-        locationDialog.openEdit(location);
-      },
-      onMoveLocation: (location, isDuplicating) => {
-        handleMoveLocation(location, isDuplicating);
-        closeMenu();
-      },
-      onDeleteLocation: (location) => {
-        setDeleteConfirmation({ 
-          open: true, 
-          type: 'location',
-          element: location 
-        });
-      },
-      onDeleteRegion: (region) => {
-        setDeleteConfirmation({ 
-          open: true, 
-          type: 'region',
-          element: region 
-        });
-      },
-      onEditRegion: (region) => {
-        regionDialog.openEdit(region);
-      },
-      onAddRegion: () => {
+    }, [locationDialog.openCreate]);
+
+    const handleAddRegion = useCallback((position: [number, number]) => {
+        // Center the map and start drawing
+        if (mapRef.current) {
+            mapRef.current.setView(position, mapRef.current.getZoom());
+        }
         startDrawing();
-        closeMenu();
-      },
-      mapRef: mapRef as React.RefObject<L.Map>,
-    });
+    }, [startDrawing]);
 
-    // Save handlers for dialogs
-    async function handleSaveLocation(location: Location) {
-      if (locationDialog.mode === 'edit') {
-        await updateLocation(location);
-      } else {
-        await addLocation(location);
-        // Check if the location's prominence is below the current zoom level
-        const currentProminenceLevel = calculateProminenceLevel(currentZoom, fitZoom);
-        if (location.prominence < currentProminenceLevel && location.name) {
-          showProminenceToast(location.name, location.prominence);
-        }
-      }
-      locationDialog.close();
-    }
+    const handleEditLocation = useCallback((location: Location) => {
+        locationDialog.openEdit(location);
+    }, [locationDialog.openEdit]);
 
-    async function handleSaveRegion(region: Region) {
-      if (regionDialog.mode === 'edit') {
-        await updateRegion(region);
-      } else {
-        await addRegion(region);
-        // Check if the region's prominence is below the current zoom level
-        const currentProminenceLevel = calculateProminenceLevel(currentZoom, fitZoom);
-        if (region.prominence < currentProminenceLevel && region.name) {
-          showProminenceToast(region.name, region.prominence);
-        }
-      }
-      regionDialog.close();
-    }
+    const handleEditRegion = useCallback((region: Region) => {
+        regionDialog.openEdit(region);
+    }, [regionDialog.openEdit]);
 
-    // Handle delete element
-    async function handleDelete() {
-      if (deleteConfirmation.type === 'location' && deleteConfirmation.element) {
-        await deleteLocation(deleteConfirmation.element.id);
-      } else if (deleteConfirmation.type === 'region' && deleteConfirmation.element) {
-        await deleteRegion(deleteConfirmation.element.id);
-      }
-      setDeleteConfirmation({ open: false, type: 'location', element: null });
-    }
+    const handleDeleteLocation = useCallback((location: Location) => {
+        setDeleteConfirm({ open: true, type: 'location', element: location });
+    }, []);
 
+    const handleDeleteRegion = useCallback((region: Region) => {
+        setDeleteConfirm({ open: true, type: 'region', element: region });
+    }, []);
+
+    // Memoize context menu props to prevent re-renders
+    const contextMenuProps = useMemo(() => ({
+        mapRef: mapRef as React.RefObject<L.Map>,
+        onAddLocation: handleAddLocation,
+        onEditLocation: handleEditLocation,
+        onMoveLocation: handleMoveLocation,
+        onDeleteLocation: handleDeleteLocation,
+        onAddRegion: handleAddRegion,
+        onEditRegion: handleEditRegion,
+        onDeleteRegion: handleDeleteRegion,
+        startDrawing: startDrawing,
+    }), [
+        handleAddLocation,
+        handleEditLocation,
+        handleMoveLocation,
+        handleDeleteLocation,
+        handleAddRegion,
+        handleEditRegion,
+        handleDeleteRegion,
+        startDrawing
+    ]);
+
+    // Context menu state and handlers
+    const { menu, handleContextMenu, handleLocationContextMenu, handleRegionContextMenu, closeMenu, getMenuItems } = useContextMenu(contextMenuProps);
+
+    // Memoized context menu handlers for markers
+    const handleLocationMarkersContextMenu = useCallback((e: L.LeafletMouseEvent, type: 'map' | 'marker', location?: Location) => {
+        return type === 'marker' && location ? handleLocationContextMenu(e, location) : handleContextMenu(e);
+    }, [handleLocationContextMenu, handleContextMenu]);
+
+    const handleRegionMarkersContextMenu = useCallback((e: L.LeafletMouseEvent, type: 'map' | 'marker', region?: Region) => {
+        return type === 'marker' && region ? handleRegionContextMenu(e, region) : handleContextMenu(e);
+    }, [handleRegionContextMenu, handleContextMenu]);
+
+    // Zoom state - use debounced updates to prevent excessive re-renders
     const [currentZoom, setCurrentZoom] = useState(fitZoom);
+    const [isZooming, setIsZooming] = useState(false);
+    const zoomTimeoutRef = useRef<number | undefined>(undefined);
 
-    useEffect(() => {
-      const map = mapRef.current;
-      if (!map) return;
-      const onZoom = () => setCurrentZoom(map.getZoom());
-      map.on('zoom', onZoom);
-      // Set initial zoom
-      setCurrentZoom(map.getZoom());
-      return () => {
-        map.off('zoom', onZoom);
-      };
-    }, [mapRef.current]);
+    // Get elements that have collision strategies (for collision detection)
+    const visibleElements = useMemo(() => {
+        const elementsWithStrategies = [...locations, ...regions].filter(el => 
+            el.labelCollisionStrategy && el.labelCollisionStrategy !== 'None'
+        );
+        return elementsWithStrategies;
+    }, [locations, regions]);
 
-    // Add logging for regions
+    // Unified collision handling for all elements (only when map is available)
+    useLabelCollisionHandling(visibleElements, mapRef.current!, isZooming);
+
+    // Save handlers for dialogs - memoized to prevent re-renders
+    const handleSaveLocation = useCallback(async (location: Location) => {
+        if (locationDialog.mode === 'edit') {
+            await updateLocation(location);
+        } else {
+            await addLocation(location);
+        }
+        locationDialog.close();
+    }, [locationDialog.mode, locationDialog.close, updateLocation, addLocation]);
+
+    const handleSaveRegion = useCallback(async (region: Region) => {
+        if (regionDialog.mode === 'edit') {
+            await updateRegion(region);
+        } else {
+            await addRegion(region);
+        }
+        regionDialog.close();
+    }, [regionDialog.mode, regionDialog.close, updateRegion, addRegion]);
+
+    // Handle delete element - memoized to prevent re-renders
+    const handleDeleteElement = useCallback(async () => {
+        if (!deleteConfirm.element) return;
+
+        if (deleteConfirm.type === 'location') {
+            await deleteLocation(deleteConfirm.element.id);
+        } else {
+            await deleteRegion(deleteConfirm.element.id);
+        }
+        setDeleteConfirm({ open: false, type: 'location', element: null });
+    }, [deleteConfirm.element, deleteConfirm.type, deleteLocation, deleteRegion]);
+
+    // Memoize dialog delete handlers
+    const handleLocationDelete = useCallback(() => {
+        if (locationDialog.location) {
+            setDeleteConfirm({ 
+                open: true, 
+                type: 'location', 
+                element: locationDialog.location as Location 
+            });
+        }
+    }, [locationDialog.location]);
+
+    const handleRegionDelete = useCallback(() => {
+        if (regionDialog.region) {
+            setDeleteConfirm({ 
+                open: true, 
+                type: 'region', 
+                element: regionDialog.region as Region 
+            });
+        }
+    }, [regionDialog.region]);
+
+    const handleDeleteCancel = useCallback(() => {
+        setDeleteConfirm({ open: false, type: 'location', element: null });
+    }, []);
+
+    // Zoom effect - debounced to prevent excessive re-renders
     useEffect(() => {
-    }, [regions, fitZoom]);
+        const map = mapRef.current;
+        if (!map) return;
+
+        const onZoomStart = () => {
+            setIsZooming(true);
+        };
+
+        const onZoom = () => {
+            const newZoom = map.getZoom();
+            
+            // Clear existing timeout
+            if (zoomTimeoutRef.current) {
+                clearTimeout(zoomTimeoutRef.current);
+            }
+            
+            // Debounce zoom updates
+            zoomTimeoutRef.current = setTimeout(() => {
+                setCurrentZoom(newZoom);
+            }, 100) as unknown as number; // 100ms debounce
+        };
+
+        const onZoomEnd = () => {
+            setIsZooming(false);
+        };
+
+        const onMove = () => {
+            const center = map.getCenter();
+        };
+
+        const onMoveStart = () => {
+        };
+
+        const onMoveEnd = () => {
+            const center = map.getCenter();
+        };
+
+        map.on('zoomstart', onZoomStart);
+        map.on('zoom', onZoom);
+        map.on('zoomend', onZoomEnd);
+        map.on('move', onMove);
+        map.on('movestart', onMoveStart);
+        map.on('moveend', onMoveEnd);
+        
+        // Set initial zoom
+        setCurrentZoom(map.getZoom());
+
+        return () => {
+            map.off('zoomstart', onZoomStart);
+            map.off('zoom', onZoom);
+            map.off('zoomend', onZoomEnd);
+            map.off('move', onMove);
+            map.off('movestart', onMoveStart);
+            map.off('moveend', onMoveEnd);
+            
+            // Clear timeout on cleanup
+            if (zoomTimeoutRef.current) {
+                clearTimeout(zoomTimeoutRef.current);
+            }
+        };
+    }, []);
 
     return (
-      <div 
-        style={{ width: '100vw', height: '100vh', position: 'relative' }} 
-        onContextMenu={e => handleContextMenu(e, 'map')}
-        className={isDrawing ? 'drawing-mode' : ''}
-      >
-        <MapContainer
-          center={MAP_CENTER}
-          zoom={fitZoom}
-          minZoom={fitZoom}
-          maxZoom={2}
-          style={{ height: "100%", width: "100%" }}
-          ref={mapRef as React.RefObject<L.Map>}
-          crs={L.CRS.Simple as any}
-          zoomControl={true}
-          preferCanvas={true}
-          renderer={L.canvas()}
-          scrollWheelZoom={false}
+        <div 
+            style={{ width: '100vw', height: '100vh', position: 'relative' }} 
+            onContextMenu={handleContextMenu}
         >
-          <ScaleBar />
-          <ProminenceLevel />
-          <MapImage />
-          <RegionMarkers
-            regions={regions}
-            currentZoom={currentZoom}
-            fitZoom={fitZoom}
-            onContextMenu={(e, type, region) => handleContextMenu(e, type, region)}
-          />
-          <LocationMarkers
-            locations={locations}
-            currentZoom={currentZoom}
-            fitZoom={fitZoom}
-            onContextMenu={(e, type, location) => handleContextMenu(e, type, location)}
-          />
-        </MapContainer>
-        <ContextMenu
-          open={menu.open}
-          x={menu.x}
-          y={menu.y}
-          onClose={() => {
-            closeMenu();
-            if (moveMode && menu.type !== 'marker') {
-              resetMoveMode();
-            }
-          }}
-          items={getMenuItems()}
-        />
-        <LocationDialog
-          open={locationDialog.open}
-          mode={locationDialog.mode}
-          location={locationDialog.location}
-          onSave={handleSaveLocation}
-          onDelete={(location) => {
-            console.log('Map: handleDeleteLocation called with:', location);
-            setDeleteConfirmation({ 
-              open: true, 
-              type: 'location',
-              element: location 
-            });
-            locationDialog.close();
-          }}
-          onClose={() => {
-            console.log('Map: onCloseLocation called');
-            locationDialog.close();
-          }}
-        />
-        {regionDialog.open && (
-        <RegionDialog
-          open={regionDialog.open}
-          mode={regionDialog.mode}
-          region={regionDialog.region}
-          position={regionDialog.position || []}
-          map={mapRef.current!}
-          onSave={(region) => {
-            console.log('Map: handleSaveRegion called with:', region);
-            handleSaveRegion(region);
-          }}
-          onDelete={(region) => {
-            console.log('Map: handleDelete called with:', region);
-            setDeleteConfirmation({ 
-              open: true, 
-              type: 'region',
-              element: region 
-            });
-            regionDialog.close();
-          }}
-          onClose={() => {
-            console.log('Map: onClose called');
-            regionDialog.close();
-          }}
-        />
-      )}
-        <ConfirmDialog
-          open={deleteConfirmation.open}
-          title={`Delete ${deleteConfirmation.type}`}
-          message={`Are you sure you want to delete this ${deleteConfirmation.type}?`}
-          onConfirm={handleDelete}
-          onCancel={() => setDeleteConfirmation({ 
-            open: false, 
-            type: 'location', 
-            element: null 
-          })}
-        />
-      </div>
+            <MapContainer
+                center={MAP_CENTER}
+                zoom={fitZoom}
+                minZoom={fitZoom}
+                maxZoom={2}
+                style={{ height: "100%", width: "100%" }}
+                ref={mapRef as React.RefObject<L.Map>}
+                crs={L.CRS.Simple}
+                zoomControl={true}
+                preferCanvas={true}
+                renderer={L.canvas()}
+                scrollWheelZoom={false}
+            >
+                <ScaleBar />
+                <ProminenceLevel />
+                <MapImage />
+                <RegionMarkers
+                    regions={regions}
+                    currentZoom={currentZoom}
+                    fitZoom={fitZoom}
+                    onContextMenu={handleRegionMarkersContextMenu}
+                    onElementClick={handleElementClick}
+                    currentPanel={currentPanel}
+                    panelWidth={450}
+                />
+                <LocationMarkers
+                    locations={locations}
+                    regions={regions}
+                    fitZoom={fitZoom}
+                    onContextMenu={handleLocationMarkersContextMenu}
+                    onElementClick={handleElementClick}
+                    currentPanel={currentPanel}
+                    panelWidth={450}
+                />
+            </MapContainer>
+
+            {/* Unified Panel */}
+            {currentPanel && (
+                <UnifiedPanel
+                    entry={currentPanel}
+                    onClose={handlePanelClose}
+                    onBack={canGoBack ? handlePanelBack : undefined}
+                    onElementClick={handleElementClick}
+                />
+            )}
+
+            <ContextMenu
+                open={menu.open}
+                x={menu.x}
+                y={menu.y}
+                onClose={() => {
+                    closeMenu();
+                    if (moveMode && menu.type !== 'marker') {
+                        resetMoveMode();
+                    }
+                }}
+                items={getMenuItems()}
+            />
+
+            <LocationDialog
+                open={locationDialog.open}
+                mode={locationDialog.mode}
+                location={locationDialog.location}
+                onSave={handleSaveLocation}
+                onClose={locationDialog.close}
+                onDelete={handleLocationDelete}
+            />
+
+            <RegionDialog
+                open={regionDialog.open}
+                mode={regionDialog.mode}
+                region={regionDialog.region as Region | undefined}
+                position={regionDialog.position || undefined}
+                map={mapRef.current!}
+                onSave={handleSaveRegion}
+                onClose={regionDialog.close}
+                onDelete={handleRegionDelete}
+            />
+
+            <ConfirmDialog
+                open={deleteConfirm.open}
+                title={`Delete ${deleteConfirm.type === 'location' ? 'Location' : 'Region'}`}
+                message={`Are you sure you want to delete "${deleteConfirm.element?.name}"?`}
+                onConfirm={handleDeleteElement}
+                onCancel={handleDeleteCancel}
+            />
+        </div>
     );
 }
   

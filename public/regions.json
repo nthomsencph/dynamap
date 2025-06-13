@@ -51,7 +51,8 @@
     "showHighlight": false,
     "fields": {
       "Population": "Shitsville"
-    }
+    },
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
@@ -79,7 +80,8 @@
     "prominence": 5,
     "id": "78f68f29-651a-4854-bae3-fb7900a92576",
     "showHighlight": false,
-    "fields": {}
+    "fields": {},
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
@@ -123,7 +125,8 @@
     "type": "Island",
     "id": "f8e8076f-b583-475e-8897-c08b109b7431",
     "showHighlight": false,
-    "fields": {}
+    "fields": {},
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
@@ -179,7 +182,8 @@
     "prominence": 5,
     "id": "0bd0653b-2d7f-4b9a-a95d-c5cc096aad76",
     "showHighlight": false,
-    "fields": {}
+    "fields": {},
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
@@ -236,7 +240,8 @@
     "label": "<p><span style=\"font-size: auto\">A region</span></p>",
     "description": "",
     "image": "https://thumbs.dreamstime.com/b/sea-island-mountain-fantasy-backdrop-concept-art-realistic-illustration-video-game-digital-cg-artwork-background-natural-scenery-171536712.jpg",
-    "fields": {}
+    "fields": {},
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
@@ -268,7 +273,8 @@
     "prominence": 5,
     "id": "da2d25ec-7e47-45a8-a9c6-4e1850c5135a",
     "label": "Hello there",
-    "fields": {}
+    "fields": {},
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
@@ -332,7 +338,8 @@
     "label": "<p><span style=\"font-family: fantasy; font-size: auto\">A name for a region</span></p>",
     "prominence": 5,
     "id": "c9ee3523-4f98-4de6-99d7-290f144d1398",
-    "fields": {}
+    "fields": {},
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
@@ -396,56 +403,8 @@
     "type": "Island",
     "id": "92c2fcf7-fce5-4933-968b-9da2b8a367b2",
     "description": "",
-    "fields": {}
-  },
-  {
-    "position": [
-      [
-        815.0980308724492,
-        639.6606336164658
-      ],
-      [
-        815.8199954702104,
-        771.7801550067742
-      ],
-      [
-        697.4178014373657,
-        906.0655701903664
-      ],
-      [
-        531.3659439522786,
-        916.1730745590238
-      ],
-      [
-        544.3613067119811,
-        767.4483674202068
-      ],
-      [
-        551.5809526895936,
-        637.494739823182
-      ],
-      [
-        560.2445278627285,
-        595.6207931530297
-      ],
-      [
-        675.036898906767,
-        606.4502621194484
-      ]
-    ],
-    "color": "#ffffff",
-    "icon": "MdCastle",
-    "showLabel": true,
-    "showBorder": true,
-    "showHighlight": true,
-    "label": "<p><span style=\"font-family: Georgia, serif; font-size: 24px; color: rgb(233, 22, 22)\"><strong><em>Nittiri hello hello how are</em></strong></span></p>",
-    "name": "Nittiri",
-    "type": "Kingdom",
-    "prominence": 10,
-    "id": "34bc4b66-a1f5-42f6-be25-8a9f6eda3a33",
-    "description": "<p>ffffff </p><img class=\"image\" src=\"https://images.unsplash.com/photo-1514539079130-25950c84af65?fm=jpg&amp;q=60&amp;w=3000&amp;ixlib=rb-4.1.0&amp;ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZmFudGFzeSUyMGNhc3RsZXxlbnwwfHwwfHx8MA%3D%3D\"><p></p><p></p>",
     "fields": {},
-    "area": 34616257.08884688
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
@@ -469,32 +428,8 @@
     "label": "<p style=\"font-size: 32px;\"><span style=\"font-family: fantasy; font-size: auto\">BIGPLACE.</span></p>",
     "type": "Region",
     "name": "BIG PLACE",
-    "id": "28e9df73-0c15-4dc4-a7b7-2199318334bc"
-  },
-  {
-    "position": [
-      [
-        727.880728993797,
-        1008.20241018178
-      ],
-      [
-        715.1388343943431,
-        1121.2867247519323
-      ],
-      [
-        584.534414749942,
-        1121.2867247519323
-      ],
-      [
-        587.7198883998054,
-        993.8677787573945
-      ]
-    ],
-    "label": "<p><span style=\"color: #00ff40\">HOW AM I?</span></p>",
-    "name": "A name for a region",
-    "type": "Continent",
-    "id": "18223c82-25d5-4e07-a759-352d91866214",
-    "area": 7791304.347826087
+    "id": "28e9df73-0c15-4dc4-a7b7-2199318334bc",
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
@@ -519,59 +454,253 @@
     "label": "<p><span style=\"font-size: 48px\">A name</span></p>",
     "type": "Island",
     "id": "4aced7bc-4cc5-4294-90eb-227792eb78d8",
-    "area": 4277353.497164461
+    "area": 4277353.497164461,
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
       [
-        888.7910554281118,
-        1037.858825781362
+        663,
+        1221
       ],
       [
-        910.2323100679628,
-        1084.0596244696126
+        662.5,
+        1263
       ],
       [
-        868.8813189768215,
-        1123.879097372193
+        632,
+        1263.5
       ],
       [
-        847.4400643369704,
-        1085.3358896267464
+        634,
+        1224
       ]
     ],
-    "name": "A name",
-    "label": "<p><span style=\"font-size: 48px\">A name</span></p>",
-    "type": "Region",
+    "fields": {},
+    "description": "<p style=\"text-align: left\">test region</p>",
+    "type": "Island",
+    "name": "test region",
+    "label": "<p><span style=\"color: #4dffa3; background-color: #ff0000\">test region</span></p>",
+    "prominence": 10,
+    "color": "#ffffff",
     "icon": "MdCastle",
-    "id": "6b62503c-f3ac-4166-a0e3-ef598cd7a09e",
-    "area": 49912741.02079395
+    "id": "9d80eb8d-07a6-458a-8245-ab8253b21d15",
+    "area": 5856181.474480151,
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
       [
-        697.1846631436364,
-        1001.80465307294
+        605.5,
+        845
       ],
       [
-        725.2249969446601,
-        1092.2984576126075
+        600,
+        917.5
       ],
       [
-        638.5548742869503,
-        1125.4370339229085
+        557.5,
+        934.5
       ],
       [
-        581.1996460575835,
-        1031.119547501283
+        530.5,
+        908.5
+      ],
+      [
+        542.5,
+        836
       ]
     ],
-    "name": "Check it out",
-    "description": "<p>Hellooooooooooo</p>",
-    "type": "Region",
-    "label": "<p><span style=\"font-family: Georgia, serif; font-size: 32px\"><strong>Check it out!!</strong></span></p>",
+    "fields": {},
+    "description": "<p style=\"text-align: left\"></p>",
+    "name": "test region 339",
+    "type": "Continent",
+    "label": "<p><span style=\"font-family: 'Jim Nightshade', cursive; font-size: 24px; background-color: #ff0000\"><strong>test region 339</strong></span></p>",
+    "prominence": 10,
+    "color": "#ffffff",
     "icon": "MdCastle",
-    "id": "81e8fa51-22b3-4057-893c-49e0864e3a84",
-    "area": 7966124.763705104
+    "showHighlight": false,
+    "id": "15ff17b0-cece-4776-ada7-bbbc5196aafc",
+    "area": 27409300.56710775,
+    "showBorder": true,
+    "labelCollisionStrategy": "None"
+  },
+  {
+    "position": [
+      [
+        633,
+        434
+      ],
+      [
+        469,
+        621
+      ],
+      [
+        170,
+        742
+      ],
+      [
+        154,
+        482
+      ],
+      [
+        465,
+        169
+      ]
+    ],
+    "fields": {},
+    "description": "<p style=\"text-align: left\">Here be monsters. Yapping, terrible monsters.</p>",
+    "name": "Camilla Sea",
+    "type": "Sea",
+    "label": "<p><span style=\"font-family: fantasy; font-size: 32px; background-color: rgb(0, 179, 255)\"><em><strong><u>Camilla Sea</u></strong></em></span></p>",
+    "showHighlight": false,
+    "showBorder": false,
+    "prominence": 10,
+    "color": "#ffffff",
+    "icon": "MdCastle",
+    "id": "c567c160-797e-4b94-b2cd-dd067ee89273",
+    "area": 179282268.43100187,
+    "labelCollisionStrategy": "None"
+  },
+  {
+    "position": [
+      [
+        702,
+        632.5
+      ],
+      [
+        703.5,
+        704.5
+      ],
+      [
+        661.5,
+        711
+      ],
+      [
+        649,
+        670
+      ],
+      [
+        656.5,
+        632.5
+      ]
+    ],
+    "fields": {},
+    "description": "<p style=\"text-align: left\"></p>",
+    "name": "Dan's Kingdom",
+    "type": "Kingdom",
+    "showHighlight": false,
+    "color": "#ffffff",
+    "icon": "MdCastle",
+    "id": "2a183444-45b4-4ccd-854a-972ec9b1df96",
+    "area": 17861323.251417767,
+    "labelCollisionStrategy": "None"
+  },
+  {
+    "position": [
+      [
+        836.5,
+        1378.5
+      ],
+      [
+        832.5,
+        1464
+      ],
+      [
+        774.5,
+        1460.5
+      ],
+      [
+        774.5,
+        1378
+      ]
+    ],
+    "fields": {},
+    "description": "<p style=\"text-align: left\">fdfdfdfdfdfd</p>",
+    "name": "A great place",
+    "type": "Region",
+    "label": "<p><span style=\"color: #000000\">A great place</span></p>",
+    "prominence": 10,
+    "color": "#ffffff",
+    "icon": "MdCastle",
+    "id": "31cf7e50-fb7c-40e2-bd09-1bccc13677c9",
+    "area": 6102381.852551985,
+    "labelCollisionStrategy": "None"
+  },
+  {
+    "position": [
+      [
+        640,
+        799.5
+      ],
+      [
+        669.5,
+        956
+      ],
+      [
+        585,
+        994.5
+      ],
+      [
+        520.5,
+        926
+      ],
+      [
+        532.5,
+        820.5
+      ]
+    ],
+    "fields": {},
+    "name": "Outer region",
+    "description": "<p style=\"text-align: left\">Hello!</p>",
+    "type": "Region",
+    "label": "<p><span style=\"font-size: 32px\">Outer region</span></p>",
+    "prominence": 10,
+    "color": "#ffffff",
+    "icon": "MdCastle",
+    "id": "10566bdf-6356-4d85-a682-18aeda5c6620",
+    "area": 25281965.97353497,
+    "labelCollisionStrategy": "Hide"
+  },
+  {
+    "position": [
+      [
+        662.4847887666175,
+        774.6345716291646
+      ],
+      [
+        728.1725187289665,
+        876.7709810218414
+      ],
+      [
+        672.4981622364877,
+        978.1063205369286
+      ],
+      [
+        580.775661252476,
+        1003.7405566197965
+      ],
+      [
+        526.7034445151766,
+        950.0688748212918
+      ],
+      [
+        516.6900710453062,
+        865.9565376743815
+      ],
+      [
+        540.3216324342001,
+        791.0565041197518
+      ]
+    ],
+    "fields": {},
+    "name": "An even bigger region",
+    "type": "Continent",
+    "color": "#617ebd",
+    "icon": "MdCastle",
+    "label": "<p><span style=\"font-size: 32px\">An even bigger region</span></p>",
+    "id": "14003845-393e-46f6-9520-d9471ccf47ff",
+    "area": 65963100.189035915,
+    "labelCollisionStrategy": "None"
   }
 ]

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -7,7 +7,6 @@ import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
-import Mention from '@tiptap/extension-mention';
 import FontFamily from '@tiptap/extension-font-family';
 import FontSize from '@tiptap/extension-font-size';
 import {
@@ -17,14 +16,17 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Palette,
   Image as ImageIcon,
   Link as LinkIcon,
   Type,
 } from 'lucide-react';
+import { AiOutlineFontSize } from 'react-icons/ai';
+import { RxFontFamily } from 'react-icons/rx';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
-import '@/css/rich-text-editor.css';
+import { createMentionExtension } from './extensions/mentionExtension';
+import '@/css/description-editor.css';
+import Dropdown from './Dropdown';
 
 // Type definitions
 interface DescriptionEditorProps {
@@ -35,63 +37,6 @@ interface DescriptionEditorProps {
   className?: string;
 }
 
-// Simplified mention list component
-const MentionList = React.forwardRef<
-  HTMLDivElement,
-  {
-    items: Array<{ id: string; label: string }>;
-    command: (item: { id: string; label: string }) => void;
-    selectedIndex: number;
-    onSelect: (index: number) => void;
-  }
->(({ items, command, selectedIndex, onSelect }, ref) => {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowUp') {
-        onSelect(selectedIndex > 0 ? selectedIndex - 1 : items.length - 1);
-        event.preventDefault();
-      } else if (event.key === 'ArrowDown') {
-        onSelect(selectedIndex < items.length - 1 ? selectedIndex + 1 : 0);
-        event.preventDefault();
-      } else if (event.key === 'Enter') {
-        if (items[selectedIndex]) {
-          command(items[selectedIndex]);
-        }
-        event.preventDefault();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [items, selectedIndex, command, onSelect]);
-
-  if (items.length === 0) {
-    return (
-      <div ref={ref} className="mention-dropdown">
-        <div className="mention-empty">No elements found</div>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={ref} className="mention-dropdown">
-      {items.map((item, index) => (
-        <div
-          key={item.id}
-          className={`mention-item ${index === selectedIndex ? 'selected' : ''}`}
-          onClick={() => command(item)}
-          role="option"
-          aria-selected={index === selectedIndex}
-        >
-          @{item.label}
-        </div>
-      ))}
-    </div>
-  );
-});
-
-MentionList.displayName = 'MentionList';
-
 const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
   value,
   onChange,
@@ -99,97 +44,29 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
   rows = 4,
   className = '',
 }) => {
-  // Configure mention extension
-  const mentionExtension = useMemo(() => {
-    return Mention.configure({
-      HTMLAttributes: {
-        class: 'mention',
-      },
-      renderLabel({ node }) {
-        return `@${node.attrs.label}`;
-      },
-      suggestion: {
-        items: ({ query }: { query: string }) => {
-          return elements
-            .filter((element) =>
-              element.name?.toLowerCase().includes(query.toLowerCase())
-            )
-            .slice(0, 5)
-            .map((element) => ({
-              id: element.id,
-              label: element.name,
-            }));
-        },
-        render: () => {
-          let component: any;
-          let popup: any;
-          let selectedIndex = 0;
-
-          return {
-            onStart: (props: any) => {
-              selectedIndex = 0;
-              
-              popup = document.createElement('div');
-              popup.style.position = 'absolute';
-              popup.style.zIndex = '9999';
-              document.body.appendChild(popup);
-
-              const rect = props.clientRect();
-              if (rect) {
-                popup.style.top = `${rect.bottom + window.scrollY}px`;
-                popup.style.left = `${rect.left + window.scrollX}px`;
-              }
-
-              const root = (window as any).ReactDOM?.createRoot?.(popup);
-              if (root) {
-                component = (
-                  <MentionList
-                    items={props.items}
-                    command={props.command}
-                    selectedIndex={selectedIndex}
-                    onSelect={(index) => { selectedIndex = index; }}
-                  />
-                );
-                root.render(component);
-              }
-            },
-
-            onUpdate: (props: any) => {
-              selectedIndex = Math.min(selectedIndex, props.items.length - 1);
-              const root = (window as any).ReactDOM?.createRoot?.(popup);
-              if (root) {
-                component = (
-                  <MentionList
-                    items={props.items}
-                    command={props.command}
-                    selectedIndex={selectedIndex}
-                    onSelect={(index) => { selectedIndex = index; }}
-                  />
-                );
-                root.render(component);
-              }
-            },
-
-            onKeyDown: (props: any) => {
-              if (props.event.key === 'Escape') {
-                return true;
-              }
-              return false;
-            },
-
-            onExit: () => {
-              if (popup && popup.parentNode) {
-                popup.parentNode.removeChild(popup);
-              }
-            },
-          };
-        },
-      },
-    });
+  // Use ref to avoid stale closure issues
+  const elementsRef = useRef(elements);
+  const isSettingContentRef = useRef(false);
+  const lastValueRef = useRef(value);
+  
+  // Update ref whenever elements change
+  useEffect(() => {
+    elementsRef.current = elements;
   }, [elements]);
+
+  // Create mention extension with ref to avoid stale closure
+  const mentionExtension = useMemo(() => {
+    return createMentionExtension(() => {
+      return elementsRef.current;
+    });
+  }, []); // Empty deps - create once, ref will always have fresh elements
+
+  // Check if toolbar should be excluded from tab navigation
+  const skipToolbarInTab = className.includes('description-editor-no-toolbar-tab');
 
   // Initialize editor with description-specific extensions
   const editor = useEditor({
+    immediatelyRender: false, // Fix SSR warning
     extensions: [
       StarterKit,
       TextStyle,
@@ -197,11 +74,17 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
       FontSize,
       Color,
       Underline,
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TextAlign.configure({ 
+        types: ['heading', 'paragraph'],
+        defaultAlignment: 'left' // Set default alignment to left
+      }),
       Link.configure({ 
-        openOnClick: false,
+        openOnClick: true,
+        autolink: true,
         HTMLAttributes: {
           class: 'link',
+          target: '_blank',
+          rel: 'noopener noreferrer nofollow',
         },
       }),
       Image.configure({
@@ -213,21 +96,51 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
     ],
     content: value,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      // Don't trigger onChange when we're programmatically setting content
+      if (!isSettingContentRef.current) {
+        const newContent = editor.getHTML();
+        // Only trigger onChange if the content actually changed and it's not just the default empty content
+        if (newContent !== lastValueRef.current && newContent !== '<p style="text-align: left"></p>') {
+          console.log('🔍 DescriptionEditor: onUpdate triggered', {
+            content: newContent,
+            contentLength: newContent?.length
+          });
+          lastValueRef.current = newContent;
+          onChange(newContent);
+        }
+      }
     },
     editorProps: {
       attributes: {
-        class: 'tiptap-editor-content description-editor',
+        class: 'description-editor-content',
         role: 'textbox',
         'aria-label': 'Description editor',
       },
     },
   });
 
+  console.log('🔍 DescriptionEditor: Editor created/updated', {
+    value,
+    valueLength: value?.length,
+    editorExists: !!editor,
+    editorContent: editor?.getHTML(),
+    editorContentLength: editor?.getHTML()?.length
+  });
+
+  // Set initial alignment to left when editor is created
+  useEffect(() => {
+    if (editor) {
+      editor.chain().focus().setTextAlign('left').run();
+    }
+  }, [editor]);
+
   // Sync content with value prop
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value, false);
+      isSettingContentRef.current = true;
+      lastValueRef.current = value;
+      editor.commands.setContent(value, true); // Parse as HTML to render links properly
+      isSettingContentRef.current = false;
     }
   }, [value, editor]);
 
@@ -272,10 +185,10 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
   }
 
   return (
-    <div className={`rte-wrapper ${className}`} data-rows={rows}>
-      <div className="tiptap-editor-wrapper">
+    <div className={`description-editor-wrapper ${className}`} data-rows={rows}>
+      <div className="description-editor-container">
         {/* Toolbar */}
-        <div className="rte-toolbar" role="toolbar" aria-label="Text formatting">
+        <div className="description-editor-toolbar" role="toolbar" aria-label="Text formatting">
           {/* Text Formatting */}
           <button
             type="button"
@@ -283,6 +196,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
             className={editor.isActive('bold') ? 'active' : ''}
             title="Bold"
             aria-label="Bold"
+            tabIndex={skipToolbarInTab ? -1 : 0}
           >
             <Bold size={16} />
           </button>
@@ -293,6 +207,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
             className={editor.isActive('italic') ? 'active' : ''}
             title="Italic"
             aria-label="Italic"
+            tabIndex={skipToolbarInTab ? -1 : 0}
           >
             <Italic size={16} />
           </button>
@@ -303,6 +218,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
             className={editor.isActive('underline') ? 'active' : ''}
             title="Underline"
             aria-label="Underline"
+            tabIndex={skipToolbarInTab ? -1 : 0}
           >
             <UnderlineIcon size={16} />
           </button>
@@ -310,52 +226,54 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
           <div className="rte-toolbar-separator"></div>
 
           {/* Font Settings */}
-          <select
-            onChange={(e) => {
-              if (e.target.value) {
-                editor.chain().focus().setFontFamily(e.target.value).run();
-                e.target.value = '';
-              }
-            }}
-            className="font-family-select"
-            title="Font Family"
-            aria-label="Font Family"
-          >
-            <option value="">Font</option>
-            <option value="Arial, sans-serif">Arial</option>
-            <option value="Georgia, serif">Georgia</option>
-            <option value="'Times New Roman', serif">Times</option>
-            <option value="'Courier New', monospace">Courier</option>
-            <option value="fantasy">Fantasy</option>
-            <option value="serif">Serif</option>
-            <option value="sans-serif">Sans-serif</option>
-            <option value="monospace">Monospace</option>
-          </select>
+          <Dropdown
+            icon={<RxFontFamily size={20} style={{ color: '#fff', fontWeight: 'bold' }} />}
+            options={[
+              { label: 'Arial', value: 'Arial, sans-serif' },
+              { label: 'Georgia', value: 'Georgia, serif' },
+              { label: 'Times', value: "'Times New Roman', serif" },
+              { label: 'Courier', value: "'Courier New', monospace" },
+              { label: 'Fantasy', value: 'fantasy' },
+              { label: 'Serif', value: 'serif' },
+              { label: 'Sans-serif', value: 'sans-serif' },
+              { label: 'Monospace', value: 'monospace' },
+              { label: 'UnifrakturMaguntia', value: "'UnifrakturMaguntia', cursive" },
+              { label: 'Passions Conflict', value: "'Passions Conflict', cursive" },
+              { label: 'Festive', value: "'Festive', cursive" },
+              { label: 'Arizonia', value: "'Arizonia', cursive" },
+              { label: 'Petemoss', value: "'Petemoss', cursive" },
+              { label: 'Kaushan Script', value: "'Kaushan Script', cursive" },
+              { label: 'Fredericka the Great', value: "'Fredericka the Great', cursive" },
+              { label: 'Meddon', value: "'Meddon', cursive" },
+              { label: 'Jim Nightshade', value: "'Jim Nightshade', cursive" },
+              { label: 'Felipa', value: "'Felipa', cursive" },
+              { label: 'MedievalSharp', value: "'MedievalSharp', cursive" },
+            ]}
+            selected={undefined}
+            onSelect={font => editor.chain().focus().setFontFamily(font).run()}
+            placeholder="Font"
+            buttonClassName="rte-dropdown-btn"
+            dropdownClassName="rte-dropdown-menu"
+          />
 
-          <div className="font-size-icon-select-wrapper">
-            <Type className="font-size-icon" size={16} />
-            <select
-              onChange={(e) => {
-                if (e.target.value) {
-                  editor.chain().focus().setFontSize(e.target.value).run();
-                  e.target.value = '';
-                }
-              }}
-              className="font-size-select"
-              title="Font Size"
-              aria-label="Font Size"
-            >
-              <option value="">Size</option>
-              <option value="12px">12px</option>
-              <option value="14px">14px</option>
-              <option value="16px">16px</option>
-              <option value="18px">18px</option>
-              <option value="20px">20px</option>
-              <option value="24px">24px</option>
-              <option value="28px">28px</option>
-              <option value="32px">32px</option>
-            </select>
-          </div>
+          <Dropdown
+            icon={<AiOutlineFontSize size={20} style={{ color: '#fff' }} />}
+            options={[
+              { label: '12px', value: '12px' },
+              { label: '14px', value: '14px' },
+              { label: '16px', value: '16px' },
+              { label: '18px', value: '18px' },
+              { label: '20px', value: '20px' },
+              { label: '24px', value: '24px' },
+              { label: '28px', value: '28px' },
+              { label: '32px', value: '32px' },
+            ]}
+            selected={undefined}
+            onSelect={size => editor.chain().focus().setFontSize(size).run()}
+            placeholder="Size"
+            buttonClassName="rte-dropdown-btn"
+            dropdownClassName="rte-dropdown-menu"
+          />
 
           <div className="rte-toolbar-separator"></div>
 
@@ -366,6 +284,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
             className={editor.isActive({ textAlign: 'left' }) ? 'active' : ''}
             title="Align Left"
             aria-label="Align Left"
+            tabIndex={skipToolbarInTab ? -1 : 0}
           >
             <AlignLeft size={16} />
           </button>
@@ -376,6 +295,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
             className={editor.isActive({ textAlign: 'center' }) ? 'active' : ''}
             title="Align Center"
             aria-label="Align Center"
+            tabIndex={skipToolbarInTab ? -1 : 0}
           >
             <AlignCenter size={16} />
           </button>
@@ -386,6 +306,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
             className={editor.isActive({ textAlign: 'right' }) ? 'active' : ''}
             title="Align Right"
             aria-label="Align Right"
+            tabIndex={skipToolbarInTab ? -1 : 0}
           >
             <AlignRight size={16} />
           </button>
@@ -399,6 +320,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
                 type="color"
                 onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
                 aria-label="Text Color"
+                tabIndex={skipToolbarInTab ? -1 : 0}
               />
             </label>
           </div>
@@ -411,6 +333,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
             onClick={insertImage}
             title="Insert Image"
             aria-label="Insert Image"
+            tabIndex={skipToolbarInTab ? -1 : 0}
           >
             <ImageIcon size={16} />
           </button>
@@ -420,13 +343,14 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
             onClick={insertLink}
             title="Insert Link"
             aria-label="Insert Link"
+            tabIndex={skipToolbarInTab ? -1 : 0}
           >
             <LinkIcon size={16} />
           </button>
         </div>
 
         {/* Standard Editor Content */}
-        <div className="tiptap-editor description-editor-container">
+        <div className="description-editor-content-wrapper">
           <EditorContent editor={editor} />
         </div>
       </div>

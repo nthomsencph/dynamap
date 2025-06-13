@@ -59,11 +59,11 @@
 
 .rte-toolbar {
   display: flex;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
   flex-wrap: nowrap;
   width: 100%;
-  align-items: center;
-  overflow-x: auto;
+  overflow: visible !important;
   padding: 2px;
   background: #222;
   border-radius: 4px;
@@ -71,43 +71,137 @@
 }
 
 .rte-toolbar > * {
-  flex-shrink: 0;
-  white-space: nowrap;
-  margin-bottom: 0 !important;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  margin: 0;
 }
 
-.rte-toolbar::-webkit-scrollbar {
-  height: 4px;
-}
-
-.rte-toolbar::-webkit-scrollbar-track {
-  background: #333;
-  border-radius: 2px;
-}
-
-.rte-toolbar::-webkit-scrollbar-thumb {
-  background: #666;
-  border-radius: 2px;
-}
-
-.rte-toolbar::-webkit-scrollbar-thumb:hover {
-  background: #888;
-}
-
-.rte-toolbar button {
-  background: none;
+.rte-toolbar button,
+.rte-toolbar select,
+.rte-toolbar input[type='color'],
+.rte-toolbar .font-size-icon-select-wrapper {
+  height: 32px;
+  width: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  max-width: 32px;
+  max-height: 32px;
+  box-sizing: border-box;
   border: none;
-  padding: 2px 4px;
+  background: #222;
   border-radius: 4px;
-  font-size: 1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+}
+
+.rte-toolbar select,
+.rte-toolbar .font-family-select {
+  padding-left: 8px;
+  padding-right: 24px;
+  width: 100px;
+  min-width: 80px;
+  max-width: 120px;
+  background: #222;
   color: #fff;
+  border: none;
+  border-radius: 4px;
+  height: 32px;
+  box-sizing: border-box;
+}
+
+.rte-toolbar .font-size-icon-select-wrapper {
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  padding: 0;
+  margin: 0;
+  background: #222;
+  border-radius: 4px;
+  border: none;
+}
+
+.rte-toolbar .font-size-icon {
+  font-size: 1.2em;
+  color: #fff;
+  pointer-events: none;
+  margin: 0 auto;
+}
+
+.rte-toolbar .font-size-select {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.01;
+  pointer-events: auto;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.rte-toolbar input[type='color'] {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #222 !important;
+  background: #222;
+  border-radius: 4px;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
   outline: none;
   display: flex;
   align-items: center;
-  min-width: 24px;
   justify-content: center;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.rte-toolbar input[type='color']::-webkit-color-swatch-wrapper {
+  border: none !important;
+  padding: 0 !important;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.rte-toolbar input[type='color']::-webkit-color-swatch {
+  border: none !important;
+  border-radius: 4px !important;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.rte-toolbar input[type='color']:focus {
+  outline: 2px solid #2563eb;
+}
+
+.rte-toolbar button {
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  max-width: 32px;
+  max-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  transition: background 0.15s, color 0.15s;
 }
 
 .rte-toolbar button.active,
@@ -121,118 +215,12 @@
   color: #fff;
 }
 
-.rte-color-group {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.background-color-wrapper {
-  display: flex;
-  gap: 2px;
-  align-items: center;
-  position: relative;
-}
-
-.background-color-picker {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.transparent-toggle {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid #444;
-  border-radius: 4px;
-  background: #222;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: bold;
-  color: #fff;
-}
-
-.transparent-toggle.active {
-  background: #444;
-  border-color: #666;
-  color: #fff;
-}
-
-.transparent-toggle:hover {
-  background: #333;
-}
-
-.rte-toolbar input[type='color'] {
-  width: 22px;
-  height: 22px;
-  border: 1px solid #444;
-  background: #222;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.rte-toolbar input[type='color']::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.rte-toolbar input[type='color']::-webkit-color-swatch {
-  border: none;
-  border-radius: 4px;
-}
-
-.rte-toolbar input[type='color'].background-color-picker {
-  position: relative;
-}
-
-.rte-toolbar input[type='color'].background-color-picker::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 1px solid #666;
-  border-radius: 4px;
-  pointer-events: none;
-}
-
-.rte-toolbar button svg {
-  width: 1em;
-  height: 1em;
-  vertical-align: middle;
-}
-
 /* Toolbar separator */
 .rte-toolbar-separator {
   width: 1px;
   height: 24px;
   background: #444;
   margin: 0 4px;
-}
-
-.rte-toolbar select {
-  background: #222;
-  color: #fff;
-  border: 1px solid #444;
-  border-radius: 4px;
-  padding: 2px 4px;
-  font-size: 12px;
-  cursor: pointer;
-  margin-right: 2px;
-  width: auto;
-  min-width: unset;
-  max-width: 70px;
-  box-sizing: border-box;
 }
 
 .rte-toolbar select:hover {
@@ -245,59 +233,10 @@
   border-color: #2563eb;
 }
 
-.rte-toolbar .font-family-select,
-.rte-toolbar .font-size-select {
-  width: auto;
-  min-width: unset;
-  max-width: 70px;
-}
-
-.rte-toolbar .font-size-select {
-  width: 48px;
-  min-width: 48px;
-  max-width: 48px;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding-right: 18px;
-}
-
 .rte-toolbar .font-size-select option {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.rte-toolbar .font-size-icon-select-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin-right: 2px;
-}
-
-.rte-toolbar .font-size-icon {
-  font-size: 1.2em;
-  color: #fff;
-  pointer-events: none;
-}
-
-.rte-toolbar .font-size-select {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 2;
-  margin: 0;
-  padding: 0;
 }
 
 /* List styles */
@@ -429,7 +368,7 @@
   box-shadow: none !important;
   padding: 8px 12px !important;
   margin: 0 !important;
-  font-family: fantasy !important;
+  font-family: 'Felipa', cursive !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   color: #fafafa !important;
@@ -456,50 +395,60 @@
   padding: 0 !important;
 }
 
-/* Style for labels with background color (for final rendering) */
-.custom-pin-label span[style*="background-color"] {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+/* ===== STYLING-ONLY MODE STYLES ===== */
+/* When LabelEditor is in styling-only mode (text prop provided) */
+.rte-wrapper.styling-only .ProseMirror {
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
-.custom-pin-label span[style*="background-color: transparent"] {
-  padding: 0;
-  border-radius: 0;
+/* Add a visual indicator that the text is locked */
+.rte-wrapper.styling-only .rte-preview-container {
+  position: relative;
+}
+
+.rte-wrapper.styling-only .rte-preview-container::after {
+  content: "Text synced with Name field";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 10px;
+  color: #888;
+  background: rgba(34, 34, 34, 0.9);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid #444;
+  pointer-events: none;
+  font-weight: normal;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Make the editor look more like a preview when in styling-only mode */
+.rte-wrapper.styling-only .ProseMirror:focus {
+  outline: none;
   box-shadow: none;
-  border: none;
-  text-shadow: none;
+  border-color: #444;
 }
 
-.custom-pin-label [style*="font-size"] {
-  line-height: 1.2;
+/* Ensure the text is centered and looks good in preview */
+.rte-wrapper.styling-only .ProseMirror p {
+  text-align: center;
+  margin: 0;
+  padding: 8px;
 }
 
-/* Remove focus styling from description editor with higher specificity */
-.description-editor-container:focus,
-.description-editor-container:focus-within {
-  border-color: #444 !important;
-  box-shadow: none !important;
-  outline: none !important;
+/* Style the non-editable editor to have a subtle visual difference */
+.rte-wrapper.styling-only .tiptap-editor {
+  background: #1a1a1a;
+  border-style: dashed;
+  opacity: 0.95;
 }
 
-.description-editor-container .ProseMirror:focus {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.description-editor.ProseMirror:focus {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-/* Override any existing focus styles */
-.description-editor-container.tiptap-editor:focus {
-  border-color: #444 !important;
-  box-shadow: none !important;
+.rte-wrapper.styling-only .tiptap-editor:hover {
+  opacity: 1;
+  border-style: solid;
+  border-color: #555;
 }

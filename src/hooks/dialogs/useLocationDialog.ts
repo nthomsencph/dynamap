@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type { Location } from "@/types/locations";
 
 interface LocationDialogState {
@@ -46,11 +46,17 @@ export function useLocationDialog() {
     setState((s) => ({ ...s, open: false }));
   }, []);
 
-  return {
-    ...state,
+  // Memoize the return value to prevent unnecessary re-renders
+  const result = useMemo(() => ({
+    open: state.open,
+    mode: state.mode,
+    position: state.position,
+    location: state.location,
     openCreate,
     openEdit,
     close,
     onSave,
-  };
+  }), [state.open, state.mode, state.position, state.location]);
+
+  return result;
 } 

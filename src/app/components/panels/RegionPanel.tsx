@@ -1,160 +1,189 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { BasePanel, createClickHandlers } from './BasePanel';
 import type { Region } from '@/types/regions';
 import type { Location } from '@/types/locations';
-import { Lightbox } from '@/app/components/ui/Lightbox';
-import { useRegions } from '@/hooks/elements/useRegions';
-import { IoArrowBack } from 'react-icons/io5';
-import '@/css/panels/sidepanel.css';
 import { useLocations } from '@/hooks/elements/useLocations';
-import { ELEMENT_ICONS } from '@/types/elements';
+import { useRegions } from '@/hooks/elements/useRegions';
+import { isPercentContained, findContainingRegions } from '@/app/utils/containment';
 import { pointInPolygon } from '@/app/utils/area';
+import '@/css/panels/sidepanel.css';
 
 interface RegionPanelProps {
-  region: Region | null;
+  region: Region;
+  containingRegions?: Region[]; // All regions that contain this one
   onClose: () => void;
-  onRegionClick?: (region: Region) => void;
   onBack?: () => void;
   onLocationClick?: (location: Location) => void;
+  onRegionClick?: (region: Region) => void;
 }
 
-// Remove leading '@' from mentions in the HTML string
-function removeAtFromMentions(html: string): string {
-  return html.replace(/(<span[^>]*class=\"mention\"[^>]*>)@/g, '$1');
-}
-
-export function RegionPanel({ region, onClose, onRegionClick, onBack, onLocationClick }: RegionPanelProps) {
-  const [showLightbox, setShowLightbox] = useState(false);
-  const { regions } = useRegions();
+export function RegionPanel({ 
+  region, 
+  containingRegions, 
+  onClose, 
+  onBack, 
+  onLocationClick, 
+  onRegionClick
+}: RegionPanelProps) {
   const { locations } = useLocations();
+  const { regions } = useRegions();
+  const { handleLocationClick, handleRegionClick } = React.useMemo(
+    () => createClickHandlers(onLocationClick, onRegionClick),
+    [onLocationClick, onRegionClick]
+  );
 
-  // Handle click on a region mention
-  const handleMentionClick = (e: React.MouseEvent<HTMLSpanElement>) => {
-    if (!onRegionClick) return;
-    const mentionId = e.currentTarget.getAttribute('data-id');
-    if (!mentionId) return;
-    const mentionedRegion = regions.find(reg => reg.id === mentionId);
-    if (mentionedRegion) {
-      onRegionClick(mentionedRegion);
+  // Render counter to track re-renders
+  const renderCount = React.useRef(0);
+  renderCount.current += 1;
+
+  // Debug logging in useEffect to avoid re-renders
+  React.useEffect(() => {
+    console.log('🔍 RegionPanel: Render #', renderCount.current, 'for region:', region.id);
+    console.log('🔍 RegionPanel: Props received:', {
+      hasOnLocationClick: !!onLocationClick,
+      hasOnRegionClick: !!onRegionClick,
+      hasHandleLocationClick: !!handleLocationClick,
+      hasHandleRegionClick: !!handleRegionClick,
+      regionId: region.id,
+      containingRegionsCount: containingRegions?.length || 0,
+      containingRegionIds: containingRegions?.map(r => r.id) || []
+    });
+  });
+
+  // Find child regions (fully contained within this region, not self)
+  const childRegions = React.useMemo(() => {
+    return regions.filter(r =>
+      r.id !== region.id &&
+      Array.isArray(r.position) && r.position.length > 2 &&
+      Array.isArray(region.position) && region.position.length > 2 &&
+      isPercentContained(r.position, region.position, 90)
+    );
+  }, [regions, region]);
+
+  // For each child region, find its locations
+  const childRegionLocations = React.useMemo(() => {
+    const map: Record<string, Location[]> = {};
+    childRegions.forEach(child => {
+      map[child.id] = locations.filter(loc =>
+        Array.isArray(child.position) && child.position.length > 2 &&
+        Array.isArray(loc.position) && loc.position.length === 2 &&
+        pointInPolygon(loc.position as [number, number], child.position as [number, number][])
+      );
+    });
+    return map;
+  }, [childRegions, locations]);
+
+  // Locations in this region, but not in any child region
+  const locationsInRegion = React.useMemo(() => {
+    // All locations in this region
+    const inThisRegion = locations.filter(loc =>
+      Array.isArray(region.position) && region.position.length > 2 &&
+      Array.isArray(loc.position) && loc.position.length === 2 &&
+      pointInPolygon(loc.position as [number, number], region.position as [number, number][])
+    );
+    // Exclude those in any child region
+    const childLocIds = new Set(
+      Object.values(childRegionLocations).flat().map(l => l.id)
+    );
+    return inThisRegion.filter(loc => !childLocIds.has(loc.id));
+  }, [locations, region, childRegionLocations]);
+
+  // Helper function to handle location clicks with containingRegions calculation
+  const handleLocationClickWithRegions = (location: Location) => {
+    const allContainingRegions = findContainingRegions(location.position, regions);
+    
+    if (onLocationClick) {
+      onLocationClick(location);
     }
   };
 
-  // Add click handlers to mentions when the panel content changes
-  useEffect(() => {
-    if (!region?.description) return;
-    
-    // Add click handlers to all mention elements
-    const mentions = document.querySelectorAll('.region-panel-description .mention');
-    mentions.forEach(mention => {
-      mention.addEventListener('click', handleMentionClick as any);
+  // Memoize the location click handler
+  const handleLocationItemClick = React.useCallback((location: Location) => {
+    console.log('🔍 RegionPanel: Location clicked:', {
+      locationId: location.id,
+      locationName: location.name,
+      hasOnLocationClick: !!onLocationClick,
+      hasHandleLocationClick: !!handleLocationClick
     });
-
-    return () => {
-      mentions.forEach(mention => {
-        mention.removeEventListener('click', handleMentionClick as any);
-      });
-    };
-  }, [region?.description, onRegionClick, regions]);
-
-  // Prevent wheel events from reaching the map when panel is open
-  useEffect(() => {
-    if (!region) return;
-
-    function preventWheel(e: Event) {
-      e.stopPropagation();
+    
+    if (handleLocationClick) {
+      handleLocationClick(location);
     }
+  }, [handleLocationClick, onLocationClick, handleLocationClick]);
 
-    const panel = document.querySelector('.region-panel');
-    if (panel) {
-      panel.addEventListener('wheel', preventWheel as EventListener, { passive: false });
-    }
-
-    return () => {
-      if (panel) {
-        panel.removeEventListener('wheel', preventWheel as EventListener);
-      }
-    };
-  }, [region]);
-
-  if (!region) return null;
-
-  // Find locations inside the region polygon
-  const locationsInRegion = locations.filter(loc =>
-    pointInPolygon(loc.position, region.position)
+  // Debug logging for containingRegions and current region
+  console.log(
+    "DEBUG: containingRegions in RegionPanel",
+    containingRegions?.map(r => ({ id: r.id, name: r.name }))
   );
+  console.log("DEBUG: current region", { id: region.id, name: region.name });
 
-  const imageUrl = region.image || '';
+  // Memoize the regions section render function
+  const renderRegionsSection = React.useMemo(() => {
+    if (childRegions.length === 0) return null;
+    return (
+      <div className="regionpanel-regions-section">
+        <h3 className="regionpanel-regions-header">Regions</h3>
+        <ul className="regionpanel-regions-list">
+          {childRegions.map(child => (
+            <li key={child.id} className="regionpanel-regions-list-item">
+              <div className="regionpanel-region-info" onClick={() => onRegionClick?.(child)} style={{ cursor: 'pointer' }}>
+                <span className="regionpanel-region-name">{child.name}</span>
+                <span className="regionpanel-region-type">{child.type}</span>
+              </div>
+              {childRegionLocations[child.id] && childRegionLocations[child.id].length > 0 && (
+                <ul className="regionpanel-region-locations-list">
+                  {childRegionLocations[child.id].map(loc => (
+                    <li key={loc.id} className="regionpanel-region-location-item" onClick={() => handleLocationClickWithRegions(loc)}>
+                      <span className="regionpanel-region-location-name">{loc.name}</span>
+                      <span className="regionpanel-region-location-type">{loc.type}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }, [childRegions, childRegionLocations, onRegionClick, handleLocationClickWithRegions]);
+
+  // Memoize the locations section render function
+  const renderLocationsSection = React.useMemo(() => {
+    if (locationsInRegion.length === 0) return null;
+
+    return (
+      <div className="regionpanel-locations-section">
+        <h3 className="regionpanel-locations-header">Locations</h3>
+        <ul className="regionpanel-locations-list">
+          {locationsInRegion.map(location => (
+            <li 
+              key={location.id}
+              className="regionpanel-locations-list-item"
+              onClick={() => handleLocationItemClick(location as Location)}
+            >
+              <div className="regionpanel-location-info">
+                <span className="regionpanel-location-name">{location.name}</span>
+                <span className="regionpanel-location-type">{location.type}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }, [locationsInRegion, handleLocationItemClick]);
 
   return (
-    <div className="sidepanel-backdrop" onClick={onClose}>
-      <div className="sidepanel" onClick={e => e.stopPropagation()}>
-        <div className="sidepanel-header">
-          {onBack && (
-            <button className="sidepanel-back-button" onClick={onBack}>
-              <IoArrowBack size={22} />
-          </button>
-          )}
-          <h2>{region.name}</h2>
-        </div>
-        <div className="sidepanel-content">
-          <div className="sidepanel-type">
-            {region.type}
-          </div>
-          {Object.keys(region.fields).length > 0 && (
-            <div className="sidepanel-fields">
-              <h3>Fields</h3>
-              <table className="fields-table">
-                <tbody>
-                  {Object.entries(region.fields).map(([key, value]) => (
-                    <tr key={key}>
-                      <th>{key}</th>
-                      <td>{value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {region.description && (
-            <div className="sidepanel-description rich-text-content">
-              <div dangerouslySetInnerHTML={{ __html: removeAtFromMentions(region.description) }} />
-            </div>
-          )}
-          {/* Locations in Region Section */}
-          {locationsInRegion.length > 0 && (
-            <div className="regionpanel-locations-section">
-              <div className="sidepanel-type regionpanel-locations-header">Locations</div>
-              <ul className="regionpanel-locations-list">
-                {locationsInRegion.map(loc => {
-                  const Icon = ELEMENT_ICONS[loc.icon]?.icon;
-                  return (
-                    <li
-                      key={loc.id}
-                      className="regionpanel-locations-list-item"
-                      onClick={() => onLocationClick && onLocationClick(loc)}
-                    >
-                      <div className="regionpanel-location-info">
-                        <span
-                          className="mention"
-                          style={{ fontWeight: 600 }}
-                        >
-                          {loc.name}
-                        </span>
-                        <span className="regionpanel-location-type">{loc.type}</span>
-                      </div>
-                      {Icon && <Icon className="regionpanel-location-icon" style={{ color: loc.color }} />}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-          {region.image && (
-            <div className="sidepanel-image">
-              <img src={region.image} alt={region.name} />
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    <BasePanel
+      element={region}
+      onClose={onClose}
+      onBack={onBack}
+      onLocationClick={handleLocationClick}
+      onRegionClick={handleRegionClick}
+      containingRegions={containingRegions}
+    >
+      {renderRegionsSection}
+      {renderLocationsSection}
+    </BasePanel>
   );
-} 
+}

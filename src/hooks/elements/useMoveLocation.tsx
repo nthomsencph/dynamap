@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import { renderToStaticMarkup } from "react-dom/server";
 import { ELEMENT_ICONS } from "../../types/elements";
@@ -34,8 +34,14 @@ export function useMoveLocation(
   const [moveMode, setMoveMode] = useState<MoveMode | null>(null);
   const cursorUrlRef = useRef<string | null>(null);
 
+  // Use refs to avoid dependency issues
+  const onLocationUpdateRef = useRef(onLocationUpdate);
+  const onLocationCreateRef = useRef(onLocationCreate);
+  onLocationUpdateRef.current = onLocationUpdate;
+  onLocationCreateRef.current = onLocationCreate;
+
   // Handle moving or duplicating a location
-  const handleMoveLocation = (location: Location, isDuplicating: boolean = false) => {
+  const handleMoveLocation = useCallback((location: Location, isDuplicating: boolean = false) => {
     if (!hasMapElementProperties(location)) {
       console.error('Location is missing required MapElement properties');
       return;
@@ -82,7 +88,7 @@ export function useMoveLocation(
         container.style.cursor = 'move';
       }
     }
-  };
+  }, []);
 
   // Add a visual indicator for move mode
   useEffect(() => {
@@ -105,17 +111,17 @@ export function useMoveLocation(
   }, [moveMode]);
 
   // Reset move mode and cursor
-  const resetMoveMode = () => {
+  const resetMoveMode = useCallback(() => {
     setMoveMode(null);
     if (mapRef.current) {
       const container = mapRef.current.getContainer();
       container.style.cursor = '';
       container.classList.remove('move-mode');
     }
-  };
+  }, []);
 
   // Handle map click when in move mode
-  const handleMapClick = (e: L.LeafletMouseEvent) => {
+  const handleMapClick = useCallback((e: L.LeafletMouseEvent) => {
     if (!moveMode || !mapRef.current) return;
     
     const { lat, lng } = e.latlng;
@@ -126,7 +132,7 @@ export function useMoveLocation(
     
     // Use setTimeout to ensure the move mode is fully reset before updating
     setTimeout(() => {
-      if (currentMoveMode.isDuplicating && onLocationCreate) {
+      if (currentMoveMode.isDuplicating && onLocationCreateRef.current) {
         // Create a new location with a new UUID
         const newLocation: Location = {
           ...currentMoveMode.location,
@@ -134,17 +140,17 @@ export function useMoveLocation(
           position: [lat, lng] as [number, number],
           name: `${currentMoveMode.location.name} (Copy)`
         };
-        onLocationCreate(newLocation);
+        onLocationCreateRef.current(newLocation);
       } else {
         // Update existing location
         const updatedLocation = { 
           ...currentMoveMode.location, 
           position: [lat, lng] as [number, number] 
         };
-        onLocationUpdate(updatedLocation);
+        onLocationUpdateRef.current(updatedLocation);
       }
     }, 0);
-  };
+  }, [moveMode, resetMoveMode]);
 
   // Add click handler when in move mode
   useEffect(() => {
@@ -187,7 +193,7 @@ export function useMoveLocation(
         document.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [moveMode, mapRef.current]);
+  }, [moveMode, handleMapClick, resetMoveMode]);
 
   return {
     moveMode,

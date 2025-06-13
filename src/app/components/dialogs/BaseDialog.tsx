@@ -52,6 +52,7 @@ export function BaseDialog<T extends MapElement>({
   stylingFields,
   richTextEditorProps = {}
 }: BaseDialogProps<T>) {
+  // Always call ALL hooks first - never conditionally call hooks
   const { types, addType } = useTypes();
   const { locations } = useLocations();
   const { regions } = useRegions();
@@ -63,25 +64,43 @@ export function BaseDialog<T extends MapElement>({
     icon: DEFAULT_ICON,
     showLabel: true,
     prominence: 5,
+    labelCollisionStrategy: 'None',
     fields: {},
   } as unknown as Partial<T>);
 
-  const [activeTab, setActiveTab] = useState<DialogTab>('content');
+  const [activeTab, setActiveTab] = useState<DialogTab>('Content');
   const [newType, setNewType] = useState('');
   const [newFieldKey, setNewFieldKey] = useState('');
   const [newFieldValue, setNewFieldValue] = useState('');
   const [isAddingType, setIsAddingType] = useState(false);
   const [iconGalleryBg, setIconGalleryBg] = useState<'light' | 'dark'>('dark');
   const [error, setError] = useState<string | null>(null);
+  const [labelAutoInitialized, setLabelAutoInitialized] = useState(false);
 
   useEffect(() => {
     if (open) {
-      if (element) setForm(element);
+      if (element) {
+        console.log('🔍 BaseDialog: Setting form with element:', {
+          id: element.id,
+          name: element.name,
+          description: element.description,
+          descriptionLength: element.description?.length
+        });
+        setForm({
+          ...element,
+          fields: element.fields || {},  // Ensure fields is always initialized
+        });
+      }
+      // Set labelAutoInitialized based on mode, not element presence
+      setLabelAutoInitialized(mode === 'edit');
+      // Always reset to Content tab when dialog opens
+      setActiveTab('Content');
     } else {
       setForm({} as Partial<T>);
+      setLabelAutoInitialized(false);
     }
     setError(null);
-  }, [open, element]);
+  }, [open, element, mode]);
 
   useEffect(() => {
     if (!open) return;
@@ -102,9 +121,49 @@ export function BaseDialog<T extends MapElement>({
     }
   }, [form.color]);
 
+  // Only render when dialog is open to prevent infinite API calls
+  if (!open) return null;
+
+  // Validate required fields for tab switching
+  const validateRequiredFields = (): string | null => {
+    if (!form.name?.trim()) {
+      return 'Name is required';
+    }
+    if (!form.type?.trim()) {
+      return 'Type is required';
+    }
+    return null;
+  };
+
+  // Handle tab switching with validation
+  const handleTabSwitch = (tab: DialogTab) => {
+    // Always allow switching to Content tab
+    if (tab === 'Content') {
+      setActiveTab(tab);
+      setError(null);
+      return;
+    }
+
+    // For Styling and Fields tabs, check required fields
+    const validationError = validateRequiredFields();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    // Clear any existing error and switch tab
+    setError(null);
+    setActiveTab(tab);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts filling required fields
+    if ((name === 'name' || name === 'type') && value.trim() && error) {
+      setError(null);
+    }
   };
 
   const handleColorChange = (color: string) => setForm(prev => ({ ...prev, color }));
@@ -152,6 +211,10 @@ export function BaseDialog<T extends MapElement>({
       await addType(typeCategory, newType.trim());
       setForm(prev => ({ ...prev, type: newType.trim() }));
       setNewType('');
+      // Clear error when type is added
+      if (error) {
+        setError(null);
+      }
     } catch (err) {
       console.error('Failed to add type:', err);
     } finally {
@@ -172,10 +235,16 @@ export function BaseDialog<T extends MapElement>({
     setForm({} as Partial<T>);
   };
 
-  if (!open) return null;
-
   // Get all elements for mentions
   const allElements = [...(locations || []), ...(regions || [])];
+
+  // Debug logging for description
+  console.log('🔍 BaseDialog: Rendering DescriptionEditor with value:', {
+    formDescription: form.description,
+    formDescriptionLength: form.description?.length,
+    elementDescription: element?.description,
+    elementDescriptionLength: element?.description?.length
+  });
 
   return (
     <>
@@ -193,19 +262,24 @@ export function BaseDialog<T extends MapElement>({
       <div className="base-dialog" onClick={e => e.stopPropagation()} aria-modal role="dialog">
         <h2>{mode === 'create' ? `Add ${title}` : `Edit ${title}`}</h2>
         <div className="dialog-tabs">
-          {(['content', 'styling', 'custom'] as DialogTab[]).map(tab => (
-            <button
-              key={tab}
-              type="button"
-              className={`dialog-tab ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
+          {(['Content', 'Styling', 'Fields'] as DialogTab[]).map(tab => {
+            const isDisabled = tab !== 'Content' && validateRequiredFields() !== null;
+            return (
+              <button
+                key={tab}
+                type="button"
+                className={`dialog-tab ${activeTab === tab ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
+                onClick={() => handleTabSwitch(tab)}
+                disabled={isDisabled}
+                title={isDisabled ? 'Please fill out Name and Type fields first to access this tab' : ''}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            );
+          })}
         </div>
         <form onSubmit={handleSubmit}>
-          {activeTab === 'content' && (
+          {activeTab === 'Content' && (
             <div className="dialog-tab-content">
               <label>Name
                 <input name="name" value={form.name || ''} onChange={handleChange} required />
@@ -218,6 +292,7 @@ export function BaseDialog<T extends MapElement>({
                     onChange={html => setForm(f => ({ ...f, description: html }))}
                     elements={allElements}
                     rows={4}
+                    className="description-editor-no-toolbar-tab"
                   />
                 </div>
               </div>
@@ -263,18 +338,18 @@ export function BaseDialog<T extends MapElement>({
               </label>
             </div>
           )}
-          {activeTab === 'styling' && (
+          {activeTab === 'Styling' && (
             <div className="dialog-tab-content">
               <div className="dialog-field-wrapper">
                 <span className="dialog-field-label">Label</span>
                 <div className="dialog-field">
-                  <LabelEditor
-                    value={form.label ?? ''}
-                    onChange={html => setForm(f => ({ ...f, label: html }))}
-                    isRegion={richTextEditorProps.isRegion}
-                    regionArea={richTextEditorProps.regionArea}
-                    rows={1}
-                  />
+                <LabelEditor
+                  value={form.label ?? ''}
+                  onChange={html => setForm(f => ({ ...f, label: html }))}
+                  text={!form.label?.trim() ? form.name : undefined}
+                  isRegion={richTextEditorProps.isRegion}
+                  regionArea={richTextEditorProps.regionArea}
+                />
                 </div>
               </div>
               <div className="dialog-row">
@@ -287,6 +362,21 @@ export function BaseDialog<T extends MapElement>({
                   onChange={e => setForm(f => ({ ...f, showLabel: e.target.checked }))}
                 />
               </div>
+              {form.showLabel !== false && (
+                <div className="dialog-row">
+                  <label className="dialog-row-label" htmlFor="labelCollisionStrategy">Label collision strategy:</label>
+                  <select
+                    id="labelCollisionStrategy"
+                    name="labelCollisionStrategy"
+                    value={form.labelCollisionStrategy || 'None'}
+                    onChange={e => setForm(f => ({ ...f, labelCollisionStrategy: e.target.value as 'None' | 'Hide' | 'Conquer' }))}
+                  >
+                    <option value="None">None (always show label)</option>
+                    <option value="Hide">Hide (hide if overlaps)</option>
+                    <option value="Conquer">Conquer (hide others if overlaps)</option>
+                  </select>
+                </div>
+              )}
               {stylingFields?.fields.map(field => (
                 <div key={field.id} className="dialog-row">
                   <label className="dialog-row-label" htmlFor={field.id}>{field.label}:</label>
@@ -298,11 +388,11 @@ export function BaseDialog<T extends MapElement>({
                         name={field.id}
                         min={field.min}
                         max={field.max}
-                        value={field.getValue(element || {}) as number}
-                        onChange={e => onSave(field.onChange(element || {}, Number(e.target.value)) as T)}
+                        value={field.getValue(form) as number}
+                        onChange={e => setForm(prev => field.onChange(prev, Number(e.target.value)))}
                       />
                       <span className="dialog-slider-value">
-                        {field.getValue(element || {})}{field.id === 'iconSize' ? 'px' : ''}
+                        {field.getValue(form)}{field.id === 'iconSize' ? 'px' : ''}
                       </span>
                     </div>
                   ) : (
@@ -310,8 +400,8 @@ export function BaseDialog<T extends MapElement>({
                       type="checkbox"
                       id={field.id}
                       name={field.id}
-                      checked={field.getValue(element || {}) as boolean}
-                      onChange={e => onSave(field.onChange(element || {}, e.target.checked) as T)}
+                      checked={field.getValue(form) as boolean}
+                      onChange={e => setForm(prev => field.onChange(prev, e.target.checked))}
                     />
                   )}
                 </div>
@@ -357,7 +447,7 @@ export function BaseDialog<T extends MapElement>({
               </div>
             </div>
           )}
-          {activeTab === 'custom' && (
+          {activeTab === 'Fields' && (
             <div className="dialog-tab-content">
               <div className="fields-section">
                 <div className="fields-list">
@@ -366,14 +456,14 @@ export function BaseDialog<T extends MapElement>({
                       <input
                         type="text"
                         value={key}
-                        onChange={e => handleUpdateField(key, e.target.value, value)}
-                        className="field-key"
+                        readOnly
+                        className="field-key field-key-readonly"
                       />
                       <input
                         type="text"
                         value={value}
-                        onChange={e => handleUpdateField(key, key, e.target.value)}
-                        className="field-value"
+                        readOnly
+                        className="field-value field-value-readonly"
                       />
                       <button
                         type="button"
@@ -429,6 +519,9 @@ export function BaseDialog<T extends MapElement>({
   );
 }
 
+// Helper function to get the brightness of a color
+// used to determine the icon gallery background color
+// based on the brightness of the icon color
 function getColorBrightness(color: string): number {
   const hex = color.replace('#', '');
   const r = parseInt(hex.slice(0, 2), 16);

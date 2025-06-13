@@ -88,6 +88,8 @@ export const ELEMENT_ICONS = {
 
 export type ElementIcon = keyof typeof ELEMENT_ICONS;
 
+export type LabelCollisionStrategy = 'None' | 'Hide' | 'Conquer';
+
 export interface MapElement {
   id: string;
   name?: string;
@@ -101,4 +103,11 @@ export interface MapElement {
   type: string; // The type of the element (e.g. 'City', 'Kingdom', etc.)
   position: [number, number] | [number, number][]; // Single point for locations, array of points for regions
   fields: { [key: string]: string }; // Dictionary of custom field names and values, always initialized as empty
+  /**
+   * Strategy for handling label collisions with other map elements.
+   * - 'None': Show label regardless of overlap (default)
+   * - 'Hide': Hide this label if it overlaps with another
+   * - 'Conquer': Show this label and hide the other if they overlap (unless both are 'Conquer')
+   */
+  labelCollisionStrategy?: LabelCollisionStrategy;
 } 

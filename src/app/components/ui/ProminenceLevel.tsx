@@ -18,7 +18,7 @@ export function ProminenceLevel() {
     return () => {
       map.off('zoom', onZoom);
     };
-  }, [map]);
+  }, []); // Removed map dependency to prevent infinite loop
 
   const prominenceLevel = calculateProminenceLevel(currentZoom, fitZoom);
 

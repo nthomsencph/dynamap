@@ -1,63 +1,75 @@
-import React, { useCallback } from 'react';
-import { Marker } from "react-leaflet";
+import React, { useCallback, useEffect, useState } from 'react';
+import { Marker, useMap } from "react-leaflet";
 import L from 'leaflet';
 import type { Location } from "@/types/locations";
-import { shouldShowElement } from '@/app/utils/zoom';
-import { createLocationIcon } from '@/app/utils/map-icons';
-import { LocationPanel } from '@/app/components/panels/LocationPanel';
-import { ElementMarkers, type NavEntry } from '@/app/components/markers/ElementMarkers';
-
-// Error boundary for LocationMarkers
-class LocationMarkersErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error?: Error }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('LocationMarkers error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="error-boundary">
-          <p>Error loading map markers. Please try refreshing the page.</p>
-          {process.env.NODE_ENV === 'development' && (
-            <pre>{this.state.error?.toString()}</pre>
-          )}
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+import type { Region } from "@/types/regions";
+import { createLocationIcon, createLocationLabelDivIcon } from '@/app/utils/map-icons';
+import { findContainingRegions } from '@/app/utils/containment';
+import { ElementMarkers, MarkerErrorBoundary } from './ElementMarkers';
+import type { PanelEntry } from '@/hooks/ui/usePanelStack';
 
 interface LocationMarkersProps {
   locations: Location[];
-  currentZoom: number;
+  regions: Region[];
   fitZoom: number;
-  onContextMenu: (e: L.LeafletMouseEvent, type: 'marker', location: Location) => void;
+  onContextMenu: (e: L.LeafletMouseEvent, type: 'map' | 'marker', location?: Location) => void;
+  onElementClick?: (element: Location | Region) => void;
+  currentPanel?: PanelEntry | null;
   panelWidth?: number;
 }
 
 function LocationMarkersComponent({ 
   locations, 
-  currentZoom, 
-  fitZoom, 
+  regions,
+  fitZoom,
   onContextMenu,
-  panelWidth = 450 
+  onElementClick,
+  currentPanel,
+  panelWidth = 450
 }: LocationMarkersProps) {
-  // Memoized marker renderer
-  const renderMarker = useCallback((loc: Location, opts: {
+  const map = useMap();
+  const [zoom, setZoom] = useState(map.getZoom());
+
+  useEffect(() => {
+    const onZoom = () => {
+      const newZoom = map.getZoom();
+      setZoom(newZoom);
+    };
+    map.on('zoom', onZoom);
+    setZoom(map.getZoom());
+    return () => {
+      map.off('zoom', onZoom);
+    };
+  }, [map]);
+
+  const handleLocationClick = useCallback((location: Location) => {
+    // Find all regions containing this location
+    const allContainingRegions = findContainingRegions(location.position, regions);
+    
+    console.log('🔍 Location click debug:', {
+      locationId: location.id,
+      locationName: location.name,
+      locationPosition: location.position,
+      allContainingRegionsCount: allContainingRegions.length,
+      allContainingRegions: allContainingRegions.map(r => ({
+        id: r.id,
+        name: r.name,
+        area: r.area,
+        type: r.type
+      }))
+    });
+    
+    if (onElementClick) {
+      onElementClick(location);
+    }
+  }, [onElementClick, regions]);
+
+  const handleContextMenu = useCallback((e: L.LeafletMouseEvent, type: 'marker' | 'map', location?: Location) => {
+    onContextMenu(e, type, location);
+  }, [onContextMenu]);
+
+  // Render marker with label as a React element (not just in icon)
+  const renderLocationMarker = useCallback((location: Location, opts: {
     onClick: () => void;
     onContextMenu: (e: L.LeafletMouseEvent) => void;
     markerRef: (marker: L.Marker | null) => void;
@@ -65,94 +77,60 @@ function LocationMarkersComponent({
     type: string;
     isZooming: boolean;
   }) => {
-    if (!Array.isArray(loc.position) || loc.position.length !== 2) {
-      console.error('LocationMarkers: Invalid position for location:', loc);
+    if (!Array.isArray(location.position) || location.position.length !== 2) {
+      console.error('LocationMarkers: Invalid position for location:', location);
       return null;
     }
 
-    return (
-      <Marker
-        key={loc.id}
-        position={loc.position}
-        icon={createLocationIcon(loc, currentZoom)}
-        zIndexOffset={1000}
-        ref={opts.markerRef}
-        eventHandlers={{
-          contextmenu: opts.onContextMenu,
-          click: opts.onClick,
-        }}
-      />
-    );
-  }, [currentZoom]);
-
-  // Memoized panel renderer
-  const renderPanel = useCallback((entry: NavEntry<Location>, opts: {
-    onClose: () => void;
-    onBack?: () => void;
-    onElementClick?: (entry: NavEntry<Location>) => void;
-  }) => {
-    if (!entry.value) {
-      console.error('LocationMarkers: Attempted to render panel with null location');
-      return null;
-    }
+    const icon = createLocationIcon(location, opts.currentZoom);
+    const labelHtml = location.label || location.name || '';
+    const showLabel = location.showLabel !== false && labelHtml;
 
     return (
-      <LocationPanel
-        location={entry.value}
-        onClose={opts.onClose}
-        onBack={opts.onBack}
-        onLocationClick={(location) => {
-          if (!location) {
-            console.error('LocationMarkers: Null location clicked in panel');
-            return;
-          }
-          if (opts.onElementClick) {
-            opts.onElementClick({ 
-              elementType: 'location',
-              value: location
-            });
-          }
-        }}
-      />
+      <>
+        <Marker
+          key={location.id}
+          position={location.position}
+          icon={icon}
+          zIndexOffset={1000}
+          ref={opts.markerRef}
+          eventHandlers={{
+            contextmenu: opts.onContextMenu,
+            click: opts.onClick,
+          }}
+        />
+        {showLabel && (
+          <Marker
+            key={location.id + '-label'}
+            position={location.position}
+            icon={createLocationLabelDivIcon(location, opts.currentZoom)}
+            interactive={false}
+            zIndexOffset={2000}
+          />
+        )}
+      </>
     );
   }, []);
 
-  // Memoized callbacks
-  const handleContextMenu = useCallback((e: L.LeafletMouseEvent, type: 'marker' | 'map', location: Location) => {
-    if (type === 'marker') {
-      onContextMenu(e, 'marker', location);
-    } else {
-      console.debug('LocationMarkers: Map context menu event ignored');
-    }
-  }, [onContextMenu]);
-
-  const getId = useCallback((loc: Location) => loc.id, []);
-  const getPosition = useCallback((loc: Location) => loc.position, []);
-  const shouldShow = useCallback((loc: Location, currentZoom: number, fitZoom: number) => 
-    shouldShowElement(loc.prominence, currentZoom, fitZoom)
-  , [fitZoom]);
-
   return (
-    <ElementMarkers<Location>
+    <ElementMarkers
       elements={locations}
-      currentZoom={currentZoom}
+      currentZoom={zoom}
       fitZoom={fitZoom}
       onContextMenu={handleContextMenu}
-      getId={getId}
-      shouldShow={shouldShow}
-      getPosition={getPosition}
-      renderMarker={renderMarker}
-      renderPanel={renderPanel}
       panelWidth={panelWidth}
+      currentPanel={currentPanel}
+      onElementClick={handleLocationClick}
+      renderMarker={renderLocationMarker}
     />
   );
 }
 
-// Export wrapped component with error boundary
+// Export with error boundary
 export function LocationMarkers(props: LocationMarkersProps) {
   return (
-    <LocationMarkersErrorBoundary>
+    <MarkerErrorBoundary componentName="LocationMarkers">
       <LocationMarkersComponent {...props} />
-    </LocationMarkersErrorBoundary>
+    </MarkerErrorBoundary>
   );
 } 

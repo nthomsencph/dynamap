@@ -15,7 +15,7 @@ export const DEFAULT_LOCATION_TYPES = [
 ] as const;
 
 // Default icon size for locations
-export const DEFAULT_ICON_SIZE = 20;
+export const DEFAULT_ICON_SIZE = 12;
 
 // Location interface
 export interface Location extends MapElement {

@@ -1,5 +1,4 @@
 import { MAP_IMAGE_WIDTH, MAP_IMAGE_HEIGHT } from '@/constants/map';
-import type { MapElement } from '@/types/elements';
 
 /**
  * Calculates the zoom level that fits the map image to the viewport
@@ -36,19 +35,19 @@ export function calculateProminenceLevel(currentZoom: number, fitZoom: number): 
   // prominence 1 = fitZoom + 2.7
   // So we can calculate prominence directly:
   const zoomOffset = currentZoom - fitZoom;
-  return Math.max(0, 10 - (zoomOffset / 0.3));
+  return 10 - (zoomOffset / 0.3);
 }
 
 /**
- * Check if an element should be visible at the current zoom level
- * @param prominence The prominence level of the element
+ * Check if a map element should be visible at the current zoom level
+ * @param prominence The prominence level of the map elememt
  * @param currentZoom The current zoom level
  * @param fitZoom The zoom level that fits the map in viewport
- * @returns boolean indicating if the element should be visible
+ * @returns boolean indicating if the map elememt should be visible
  */
 export function shouldShowElement(prominence: number, currentZoom: number, fitZoom: number): boolean {
   const currentProminence = calculateProminenceLevel(currentZoom, fitZoom);
-  // Show element when current prominence level is less than or equal to the element's prominence
-  // e.g., an element with prominence 5 should show when current prominence is 5.0 or lower
+  // Show map elememt when current prominence level is less than or equal to the map elememt's prominence
+  // e.g., a map elememt with prominence 5 should show when current prominence is 5.0 or lower
   return currentProminence <= prominence;
 }

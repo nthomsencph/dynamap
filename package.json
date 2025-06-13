@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate-locations": "ts-node src/scripts/migrate-locations.ts"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.11",
@@ -28,11 +29,16 @@
     "@tiptap/suggestion": "^2.12.0",
     "@types/leaflet": "^1.9.18",
     "@types/leaflet-draw": "^1.0.12",
+    "@types/rbush": "^4.0.0",
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.513.0",
     "next": "15.3.3",
+    "polygon-clipping": "^0.15.7",
+    "rbush": "^4.0.1",
     "react": "^19.0.0",
+    "react-curved-text": "^3.0.1",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
     "react-leaflet": "^5.0.0",
@@ -41,11 +47,13 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/lodash": "^4.17.17",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "sass": "^1.89.1",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

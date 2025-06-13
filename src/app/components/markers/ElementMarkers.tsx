@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useMap } from 'react-leaflet';
 import { flyToLocationWithPanel, getMapCenter } from '@/app/utils/fly';
 import { MapElement } from '@/types/elements';
 import { calculatePolygonCenter } from '@/app/utils/area';
+import { shouldShowElement } from '@/app/utils/zoom';
+import type { PanelEntry } from '@/hooks/ui/usePanelStack';
+import { useLabelCollisionHandling } from '@/hooks/ui/useLabelCollisionHandling';
 
 // Navigation type for panels
 export type ElementType = 'location' | 'region';
@@ -17,29 +20,69 @@ export interface NavEntry<T extends MapElement> {
 export type ElementClickHandler<T extends MapElement, U extends MapElement = T> = 
   (entry: NavEntry<T | U>) => void;
 
-interface ElementMarkersProps<T extends MapElement, U extends MapElement = T> {
+// Base props that all marker components should have
+export interface BaseMarkerProps<T extends MapElement> {
   elements: T[];
   currentZoom: number;
   fitZoom: number;
-  onContextMenu: (e: L.LeafletMouseEvent, type: 'marker' | 'map', element: T) => void;
-  getId: (element: T) => string;
-  shouldShow: (element: T, currentZoom: number, fitZoom: number) => boolean;
-  getPosition: (element: T) => [number, number];
+  onContextMenu: (e: L.LeafletMouseEvent, type: 'marker' | 'map', element?: T) => void;
+  panelWidth?: number;
+}
+
+// Extended props for ElementMarkers
+interface ElementMarkersProps<T extends MapElement, U extends MapElement = T> extends BaseMarkerProps<T> {
+  // External panel state
+  currentPanel?: PanelEntry | null;
+  // Optional props that can be overridden
+  getId?: (element: T) => string;
+  shouldShow?: (element: T, currentZoom: number, fitZoom: number) => boolean;
+  getPosition?: (element: T) => [number, number];
+  onElementClick?: (element: T) => void;
+  // Required props that must be provided
   renderMarker: (element: T, opts: {
     onClick: () => void;
     onContextMenu: (e: L.LeafletMouseEvent) => void;
-    markerRef: (marker: L.Marker | null) => void;
+    markerRef: (marker: any) => void;
     currentZoom: number;
     type: string;
     isZooming: boolean;
+    labelRef: (node: HTMLDivElement | null) => void;
   }) => React.ReactNode;
-  renderPanel: (entry: NavEntry<T>, opts: {
-    onClose: () => void;
-    onBack?: () => void;
-    onElementClick?: ElementClickHandler<T, U>;
-  }) => React.ReactNode;
-  panelWidth?: number;
   onOtherElementClick?: ElementClickHandler<U>;
+}
+
+// Error boundary for marker components
+export class MarkerErrorBoundary extends React.Component<
+  { children: React.ReactNode; componentName: string },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode; componentName: string }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error(`${this.props.componentName} error:`, error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-boundary">
+          <p>Error loading map markers. Please try refreshing the page.</p>
+          {process.env.NODE_ENV === 'development' && (
+            <pre>{this.state.error?.toString()}</pre>
+          )}
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 export function ElementMarkers<T extends MapElement, U extends MapElement = T>({
@@ -47,47 +90,30 @@ export function ElementMarkers<T extends MapElement, U extends MapElement = T>({
   currentZoom,
   fitZoom,
   onContextMenu,
-  getId,
-  shouldShow,
-  getPosition,
-  renderMarker,
-  renderPanel,
   panelWidth = 450,
+  currentPanel,
+  getId = (element: T) => element.id,
+  shouldShow = (element: T, currentZoom: number, fitZoom: number) => 
+    shouldShowElement(element.prominence, currentZoom, fitZoom),
+  getPosition = (element: T) => {
+    const pos = element.position;
+    return Array.isArray(pos[0]) 
+      ? calculatePolygonCenter(pos as [number, number][])
+      : pos as [number, number];
+  },
+  onElementClick,
+  renderMarker,
   onOtherElementClick,
 }: ElementMarkersProps<T, U>) {
-  // Add logging for props
-  useEffect(() => {
-  }, [elements, currentZoom, fitZoom]);
-
-  // Stack of open panels (each with elementType and value)
-  const [panelStack, setPanelStack] = useState<NavEntry<T | U>[]>([]);
-  const panelStackRef = useRef<NavEntry<T | U>[]>([]);
   const [previousMapCenter, setPreviousMapCenter] = useState<[number, number] | null>(null);
   const [isZooming, setIsZooming] = useState(false);
   const [lastStableZoom, setLastStableZoom] = useState(currentZoom);
   const map = useMap();
   const markersRef = useRef<{ [key: string]: any }>({});
+  const labelRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Keep ref in sync with state
-  useEffect(() => {
-    panelStackRef.current = panelStack;
-  }, [panelStack]);
-
-  // Update panel stack when elements change
-  useEffect(() => {
-    if (panelStack.length === 0) return;
-    
-    // Update the panel stack with the latest element data
-    setPanelStack(prev => {
-      return prev.map(entry => {
-        const updatedElement = elements.find(el => getId(el) === getId(entry.value as T));
-        if (updatedElement) {
-          return { ...entry, value: updatedElement };
-        }
-        return entry;
-      });
-    });
-  }, [elements, getId, panelStack.length]);
+  // Refs to track if we've already handled certain operations
+  const hasInitializedRef = useRef(false);
 
   // Track zoom animation state
   useEffect(() => {
@@ -109,59 +135,57 @@ export function ElementMarkers<T extends MapElement, U extends MapElement = T>({
       map.off('zoomstart', handleZoomStart);
       map.off('zoomend', handleZoomEnd);
     };
-  }, [map]);
+  }, []); // Removed map dependency to prevent infinite loop
 
   // Fly to element when a panel is opened
   useEffect(() => {
-    if (!map) return;
-    const top = panelStack[panelStack.length - 1];
-    if (top) {
-      if (!previousMapCenter) {
-        setPreviousMapCenter(getMapCenter(map));
-      }
-      // Get position based on element type
-      const position = top.elementType === 'region'
-        ? calculatePolygonCenter((top.value as any).position)
-        : (top.value as any).position;
-      flyToLocationWithPanel(map, position, panelWidth);
+    // Skip if no map or if we haven't initialized yet
+    if (!map || !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      return;
     }
-  }, [panelStack, map, panelWidth]);
+
+    if (currentPanel && currentPanel.element) {
+      if (!previousMapCenter) {
+        const center = getMapCenter(map);
+        setPreviousMapCenter(center);
+      }
+      const position = getPosition(currentPanel.element as T);
+      
+      // Add a small delay to ensure the panel is fully rendered before flying
+      setTimeout(() => {
+        flyToLocationWithPanel(map, position, panelWidth);
+      }, 50);
+    }
+  }, [currentPanel, panelWidth, getPosition]); // Removed map and previousMapCenter to prevent circular dependency
 
   // Restore previous center only when no panel is open
   useEffect(() => {
-    if (!map) return;
-    if (panelStack.length === 0 && previousMapCenter) {
+    // Skip if no map or if we haven't initialized yet
+    if (!map || !hasInitializedRef.current) {
+      return;
+    }
+
+    const currentPanelStackLength = currentPanel ? 1 : 0;
+    
+    // Only run if panel stack is empty and we have a previous center to restore
+    if (currentPanelStackLength !== 0 || !previousMapCenter) {
+      return;
+    }
+    
+    // Add a small delay to ensure the panel is fully closed before restoring
+    setTimeout(() => {
       flyToLocationWithPanel(map, previousMapCenter, 0);
       setPreviousMapCenter(null);
-    }
-  }, [panelStack, previousMapCenter, map]);
+    }, 50);
+  }, [currentPanel, previousMapCenter]); // Removed map to prevent infinite loop
 
   // Update handleElementClick to use elementType
   const handleElementClick = useCallback((element: T, elementType: ElementType) => {
-    console.log('[ElementMarkers] Element clicked:', {
-      id: element.id,
-      name: element.name,
-      type: elementType,
-      position: element.position
-    });
-    setPanelStack(prev => [...prev, { elementType, value: element }]);
-  }, []);
-
-  // Handle back navigation
-  const handleBack = useCallback(() => {
-    setPanelStack(prev => prev.slice(0, -1));
-  }, []);
-
-  // Handle close
-  const handleClose = useCallback(() => {
-    setPanelStack([]);
-  }, []);
-
-  // Open a panel for an element (from the map, not from another panel)
-  const openPanel = useCallback((el: T) => {
-    const elementType: ElementType = Array.isArray((el as any).position[0]) ? 'region' : 'location';
-    setPanelStack([{ elementType, value: el }]);
-  }, []);
+    if (onElementClick) {
+      onElementClick(element);
+    }
+  }, [onElementClick]);
 
   // Handle clicks on other element types
   const handleOtherElementClick = useCallback((entry: NavEntry<U>) => {
@@ -170,41 +194,35 @@ export function ElementMarkers<T extends MapElement, U extends MapElement = T>({
     }
   }, [onOtherElementClick]);
 
+  // Memoized context menu handler
+  const handleContextMenu = useCallback((e: L.LeafletMouseEvent, element: T) => {
+    onContextMenu(e, 'marker', element);
+  }, [onContextMenu]);
+
   return (
     <>
-      {elements.map(el => {
-        if (!shouldShow(el, lastStableZoom, fitZoom)) return null;
-        return renderMarker(el, {
-          onClick: () => openPanel(el),
-          onContextMenu: (e: L.LeafletMouseEvent) => onContextMenu(e, 'marker', el),
-          markerRef: (marker: any) => {
-            if (marker) {
-              markersRef.current[getId(el)] = marker;
-            } else {
-              delete markersRef.current[getId(el)];
-            }
-          },
-          currentZoom: lastStableZoom,
-          type: el.type,
-          isZooming,
-        });
-      })}
-      {panelStack.map((entry, index) => {
-        if (!entry.value) return null;
-        return (
-          <React.Fragment key={getId(entry.value as T)}>
-            {renderPanel(entry as NavEntry<T>, {
-              onClose: handleClose,
-              onBack: index > 0 ? handleBack : undefined,
-              onElementClick: (entry: NavEntry<T | U>) => {
-                if (!entry.value) return;
-                const elementType: ElementType = Array.isArray((entry.value as any).position[0]) ? 'region' : 'location';
-                handleElementClick(entry.value as T, elementType);
+      {elements.filter(el => shouldShow(el, currentZoom, fitZoom)).map(el => (
+        <React.Fragment key={getId(el)}>
+          {renderMarker(el, {
+            onClick: () => {
+              const elementType: ElementType = Array.isArray(el.position[0]) ? 'region' : 'location';
+              handleElementClick(el, elementType);
+            },
+            onContextMenu: (e: L.LeafletMouseEvent) => handleContextMenu(e, el),
+            markerRef: (marker: any) => {
+              if (marker) {
+                markersRef.current[getId(el)] = marker;
+              } else {
+                delete markersRef.current[getId(el)];
               }
-            })}
-          </React.Fragment>
-        );
-      })}
+            },
+            currentZoom: currentZoom,
+            type: el.type,
+            isZooming,
+            labelRef: (node: HTMLDivElement | null) => { labelRefs.current[el.id] = node; },
+          })}
+        </React.Fragment>
+      ))}
     </>
   );
 } 

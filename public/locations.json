@@ -13,25 +13,8 @@
     "type": "City",
     "id": "53d5cf31-b496-42a0-86e5-0f5e1aa8ce5f",
     "prominence": 5,
-    "fields": {}
-  },
-  {
-    "position": [
-      777.0357603388126,
-      710.5858056615624
-    ],
-    "showLabel": true,
-    "label": "Some place yo",
-    "description": "<p>Home to <span class=\"mention\" data-type=\"mention\" data-id=\"b8449d7d-48b4-4183-ac04-83a859e74c5a\" data-label=\"Hello there 222\">@Hello there 222</span>'s cousin yo</p>",
-    "color": "#ffffff",
-    "icon": "MdCastle",
-    "name": "Some place yo",
-    "type": "Village",
-    "id": "c3e9dbd7-6b7a-4b3d-bb9d-5ca8b2189169",
-    "prominence": 5,
-    "fields": {
-      "Population": "50,000"
-    }
+    "fields": {},
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
@@ -39,32 +22,59 @@
       856.4437897257662
     ],
     "showLabel": true,
-    "label": "Hello there",
-    "description": "<p>Whats up. This is close to <span class=\"mention\" data-type=\"mention\" data-id=\"b8449d7d-48b4-4183-ac04-83a859e74c5a\" data-label=\"Hello there 222\">@Hello there 222</span> !</p>",
+    "label": "<p><span style=\"background-color: #ff0000\">Hello there</span></p>",
+    "description": "<p style=\"text-align: left\">Whats up. This is close to @Hello there</p>",
     "color": "#ffffff",
     "icon": "MdCastle",
     "name": "Hello there",
     "type": "Town",
     "id": "f97c9e3b-79bd-4ed0-af6d-13e0c7086ac2",
     "prominence": 5,
-    "iconSize": 22,
-    "fields": {}
-  },
-  {
-    "position": [
-      710.0875472352186,
-      810.6832830935413
+    "iconSize": 12,
+    "fields": {},
+    "containingRegions": [
+      {
+        "position": [
+          [
+            662.4847887666175,
+            774.6345716291646
+          ],
+          [
+            728.1725187289665,
+            876.7709810218414
+          ],
+          [
+            672.4981622364877,
+            978.1063205369286
+          ],
+          [
+            580.775661252476,
+            1003.7405566197965
+          ],
+          [
+            526.7034445151766,
+            950.0688748212918
+          ],
+          [
+            516.6900710453062,
+            865.9565376743815
+          ],
+          [
+            540.3216324342001,
+            791.0565041197518
+          ]
+        ],
+        "fields": {},
+        "name": "An even bigger region",
+        "type": "Continent",
+        "color": "#617ebd",
+        "icon": "MdCastle",
+        "label": "<p><span style=\"font-size: 32px\">An even bigger region</span></p>",
+        "id": "14003845-393e-46f6-9520-d9471ccf47ff",
+        "area": 65963100.189035915
+      }
     ],
-    "showLabel": true,
-    "label": "<p>Hello there 222</p>",
-    "description": "<p>Whats up</p>",
-    "color": "#ffffff",
-    "icon": "MdCastle",
-    "name": "Hello there 222",
-    "type": "Town",
-    "id": "b8449d7d-48b4-4183-ac04-83a859e74c5a",
-    "prominence": 5,
-    "fields": {}
+    "labelCollisionStrategy": "None"
   },
   {
     "position": [
@@ -72,48 +82,173 @@
       936.0128662420694
     ],
     "showLabel": true,
-    "label": "<p>A location in a region</p>",
-    "description": "",
-    "color": "#ffffff",
-    "icon": "Md24Mp",
-    "name": "A location in a region",
-    "type": "City",
-    "id": "5a3a285f-bb00-412a-9b3a-130c592e65db",
-    "prominence": 5,
-    "fields": {}
-  },
-  {
-    "position": [
-      764.4001889875826,
-      792.0132692090377
-    ],
-    "showLabel": true,
-    "label": "Hello there",
-    "description": "<p>Whats up. This is close to <span class=\"mention\" data-type=\"mention\" data-id=\"b8449d7d-48b4-4183-ac04-83a859e74c5a\" data-label=\"Hello there 222\">@Hello there 222</span> !</p>",
+    "label": "<p><span style=\"font-family: UnifrakturMaguntia, cursive; font-size: 24px; color: rgb(255, 255, 255)\"><em><strong><u>A location in a region2</u></strong></em></span></p>",
+    "description": "<p style=\"text-align: left\"></p>",
     "color": "#ffffff",
     "icon": "MdCastle",
-    "name": "Hello there (Copy)",
-    "type": "Town",
-    "id": "0f24cb54-3ea2-45b9-9aea-e8312ae212b9",
-    "prominence": 5,
-    "iconSize": 23,
-    "fields": {}
+    "name": "A location in a region 32",
+    "type": "City",
+    "id": "5a3a285f-bb00-412a-9b3a-130c592e65db",
+    "prominence": 10,
+    "fields": {},
+    "iconSize": 24,
+    "labelCollisionStrategy": "Conquer"
   },
   {
     "position": [
-      708.9748932555312,
-      706.9258328703996
+      816.7388167388167,
+      1304.4733044733043
     ],
     "showLabel": true,
-    "label": "<p><span style=\"font-family: fantasy; font-size: 1em\">fdfdfdfd</span></p>",
-    "description": "<p>fdfdfdfdf</p>",
+    "name": "name",
+    "description": "<p>something</p>",
+    "type": "Village",
+    "label": "<p><span style=\"font-size: 24px\">name</span></p>",
+    "icon": "MdCastle",
+    "prominence": 9,
     "color": "#ffffff",
-    "icon": "MdOutlineCastle",
-    "name": "Some place yo (Copy)",
+    "id": "d4d87e77-1d83-4b81-91a8-4dfdf70526f4",
+    "fields": {},
+    "labelCollisionStrategy": "None"
+  },
+  {
+    "position": [
+      789.1073053530441,
+      1189.7976571105369
+    ],
+    "showLabel": true,
+    "fields": {
+      "Population": "14,000",
+      "Bacon": "Always",
+      "A great many": "of my friends are ducks",
+      "Artificially": "uintelligent"
+    },
+    "name": "Sombreo",
+    "description": "<p>Hello there this is the story of sombreo eo eo eo Hello there this is the story of sombreo eo eo eo Hello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eoHello there this is the story of sombreo eo eo eo</p><p></p><p></p><p>Hello there </p><p>Hello there </p><p>Hello there </p>",
+    "type": "City State",
+    "label": "<p>Sombreo</p>",
+    "iconSize": 10,
+    "prominence": 8,
+    "color": "#000000",
+    "icon": "Fa6Crown",
+    "id": "ec766fca-adf7-4e7e-830d-61cc5f650db1",
+    "labelCollisionStrategy": "None"
+  },
+  {
+    "position": [
+      911.6780599841906,
+      1441.244098305442
+    ],
+    "showLabel": true,
+    "fields": {},
+    "description": "<p style=\"text-align: left\"></p>",
+    "name": "test test",
+    "type": "Town",
+    "label": "<p><span style=\"font-family: serif; font-size: 24px; color: #000000; background-color: #fa0000\"><em><strong><u>test test</u></strong></em></span></p>",
+    "color": "#ff0000",
+    "icon": "MdCastle",
+    "id": "c6e36c3a-c512-4177-b2fa-eaa1f48b094c",
+    "prominence": 10,
     "iconSize": 24,
-    "type": "Castle",
-    "id": "e2160c01-92fd-447a-882e-e0a59e041bfd",
+    "labelCollisionStrategy": "None"
+  },
+  {
+    "position": [
+      458.9187193309261,
+      665.2079156425476
+    ],
+    "showLabel": true,
+    "fields": {},
+    "description": "<p style=\"text-align: left\">Once a powerful yapper settled here, and yapped this village into existence - and then straight to ruin.</p>",
+    "name": "Yap Town",
+    "type": "Ruin",
+    "label": "<p><span style=\"font-family: UnifrakturMaguntia, cursive; font-size: 24px; color: #ffffff\"><em><strong>Yap Town</strong></em></span></p>",
+    "prominence": 7,
+    "iconSize": 18,
+    "color": "#ffffff",
+    "icon": "GiCastleRuins",
+    "id": "738ad1b5-b649-4d8c-9b06-6804f29a9d6c",
+    "labelCollisionStrategy": "None"
+  },
+  {
+    "position": [
+      721.345066812132,
+      603.9286723558048
+    ],
+    "showLabel": true,
+    "fields": {},
+    "description": "<p style=\"text-align: left\">A small village</p>",
+    "name": "Wayward",
+    "type": "Village",
+    "label": "<p><span style=\"font-family: fantasy; color: #ffffff\">Wayward</span></p>",
+    "iconSize": 8,
+    "prominence": 3,
+    "icon": "GiVillage",
+    "color": "#ffffff",
+    "id": "247da94a-b431-4b24-9b9b-c6eddbaf4715",
+    "labelCollisionStrategy": "None"
+  },
+  {
+    "position": [
+      664.2300797949426,
+      665.9711809215349
+    ],
+    "showLabel": true,
+    "fields": {},
+    "description": "<p style=\"text-align: right\">dsdssd</p>",
+    "name": "Dan's Place",
+    "type": "Ruin",
+    "color": "#ffffff",
+    "icon": "MdCastle",
+    "prominence": 10,
+    "iconSize": 24,
+    "id": "91360789-22b5-41c0-a05f-969267afb2ce",
+    "label": "<p style=\"line-height: 80%\">Danny's <br>Place</p>",
+    "labelCollisionStrategy": "None"
+  },
+  {
+    "position": [
+      636,
+      876
+    ],
+    "showLabel": true,
+    "fields": {},
+    "name": "Outer location",
+    "description": "<p style=\"text-align: left\">YAP</p>",
+    "type": "Landmark",
+    "color": "#ffffff",
+    "icon": "PiTreasureChestFill",
+    "id": "30cbb6f6-3ada-4362-aed5-ae40856db617",
     "prominence": 5,
-    "fields": {}
+    "labelCollisionStrategy": "None"
+  },
+  {
+    "position": [
+      769.1365989528176,
+      708.2794466513584
+    ],
+    "showLabel": true,
+    "fields": {},
+    "name": "A funky place",
+    "type": "Town",
+    "icon": "GiMagicLamp",
+    "color": "#ffffff",
+    "id": "75b55c86-a747-4fd4-a850-9bf9192c9853",
+    "prominence": 5
+  },
+  {
+    "position": [
+      595.1415891888436,
+      854.7943433603789
+    ],
+    "showLabel": true,
+    "fields": {},
+    "name": "A location in a region",
+    "type": "Castle",
+    "prominence": 8,
+    "color": "#ffffff",
+    "icon": "MdPlace",
+    "id": "b947fef4-d956-4c74-a274-5c7f124c93a2",
+    "labelCollisionStrategy": "Conquer"
   }
 ]

@@ -3,8 +3,10 @@
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.2);
-  z-index: 5000;
+  z-index: 9999;
   pointer-events: auto;
+  /* Prevent wheel events from bubbling */
+  overflow: hidden;
 }
 
 .sidepanel {
@@ -17,8 +19,8 @@
   color: #fff;
   box-shadow: -2px 0 12px rgba(0,0,0,0.15);
   padding: 24px;
-  overflow-y: auto;
-  z-index: 5100;
+  overflow: hidden;
+  z-index: 10000;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -26,6 +28,16 @@
   pointer-events: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.2) transparent;
+  /* Ensure smooth scrolling */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  /* Test hover effect */
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.sidepanel:hover {
+  background: rgba(0,0,0,0.9);
 }
 
 @keyframes slideIn {
@@ -41,15 +53,16 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
+  min-height: 32px;
 }
 
 .sidepanel-back-button {
+  height: 40px;
+  width: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
   border: none;
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
@@ -63,27 +76,52 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
-.sidepanel h2 {
+.sidepanel-header-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.sidepanel-title {
   margin: 0;
   font-size: 2em;
   color: #fff;
   font-weight: 600;
-  flex-grow: 1;
+  line-height: 1.2;
 }
 
 .sidepanel-type {
-  font-size: 1.4em;
+  font-size: 1.2em;
   color: #e5e7eb;
-  margin-bottom: 12px;
   font-weight: 500;
   text-transform: capitalize;
+  margin: 0;
+}
+
+.sidepanel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+  height: calc(100vh - 120px); /* Fixed height instead of max-height */
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+  /* Ensure smooth scrolling */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  /* Force scrollbar to show when needed */
+  scrollbar-gutter: stable;
 }
 
 .sidepanel-description {
-  font-size: 1.2em;
+  font-size: 1.1em;
   line-height: 1.6;
   color: #e5e7eb;
-  margin-top: 8px;
+  margin: 0;
 }
 
 /* Rich text content styles */
@@ -164,7 +202,7 @@
 
 .sidepanel-image {
   width: 100%;
-  margin-bottom: 16px;
+  margin-bottom: 0;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
@@ -187,37 +225,38 @@
 }
 
 /* Webkit scrollbar styles (Chrome, Safari, newer Edge) */
-.sidepanel::-webkit-scrollbar {
+.sidepanel-content::-webkit-scrollbar {
   width: 8px;
 }
 
-.sidepanel::-webkit-scrollbar-track {
+.sidepanel-content::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.sidepanel::-webkit-scrollbar-thumb {
+.sidepanel-content::-webkit-scrollbar-thumb {
   background-color: rgba(255,255,255,0.2);
   border-radius: 4px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
-.sidepanel::-webkit-scrollbar-thumb:hover {
+.sidepanel-content::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255,255,255,0.3);
 }
 
-/* Custom Fields Table (from location-panel.css) */
+/* Custom Fields Table */
 .sidepanel-fields {
-  margin: 1rem 0;
-  padding: 1rem;
-  background: var(--bg-secondary);
+  margin: 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
 }
 
 .sidepanel-fields h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
-  color: var(--text-secondary);
+  margin: 0 0 12px 0;
+  font-size: 1.1em;
+  color: #e5e7eb;
+  font-weight: 500;
 }
 
 .fields-table {
@@ -229,18 +268,20 @@
 .fields-table td {
   padding: 0.5rem;
   text-align: left;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  word-wrap: break-word;
 }
 
 .fields-table th {
   font-weight: 600;
-  color: var(--text-secondary);
-  width: 30%;
+  color: #e5e7eb;
+  width: 40%;
   vertical-align: top;
 }
 
 .fields-table td {
-  color: var(--text-primary);
+  color: #fff;
+  width: 60%;
 }
 
 .fields-table tr:last-child th,
@@ -259,13 +300,15 @@
 
 /* === RegionPanel Locations List Styles === */
 .regionpanel-locations-section {
-  margin-top: 24px;
+  margin-top: 8px;
   padding-left: 0;
   padding-right: 0;
 }
 
 .regionpanel-locations-header {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  font-size: 1.4em;
+  font-weight: 600;
 }
 
 .regionpanel-locations-list {
@@ -283,17 +326,27 @@
   border-radius: 8px;
   transition: background 0.2s;
   cursor: pointer;
-  padding: 8px 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .regionpanel-locations-list-item:hover {
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .regionpanel-locations-list-item .regionpanel-location-info {
   display: flex;
   flex-direction: column;
   flex: 1;
+  gap: 4px;
+}
+
+.regionpanel-location-name {
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.1em;
 }
 
 .regionpanel-locations-list-item .regionpanel-location-type {
@@ -305,4 +358,317 @@
   font-size: 22px;
   margin-left: 8px;
   flex-shrink: 0;
-} 
+}
+
+/* Region Panel Tabs */
+.regionpanel-tabs-section {
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+}
+
+.regionpanel-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.regionpanel-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.regionpanel-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #e5e7eb;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.regionpanel-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.regionpanel-tab.active {
+  background: rgba(37, 99, 235, 0.2);
+  border-color: rgba(37, 99, 235, 0.4);
+  color: #fff;
+}
+
+.regionpanel-tab.current {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #fff;
+}
+
+.regionpanel-tab.current.active {
+  background: rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.regionpanel-tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.regionpanel-tab-indicator {
+  font-size: 0.8em;
+  color: #22c55e;
+  flex-shrink: 0;
+}
+
+/* Smooth, modern region panel tabs */
+.smooth-tabs-bar {
+  display: flex;
+  gap: 0;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px 10px 0 0;
+  padding: 0 2px;
+  position: relative;
+  min-height: 44px;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+}
+.smooth-tab {
+  position: relative;
+  background: none;
+  border: none;
+  outline: none;
+  color: #e5e7eb;
+  font-size: 1em;
+  font-weight: 500;
+  padding: 12px 22px 10px 22px;
+  border-radius: 10px 10px 0 0;
+  margin-right: 2px;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+  z-index: 1;
+  box-shadow: none;
+}
+.smooth-tab:last-child {
+  margin-right: 0;
+}
+.smooth-tab:not(.active):hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+.smooth-tab.active {
+  color: #fff;
+  background: rgba(37,99,235,0.18);
+  z-index: 2;
+}
+.smooth-tab:disabled {
+  cursor: default;
+  opacity: 1;
+}
+.regionpanel-tab-underline {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 3px;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #2563eb 60%, #22c55e 100%);
+  box-shadow: 0 1px 4px 0 rgba(34,197,94,0.12);
+  transition: left 0.2s, right 0.2s, background 0.2s;
+  z-index: 3;
+}
+.smooth-tabs-section {
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding-bottom: 8px;
+}
+
+/* Modern, lean pill path for hierarchy - theme friendly - HIGH SPECIFICITY */
+.sidepanel .path-section {
+  height: 100%;
+  display: flex !important;
+  align-items: center !important;
+  margin-bottom: 0 !important;
+}
+
+.sidepanel .path-pills {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  flex-wrap: nowrap !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+  max-height: 48px !important;
+  scrollbar-width: auto !important;
+  scrollbar-color: rgba(255,255,255,0.2) transparent !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth !important;
+}
+
+.sidepanel .path-pills::-webkit-scrollbar {
+  height: 8px;
+  background: #222;
+}
+
+.sidepanel .path-pills::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.sidepanel .path-pill {
+  display: flex !important;
+  align-items: center !important;
+  border-radius: 999px !important;
+  font-size: 0.85em !important;
+  font-weight: 500 !important;
+  padding: 0.35em 0.9em !important;
+  margin: 0 !important;
+  border: none !important;
+  outline: none !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #e5e7eb !important;
+  box-shadow: none !important;
+  transition: background 0.18s, color 0.18s !important;
+  cursor: pointer !important;
+  min-width: 0 !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.sidepanel .path-pill--parent {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #cbd5e1 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
+  font-weight: 500 !important;
+}
+
+.sidepanel .path-pill--parent:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+  border-color: #2563eb !important;
+}
+
+.sidepanel .path-pill--current {
+  background: rgba(37, 99, 235, 0.25) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  border: none !important;
+  box-shadow: 0 2px 8px 0 rgba(37, 99, 235, 0.15) !important;
+  cursor: default !important;
+}
+
+.sidepanel .path-pill-name {
+  overflow: visible !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: none !important;
+  font-size: 0.85em !important;
+}
+
+.sidepanel .path-separator {
+  display: flex !important;
+  align-items: center !important;
+  margin: 0 0.1em !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  opacity: 0.8 !important;
+  font-size: 0.9em !important;
+  user-select: none !important;
+  border: none !important;
+}
+
+/* Regions section in RegionPanel */
+.regionpanel-regions-section {
+  margin-top: 18px;
+  margin-bottom: 18px;
+}
+.regionpanel-regions-header {
+  margin-bottom: 12px;
+  font-size: 1.4em;
+  font-weight: 600;
+  color: #fff;
+}
+.regionpanel-regions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.regionpanel-regions-list-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  padding: 14px 16px 10px 16px;
+  transition: background 0.18s, border-color 0.18s;
+}
+.regionpanel-regions-list-item:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(37,99,235,0.18);
+}
+.regionpanel-region-info {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.regionpanel-region-name {
+  font-weight: 600;
+  color: #fff;
+  font-size: 1.1em;
+}
+.regionpanel-region-type {
+  font-size: 0.98em;
+  color: #a3a3a3;
+  font-weight: 400;
+}
+.regionpanel-region-locations-list {
+  list-style: none;
+  padding: 0 0 0 12px;
+  margin: 0;
+}
+.regionpanel-region-location-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0 7px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.regionpanel-region-location-item:hover {
+  background: rgba(37,99,235,0.08);
+}
+.regionpanel-region-location-name {
+  color: #e5e7eb;
+  font-weight: 500;
+  font-size: 1em;
+}
+.regionpanel-region-location-type {
+  color: #bdbdbd;
+  font-size: 0.97em;
+  margin-left: 8px;
+}
+
+.sidepanel-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 48px;
+  min-height: 48px;
+  width: 100%;
+  overflow: visible;
+}

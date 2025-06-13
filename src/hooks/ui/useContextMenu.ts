@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
 import L from 'leaflet';
@@ -17,10 +17,11 @@ interface UseContextMenuProps {
   onEditLocation: (location: Location) => void;
   onMoveLocation: (location: Location, isDuplicating?: boolean) => void;
   onDeleteLocation: (location: Location) => void;
-  onDeleteRegion: (region: Region) => void;
+  onAddRegion: (position: [number, number]) => void;
   onEditRegion: (region: Region) => void;
-  onAddRegion: (position: [number, number][]) => void;
+  onDeleteRegion: (region: Region) => void;
   mapRef: React.RefObject<L.Map>;
+  startDrawing: () => void; // Required: polygon drawing is the only way to add regions
 }
 
 export function useContextMenu({
@@ -28,10 +29,11 @@ export function useContextMenu({
   onEditLocation,
   onMoveLocation,
   onDeleteLocation,
-  onDeleteRegion,
-  onEditRegion,
   onAddRegion,
+  onEditRegion,
+  onDeleteRegion,
   mapRef,
+  startDrawing,
 }: UseContextMenuProps) {
   const [menu, setMenu] = useState<ContextMenuState>({ 
     open: false, 
@@ -40,75 +42,136 @@ export function useContextMenu({
     type: 'map' 
   });
 
-  const handleContextMenu = useCallback((
-    e: React.MouseEvent | L.LeafletMouseEvent, 
-    type: 'map' | 'marker', 
-    element?: Location | Region
-  ) => {
-    
+  // Use a ref to access the current menu state without causing re-renders
+  const menuRef = useRef(menu);
+  menuRef.current = menu;
+
+  // Helper function to check if any panels are open
+  const hasOpenPanels = useCallback(() => {
+    return document.querySelectorAll('.sidepanel-backdrop').length > 0;
+  }, []);
+
+  // Type-safe handlers for different element types
+  const handleContextMenu = useCallback((e: React.MouseEvent | L.LeafletMouseEvent) => {
+    // Check if any panels are open - if so, prevent context menu
+    if (hasOpenPanels()) {
+      if ('preventDefault' in e) {
+        e.preventDefault();
+      } else if ('originalEvent' in e && 'preventDefault' in e.originalEvent) {
+        e.originalEvent.preventDefault();
+      }
+      return;
+    }
+
     if ('preventDefault' in e) {
       e.preventDefault();
     } else if ('originalEvent' in e && 'preventDefault' in e.originalEvent) {
       e.originalEvent.preventDefault();
     }
-    const clientX = 'clientX' in e ? e.clientX : e.originalEvent.clientX;
-    const clientY = 'clientY' in e ? e.clientY : e.originalEvent.clientY;
     
-    // Check if element is a Location or Region based on position type
-    const isLocation = element && 'position' in element && Array.isArray(element.position) && element.position.length === 2 && !('showBorder' in element);
+    const clientX = 'clientX' in e ? e.clientX : (e as L.LeafletMouseEvent).originalEvent.clientX;
+    const clientY = 'clientY' in e ? e.clientY : (e as L.LeafletMouseEvent).originalEvent.clientY;
     
     setMenu({ 
       open: true, 
       x: clientX, 
       y: clientY, 
-      type,
-      ...(isLocation ? { location: element as Location } : { region: element as Region })
+      type: 'map'
     });
-  }, []);
+  }, [hasOpenPanels]);
+
+  const handleLocationContextMenu = useCallback((e: L.LeafletMouseEvent, location: Location) => {
+    // Check if any panels are open - if so, prevent context menu
+    if (hasOpenPanels()) {
+      e.originalEvent.preventDefault();
+      return;
+    }
+
+    e.originalEvent.preventDefault();
+    
+    // Stop propagation to prevent map context menu from overriding marker context menu
+    e.originalEvent.stopPropagation();
+    
+    const clientX = e.originalEvent.clientX;
+    const clientY = e.originalEvent.clientY;
+    
+    setMenu({ 
+      open: true, 
+      x: clientX, 
+      y: clientY, 
+      type: 'marker',
+      location
+    });
+  }, [hasOpenPanels]);
+
+  const handleRegionContextMenu = useCallback((e: L.LeafletMouseEvent, region: Region) => {
+    // Check if any panels are open - if so, prevent context menu
+    if (hasOpenPanels()) {
+      e.originalEvent.preventDefault();
+      return;
+    }
+
+    e.originalEvent.preventDefault();
+    
+    // Stop propagation to prevent map context menu from overriding marker context menu
+    e.originalEvent.stopPropagation();
+    
+    const clientX = e.originalEvent.clientX;
+    const clientY = e.originalEvent.clientY;
+    
+    setMenu({ 
+      open: true, 
+      x: clientX, 
+      y: clientY, 
+      type: 'marker',
+      region
+    });
+  }, [hasOpenPanels]);
 
   const closeMenu = useCallback(() => {
     setMenu(m => ({ ...m, open: false }));
   }, []);
 
   const getMenuItems = useCallback(() => {
-    if (menu.type === 'marker') {
-      if (menu.location) {
+    const currentMenu = menuRef.current;
+    if (currentMenu.type === 'marker') {
+      if (currentMenu.location) {
         return [
           { 
             label: "Edit location", 
             onClick: () => { 
-              onEditLocation(menu.location!); 
+              onEditLocation(currentMenu.location!); 
               closeMenu(); 
             } 
           },
           { 
             label: "Move location", 
             onClick: () => { 
-              onMoveLocation(menu.location!); 
+              onMoveLocation(currentMenu.location!); 
               closeMenu(); 
             } 
           },
           { 
             label: "Duplicate location", 
             onClick: () => { 
-              onMoveLocation(menu.location!, true); 
+              onMoveLocation(currentMenu.location!, true); 
               closeMenu(); 
             } 
           },
           { 
             label: "Delete location", 
             onClick: () => { 
-              onDeleteLocation(menu.location!); 
+              onDeleteLocation(currentMenu.location!); 
               closeMenu(); 
             } 
           },
         ];
-      } else if (menu.region) {
+      } else if (currentMenu.region) {
         return [
           { 
             label: "Edit region", 
             onClick: () => { 
-              onEditRegion(menu.region!); 
+              onEditRegion(currentMenu.region!); 
               closeMenu(); 
             } 
           },
@@ -119,7 +182,7 @@ export function useContextMenu({
                 const map = mapRef.current;
                 const container = map.getContainer();
                 const rect = container.getBoundingClientRect();
-                const point = L.point(menu.x - rect.left, menu.y - rect.top);
+                const point = L.point(currentMenu.x - rect.left, currentMenu.y - rect.top);
                 const latlng = map.containerPointToLatLng(point);
                 onAddLocation([latlng.lat, latlng.lng]);
               }
@@ -129,7 +192,7 @@ export function useContextMenu({
           { 
             label: "Delete region", 
             onClick: () => { 
-              onDeleteRegion(menu.region!); 
+              onDeleteRegion(currentMenu.region!); 
               closeMenu(); 
             } 
           },
@@ -140,11 +203,11 @@ export function useContextMenu({
       { 
         label: "Add location", 
         onClick: () => {
-          if (menu.type === 'map' && mapRef.current) {
+          if (currentMenu.type === 'map' && mapRef.current) {
             const map = mapRef.current;
             const container = map.getContainer();
             const rect = container.getBoundingClientRect();
-            const point = L.point(menu.x - rect.left, menu.y - rect.top);
+            const point = L.point(currentMenu.x - rect.left, currentMenu.y - rect.top);
             const latlng = map.containerPointToLatLng(point);
             onAddLocation([latlng.lat, latlng.lng]);
           }
@@ -154,30 +217,25 @@ export function useContextMenu({
       { 
         label: "Add region", 
         onClick: () => {
-          if (menu.type === 'map' && mapRef.current) {
+          if (currentMenu.type === 'map' && mapRef.current) {
             const map = mapRef.current;
             const container = map.getContainer();
             const rect = container.getBoundingClientRect();
-            const point = L.point(menu.x - rect.left, menu.y - rect.top);
+            const point = L.point(currentMenu.x - rect.left, currentMenu.y - rect.top);
             const latlng = map.containerPointToLatLng(point);
-            // For now, create a simple triangle around the click point
-            const offset = 0.1; // Adjust this value to control the size of the region
-            const position: [number, number][] = [
-              [latlng.lat, latlng.lng],
-              [latlng.lat + offset, latlng.lng + offset],
-              [latlng.lat + offset, latlng.lng - offset],
-            ];
-            onAddRegion(position);
+            onAddRegion([latlng.lat, latlng.lng]);
           }
           closeMenu();
         } 
       },
     ];
-  }, [menu, onAddLocation, onEditLocation, onMoveLocation, onDeleteLocation, onDeleteRegion, onEditRegion, onAddRegion, closeMenu, mapRef]);
+  }, [onEditLocation, onMoveLocation, onDeleteLocation, onEditRegion, onAddLocation, onDeleteRegion, mapRef, startDrawing, closeMenu]);
 
   return {
     menu,
     handleContextMenu,
+    handleLocationContextMenu,
+    handleRegionContextMenu,
     closeMenu,
     getMenuItems,
   };

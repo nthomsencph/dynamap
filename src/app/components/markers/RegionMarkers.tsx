@@ -1,45 +1,53 @@
-import React, { useCallback, useEffect } from 'react';
-import { Polygon, Marker } from "react-leaflet";
+import React, { useCallback } from 'react';
+import { Polygon, Marker, useMap } from "react-leaflet";
 import L from 'leaflet';
 import type { Region } from "@/types/regions";
 import type { Location } from "@/types/locations";
-import type { MapElement } from '@/types/elements';
 import { shouldShowElement } from '@/app/utils/zoom';
-import { RegionPanel } from '@/app/components/panels/RegionPanel';
-import { renderToStaticMarkup } from "react-dom/server";
+import { findContainingRegions } from '@/app/utils/containment';
+import { ElementMarkers, MarkerErrorBoundary } from './ElementMarkers';
+import type { PanelEntry } from '@/hooks/ui/usePanelStack';
 import { calculatePolygonCenter } from '@/app/utils/area';
-import { ElementMarkers, type NavEntry } from '@/app/components/markers/ElementMarkers';
 
 // Import region label styles
 import '@/css/markers/region-label.css';
 
-// Helper function to create a region label icon
-function createRegionLabelIcon(region: Region) {
-  const labelHtml = region.label || region.name || '';
+// Cache for memoized region label icons
+const regionLabelIconCache = new Map<string, L.DivIcon>();
+
+function createRegionLabelDivIcon(region: Region) {
+  // Create a cache key
+  const cacheKey = `region-label-${region.id}-${region.label || ''}-${region.labelCollisionStrategy || 'None'}`;
   
-  const iconHtml = renderToStaticMarkup(
-    <div className="region-label-wrapper">
-      {(region.showLabel !== false) && labelHtml && (
-        <span 
-          className="region-label" 
-          dangerouslySetInnerHTML={{ __html: labelHtml }}
-        />
-      )}
-    </div>
-  );
-  return L.divIcon({
-    className: 'region-label-icon',
-    html: iconHtml,
-    iconSize: [1, 1], // Minimal size since we only need the label
-    iconAnchor: [0, 0], // No offset needed
+  // Return cached icon if it exists
+  if (regionLabelIconCache.has(cacheKey)) {
+    return regionLabelIconCache.get(cacheKey)!;
+  }
+
+  const icon = L.divIcon({
+    className: 'map-label-icon',
+    html: `<div
+      class="map-label region-label"
+      id="${region.id}"
+      data-collision-strategy="${region.labelCollisionStrategy || 'None'}"
+      style="pointer-events: none;"
+    >${region.label || ''}</div>`,
+    iconSize: [1, 1],
+    iconAnchor: [0, 0],
   });
+  
+  // Cache the icon
+  regionLabelIconCache.set(cacheKey, icon);
+  return icon;
 }
 
 interface RegionMarkersProps {
   regions: Region[];
   currentZoom: number;
   fitZoom: number;
-  onContextMenu: (e: L.LeafletMouseEvent, type: 'marker' | 'map', region?: Region) => void;
+  onContextMenu: (e: L.LeafletMouseEvent, type: 'map' | 'marker', region?: Region) => void;
+  onElementClick?: (element: Location | Region) => void;
+  currentPanel?: PanelEntry | null;
   panelWidth?: number;
 }
 
@@ -48,160 +56,106 @@ function RegionMarkersComponent({
   currentZoom, 
   fitZoom, 
   onContextMenu,
-  panelWidth = 450 
+  onElementClick,
+  currentPanel,
+  panelWidth = 450
 }: RegionMarkersProps) {
-  // Add logging for props
-  useEffect(() => {
-  }, [regions, currentZoom, fitZoom]);
+  const map = useMap();
 
-  // Use regions directly
-  const renderMarker = useCallback((region: Region, opts: {
+  const handleRegionClick = useCallback((region: Region) => {
+    if (onElementClick) {
+      onElementClick(region);
+    }
+  }, [onElementClick]);
+
+  const handleContextMenu = useCallback((e: L.LeafletMouseEvent, type: 'marker' | 'map', region?: Region) => {
+    onContextMenu(e, type, region);
+  }, [onContextMenu]);
+
+  // Render marker function for ElementMarkers
+  const renderRegionMarker = useCallback((region: Region, opts: {
     onClick: () => void;
     onContextMenu: (e: L.LeafletMouseEvent) => void;
-    markerRef: (marker: L.Marker | null) => void;
+    markerRef: (marker: L.Polygon | null) => void;
     currentZoom: number;
     type: string;
     isZooming: boolean;
   }) => {
-
-    const center = calculatePolygonCenter(region.position);
-    return (
-      <React.Fragment key={region.id}>
-        {/* Only render polygon when not zooming */}
-        {!opts.isZooming && (
-          <Polygon
-            positions={region.position}
-            pathOptions={{
-              color: region.color,
-              weight: region.showBorder ? 2 : 0,
-              opacity: 0.8,
-              fillOpacity: region.showHighlight !== false ? 0.2 : 0,
-            }}
-            eventHandlers={{
-              click: opts.onClick,
-              contextmenu: (e) => {
-                e.originalEvent.preventDefault();
-                e.originalEvent.stopPropagation();
-                opts.onContextMenu(e);
-              },
-            }}
-          />
-        )}
-        {/* Always render label */}
-        {region.showLabel !== false && region.label && (
-          <Marker
-            position={center}
-            icon={createRegionLabelIcon(region)}
-            interactive={false}
-            zIndexOffset={1000}
-            ref={opts.markerRef}
-          />
-        )}
-      </React.Fragment>
-    );
-  }, []);
-
-  // Memoized panel renderer
-  const renderPanel = useCallback((entry: NavEntry<Region>, opts: {
-    onClose: () => void;
-    onBack?: () => void;
-    onElementClick?: (entry: NavEntry<Region | (Location & MapElement)>) => void;
-  }) => {
-    if (!entry.value) {
-      console.error('RegionMarkers: Attempted to render panel with null region');
+    if (!Array.isArray(region.position) || region.position.length < 3) {
+      console.error('RegionMarkers: Invalid position for region:', region);
       return null;
     }
 
+    const showLabel = region.showLabel !== false && region.label;
+    const centroid = calculatePolygonCenter(region.position);
+
     return (
-      <RegionPanel
-        region={entry.value}
-        onClose={opts.onClose}
-        onBack={opts.onBack}
-        onLocationClick={(location) => {
-          if (!location) {
-            console.error('RegionMarkers: Null location clicked in panel');
-            return;
-          }
-          if (opts.onElementClick) {
-            opts.onElementClick({ 
-              elementType: 'location',
-              value: location
-            });
-          }
-        }}
-      />
+      <>
+        <Polygon
+          key={region.id + '-polygon'}
+          positions={region.position}
+          pathOptions={{
+            color: region.color,
+            weight: region.showBorder ? 2 : 0,
+            opacity: 0.8,
+            fillOpacity: region.showHighlight !== false ? 0.2 : 0,
+          }}
+          ref={opts.markerRef}
+          eventHandlers={{
+            contextmenu: opts.onContextMenu,
+            click: (e: L.LeafletMouseEvent) => {
+              // Find all regions containing this click point
+              const clickPoint: [number, number] = [e.latlng.lat, e.latlng.lng];
+              const allContainingRegions = findContainingRegions(clickPoint, regions);
+              
+              if (allContainingRegions.length > 0) {
+                // Find the smallest containing region (first in the sorted list)
+                const smallestContainingRegion = allContainingRegions[0];
+                
+                if (onElementClick) {
+                  onElementClick(smallestContainingRegion);
+                }
+              } else {
+                // No containing regions, click the region itself
+                if (onElementClick) {
+                  onElementClick(region);
+                }
+              }
+            },
+          }}
+        />
+        {showLabel && (
+          <Marker
+            key={region.id + '-label'}
+            position={centroid}
+            icon={createRegionLabelDivIcon(region)}
+            interactive={false}
+            zIndexOffset={2000}
+          />
+        )}
+      </>
     );
-  }, []);
-
-  // Memoized callbacks
-  const handleContextMenu = useCallback((e: L.LeafletMouseEvent, type: 'marker' | 'map', region: Region) => {
-    if (type === 'marker') {
-      onContextMenu(e, 'marker', region);
-    } else {
-      onContextMenu(e, 'map');
-    }
-  }, [onContextMenu]);
-
-  const getId = useCallback((region: Region) => region.id, []);
-  const getPosition = useCallback((region: Region) => calculatePolygonCenter(region.position), []);
-  const shouldShow = useCallback((region: Region, currentZoom: number, fitZoom: number) => 
-    shouldShowElement(region.prominence, currentZoom, fitZoom)
-  , [fitZoom]);
+  }, [regions, handleRegionClick]);
 
   return (
-    <ElementMarkers<Region, Location & MapElement>
+    <ElementMarkers
       elements={regions}
       currentZoom={currentZoom}
       fitZoom={fitZoom}
       onContextMenu={handleContextMenu}
-      getId={getId}
-      shouldShow={shouldShow}
-      getPosition={getPosition}
-      renderMarker={renderMarker}
-      renderPanel={renderPanel}
       panelWidth={panelWidth}
+      currentPanel={currentPanel}
+      onElementClick={handleRegionClick}
+      renderMarker={renderRegionMarker}
     />
   );
 }
 
-// Export wrapped component with error boundary
-class RegionMarkersErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error?: Error }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('RegionMarkers error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="error-boundary">
-          <p>Error loading map markers. Please try refreshing the page.</p>
-          {process.env.NODE_ENV === 'development' && (
-            <pre>{this.state.error?.toString()}</pre>
-          )}
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
+// Export with error boundary
 export function RegionMarkers(props: RegionMarkersProps) {
   return (
-    <RegionMarkersErrorBoundary>
+    <MarkerErrorBoundary componentName="RegionMarkers">
       <RegionMarkersComponent {...props} />
-    </RegionMarkersErrorBoundary>
+    </MarkerErrorBoundary>
   );
 } 

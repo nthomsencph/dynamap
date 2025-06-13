@@ -1,30 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Region } from '@/types/regions';
 
 export function useRegions() {
   const [regions, setRegions] = useState<Region[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch regions
-  useEffect(() => {
-    async function fetchRegions() {
-      try {
-        const response = await fetch('/api/regions');
-        if (!response.ok) throw new Error('Failed to fetch regions');
-        const data = await response.json();
-        setRegions(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch regions');
-      } finally {
-        setLoading(false);
-      }
+  const fetchRegions = useCallback(async () => {
+    setLoading(true); // Set loading when we start fetching
+    try {
+      const response = await fetch('/api/regions');
+      if (!response.ok) throw new Error('Failed to fetch regions');
+      const data = await response.json();
+      // Combine state updates to reduce re-renders
+      setRegions(data);
+      setLoading(false);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch regions');
+      setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
     fetchRegions();
-  }, []); // No dependencies
+  }, []);
 
   // Add a new region
-  async function addRegion(region: Omit<Region, 'id'>) {
+  const addRegion = useCallback(async (region: Omit<Region, 'id'>) => {
     try {
       const response = await fetch('/api/regions', {
         method: 'POST',
@@ -39,10 +43,10 @@ export function useRegions() {
       setError(err instanceof Error ? err.message : 'Failed to add region');
       throw err;
     }
-  }
+  }, []);
 
   // Update an existing region
-  async function updateRegion(region: Region) {
+  const updateRegion = useCallback(async (region: Region) => {
     try {
       const response = await fetch('/api/regions', {
         method: 'PUT',
@@ -57,13 +61,15 @@ export function useRegions() {
       setError(err instanceof Error ? err.message : 'Failed to update region');
       throw err;
     }
-  }
+  }, []);
 
   // Delete a region
-  async function deleteRegion(regionId: string) {
+  const deleteRegion = useCallback(async (regionId: string) => {
     try {
-      const response = await fetch(`/api/regions/${regionId}`, {
+      const response = await fetch('/api/regions', {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: regionId }),
       });
       if (!response.ok) throw new Error('Failed to delete region');
       setRegions(prev => prev.filter(r => r.id !== regionId));
@@ -71,14 +77,17 @@ export function useRegions() {
       setError(err instanceof Error ? err.message : 'Failed to delete region');
       throw err;
     }
-  }
+  }, []);
 
-  return {
+  // Memoize the return value to prevent unnecessary re-renders
+  const result = useMemo(() => ({
     regions,
     loading,
     error,
     addRegion,
     updateRegion,
     deleteRegion,
-  };
+  }), [regions, loading, error]); // Remove callback functions from dependencies
+
+  return result;
 }

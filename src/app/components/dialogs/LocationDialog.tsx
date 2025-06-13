@@ -34,8 +34,8 @@ export function LocationDialog({ open, mode, location, onSave, onDelete, onClose
           id: 'iconSize',
           label: 'Icon size',
           type: 'range',
-          min: 16,
-          max: 32,
+          min: 1,
+          max: 24,
           defaultValue: DEFAULT_ICON_SIZE,
           getValue: (element) => element?.iconSize || DEFAULT_ICON_SIZE,
           onChange: (element, value) => ({ ...element, iconSize: value as number })

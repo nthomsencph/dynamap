@@ -1,11 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type { Region } from "@/types/regions";
 
 interface RegionDialogState {
   open: boolean;
   mode: "create" | "edit";
   position: [number, number][] | null;
-  region: Region | undefined;
+  region: Partial<Region> | null;
 }
 
 export function useRegionDialog() {
@@ -13,7 +13,7 @@ export function useRegionDialog() {
     open: false,
     mode: "create",
     position: null,
-    region: undefined,
+    region: null,
   });
 
   // Open dialog to create a new region at a given position
@@ -22,7 +22,7 @@ export function useRegionDialog() {
       open: true,
       mode: "create",
       position,
-      region: { position } as Region,
+      region: { position } as Partial<Region>,
     });
   }, []);
 
@@ -32,7 +32,7 @@ export function useRegionDialog() {
       open: true,
       mode: "edit",
       position: region.position,
-      region,
+      region: region as Partial<Region>,
     });
   }, []);
 
@@ -46,11 +46,17 @@ export function useRegionDialog() {
     setState((s) => ({ ...s, open: false }));
   }, []);
 
-  return {
-    ...state,
+  // Memoize the return value to prevent unnecessary re-renders
+  const result = useMemo(() => ({
+    open: state.open,
+    mode: state.mode,
+    position: state.position,
+    region: state.region,
     openCreate,
     openEdit,
     close,
     onSave,
-  };
+  }), [state.open, state.mode, state.position, state.region]);
+
+  return result;
 } 

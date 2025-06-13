@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 
 type Category = 'locations' | 'regions';
 
@@ -9,7 +9,7 @@ interface Types {
 
 export function useTypes() {
   const [types, setTypes] = useState<Types>({ locations: [], regions: [] });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false to prevent initial re-render
   const [error, setError] = useState<string | null>(null);
 
   // Fetch all types
@@ -20,10 +20,11 @@ export function useTypes() {
       const res = await fetch('/api/types');
       if (!res.ok) throw new Error('Failed to fetch types');
       const data = await res.json();
+      // Combine state updates to reduce re-renders
       setTypes(data);
+      setLoading(false);
     } catch (err: any) {
       setError(err.message || 'Unknown error');
-    } finally {
       setLoading(false);
     }
   }, []);
@@ -67,14 +68,17 @@ export function useTypes() {
   // Load types when component mounts
   useEffect(() => {
     fetchTypes();
-  }, [fetchTypes]);
+  }, []); // Remove fetchTypes from dependencies to prevent circular dependency
 
-  return {
+  // Memoize the return value to prevent unnecessary re-renders
+  const result = useMemo(() => ({
     types,
     loading,
     error,
     fetchTypes,
     addType,
     deleteType,
-  };
+  }), [types, loading, error]); // Remove callback functions from dependencies
+
+  return result;
 } 

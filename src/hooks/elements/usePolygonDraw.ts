@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet-draw';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -22,6 +22,10 @@ export function usePolygonDraw(
   const [isCompleting, setIsCompleting] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [wasDrawingBeforeZoom, setWasDrawingBeforeZoom] = useState(false);
+
+  // Use refs to avoid dependency issues
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   // Cleanup function to remove draw control
   const cleanupDrawControl = useCallback(() => {
@@ -105,6 +109,7 @@ export function usePolygonDraw(
     cleanupDrawControl();
   }, [cleanupDrawControl]);
 
+  // Main effect for event handling - simplified dependencies
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -122,8 +127,8 @@ export function usePolygonDraw(
         // Remove the drawn layer first
         map.removeLayer(layer);
         
-        // Call onComplete with the points
-        onComplete(points);
+        // Call onComplete with the points using ref
+        onCompleteRef.current(points);
       } finally {
         // Clean up after the event is processed
         cleanupDrawControl();
@@ -167,7 +172,7 @@ export function usePolygonDraw(
       // Clean up on unmount
       cleanupDrawControl();
     };
-  }, [mapRef, drawControl, onComplete, stopDrawing, cleanupDrawControl, isDrawing, isCompleting, startDrawing, wasDrawingBeforeZoom]);
+  }, [drawControl, isCompleting, isDrawing, wasDrawingBeforeZoom, cleanupDrawControl, stopDrawing, startDrawing]);
 
   return {
     isDrawing,
