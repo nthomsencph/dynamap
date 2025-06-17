@@ -8,6 +8,8 @@ interface MapImageSettings {
   customWidth: number;
   customHeight: number;
   lockAspectRatio: boolean;
+  showBorder: boolean;
+  borderColor: string;
 }
 
 interface MapNameSettings {
@@ -29,6 +31,8 @@ interface MapSettingsContextType {
   setMapNameSettings: (settings: MapNameSettings) => void;
   backgroundImage: string;
   setBackgroundImage: (v: string) => void;
+  backgroundColor: string;
+  setBackgroundColor: (v: string) => void;
   imageGallery: string[];
   addToImageGallery: (url: string) => void;
   editMode: boolean;
@@ -46,7 +50,9 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
     position: 'center',
     customWidth: 4000,
     customHeight: 3000,
-    lockAspectRatio: true
+    lockAspectRatio: true,
+    showBorder: false,
+    borderColor: '#000000'
   });
   const [mapNameSettings, setMapNameSettings] = useState<MapNameSettings>({
     content: '',
@@ -54,6 +60,7 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
     position: 'center'
   });
   const [backgroundImage, setBackgroundImage] = useState('/media/parchment.jpeg');
+  const [backgroundColor, setBackgroundColor] = useState('#000000');
   const [imageGallery, setImageGallery] = useState<string[]>([
     '/media/map.jpg',
     '/media/parchment.jpeg',
@@ -70,16 +77,27 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
   // Load settings from API on mount
   useEffect(() => {
     fetch('/api/settings')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
+        console.log('MapSettings: Loaded settings from API:', data);
         if (typeof data.mapImageRoundness === 'number') setMapImageRoundness(data.mapImageRoundness);
         if (typeof data.mapScale === 'number') setMapScale(data.mapScale);
         if (typeof data.mapImage === 'string') setMapImage(data.mapImage);
         if (data.mapImageSettings) setMapImageSettings(data.mapImageSettings);
         if (data.mapNameSettings) setMapNameSettings(data.mapNameSettings);
         if (typeof data.backgroundImage === 'string') setBackgroundImage(data.backgroundImage);
+        if (typeof data.backgroundColor === 'string') setBackgroundColor(data.backgroundColor);
         if (Array.isArray(data.imageGallery)) setImageGallery(data.imageGallery);
         if (typeof data.editMode === 'boolean') setEditMode(data.editMode);
+      })
+      .catch(error => {
+        console.error('MapSettings: Error loading settings:', error);
+        // Continue with default values if API fails
       });
   }, []);
 
@@ -95,11 +113,24 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
         mapImageSettings,
         mapNameSettings,
         backgroundImage, 
+        backgroundColor,
         imageGallery,
         editMode
       }),
+    })
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then(data => {
+      console.log('MapSettings: Settings saved successfully:', data);
+    })
+    .catch(error => {
+      console.error('MapSettings: Error saving settings:', error);
     });
-  }, [mapImageRoundness, mapScale, mapImage, mapImageSettings, mapNameSettings, backgroundImage, imageGallery, editMode]);
+  }, [mapImageRoundness, mapScale, mapImage, mapImageSettings, mapNameSettings, backgroundImage, backgroundColor, imageGallery, editMode]);
 
   return (
     <MapSettingsContext.Provider value={{ 
@@ -115,6 +146,8 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
       setMapNameSettings,
       backgroundImage,
       setBackgroundImage,
+      backgroundColor,
+      setBackgroundColor,
       imageGallery,
       addToImageGallery,
       editMode,

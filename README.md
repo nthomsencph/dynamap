@@ -13,6 +13,33 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
 - **Custom Fields**: Add unlimited key-value pairs to both locations and regions for additional metadata
 - **Type System**: Categorize locations and regions with predefined types (Cities, Kingdoms, Forests, etc.)
 
+### Map Settings & Customization
+- **General Settings Panel**: Comprehensive settings interface accessible via the settings button
+- **Map Image Controls**: 
+  - Upload custom map images via file upload
+  - Set map images from URLs
+  - Choose from image gallery
+  - Adjust map image roundness (0-100%)
+  - Configure map scale (km per pixel)
+  - Size options: Cover, Contain, Auto, or Custom dimensions
+  - Position control: 9-directional positioning
+  - Aspect ratio locking for custom dimensions
+- **Background Image Settings**:
+  - Upload custom background images
+  - Set background images from URLs
+  - Choose from image gallery
+  - Background images always cover the viewport
+- **Map Name System**:
+  - Rich text map name editor with full formatting options
+  - Show/hide toggle for map name visibility
+  - Position options: Center (with fade on zoom), corners
+  - Smooth fade animation on zoom level changes
+- **Edit Mode Toggle**: 
+  - Enable/disable editing capabilities
+  - When disabled, context menus are completely disabled
+  - Perfect for presentation mode or view-only access
+  - Persistent setting across sessions
+
 ### Advanced Features
 - **Dynamic Font Sizing**: Region labels automatically scale based on polygon area
 - **Mention System**: Link locations and regions within descriptions using @mentions
@@ -35,6 +62,8 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
 - **Hierarchical Navigation**: Breadcrumb-style navigation showing regional hierarchy
 - **Smart Map Positioning**: Automatic map centering when opening panels
 - **Region Animations**: Smooth fade-in animations for regions with customizable duration
+- **Settings Persistence**: All map settings are automatically saved and restored
+- **Click Outside to Close**: Settings panel closes when clicking outside the panel area
 
 ### Label System
 - **Advanced Label Positioning**: 9-directional label placement (Center, Left top, Mid top, Right top, Left mid, Right mid, Left bottom, Mid bottom, Right bottom)
@@ -70,12 +99,16 @@ dynamap/
 │   ├── locations.json        # Location data storage
 │   ├── regions.json          # Region data storage
 │   ├── types.json            # Type definitions
+│   ├── settings.json         # Map settings and preferences
+│   ├── uploads/              # User uploaded images
 │   └── media/                # Map images and assets
 ├── src/
 │   ├── app/                  # Next.js app directory
 │   │   ├── api/             # API routes for CRUD operations
 │   │   │   ├── locations/   # Location API endpoints
-│   │   │   └── regions/     # Region API endpoints
+│   │   │   ├── regions/     # Region API endpoints
+│   │   │   ├── settings/    # Settings API endpoint
+│   │   │   └── upload/      # Image upload API endpoint
 │   │   ├── components/      # React components
 │   │   │   ├── dialogs/     # Modal dialog components
 │   │   │   ├── editor/      # Rich text editor components
@@ -229,6 +262,41 @@ Add custom metadata to any element:
 - **Context Menu**: Right-click for quick actions
 - **Panel Navigation**: Click elements to open panels, use back button for navigation
 
+### Map Settings & Customization
+
+#### Accessing Settings
+- Click the settings button (gear icon) in the bottom-right corner
+- The settings panel slides in from the right
+- Click outside the panel to close it
+
+#### Map Image Configuration
+1. **Change Map Image**: Use Upload, URL, or Gallery options
+2. **Adjust Roundness**: Use the slider to set corner roundness (0-100%)
+3. **Set Map Scale**: Configure km per pixel for accurate measurements
+4. **Size Options**:
+   - **Cover**: Fill the entire map area
+   - **Contain**: Fit within the map area while maintaining aspect ratio
+   - **Auto**: Use original image dimensions
+   - **Custom**: Set specific width and height with optional aspect ratio lock
+5. **Position Control**: Choose from 9 directional positions
+
+#### Background Image
+- Upload or set background images that cover the entire viewport
+- Background images are separate from map images
+- Use the gallery to quickly switch between backgrounds
+
+#### Map Name
+- **Rich Text Editor**: Format your map name with colors, fonts, and styling
+- **Visibility Toggle**: Show or hide the map name
+- **Position Options**: Center (with fade on zoom) or corner positions
+- **Fade Animation**: Smooth fade out when zooming in
+
+#### Edit Mode
+- **Toggle Edit Mode**: Enable or disable editing capabilities
+- **Presentation Mode**: Disable editing for view-only access
+- **Context Menu Control**: When disabled, right-click context menus are disabled
+- **Persistent Setting**: Your preference is saved across sessions
+
 ### Prominence System
 
 - **Set Visibility Ranges**: Configure lower and upper prominence bounds for elements
@@ -293,6 +361,18 @@ The application uses JSON files for data persistence:
 - `public/locations.json` - Location data
 - `public/regions.json` - Region data
 - `public/types.json` - Type definitions
+- `public/settings.json` - Map settings and preferences (automatically managed)
+
+### Settings Persistence
+
+The application automatically saves and restores user preferences including:
+- Map image settings (image, roundness, scale, size, position)
+- Background image settings
+- Map name content and display settings
+- Edit mode toggle state
+- Image gallery (user-uploaded images)
+
+All settings are persisted across browser sessions and automatically loaded when the application starts.
 
 ### Migration Scripts
 
@@ -303,7 +383,19 @@ npm run migrate-locations
 
 ## Recent Updates
 
-### v0.1.0+ (Current)
+### v0.2.0+ (Current)
+- **General Settings Panel**: Comprehensive settings interface with slide-in panel design
+- **Map Image Customization**: Full control over map image with upload, URL, and gallery options
+- **Dynamic Map Sizing**: Cover, contain, auto, and custom dimension options with aspect ratio locking
+- **Background Image System**: Separate background image controls with viewport coverage
+- **Rich Text Map Name**: Advanced map name editor with formatting, positioning, and fade animations
+- **Edit Mode Toggle**: Enable/disable editing capabilities for presentation and view-only modes
+- **Settings Persistence**: Automatic saving and restoration of all user preferences
+- **Image Upload System**: Server-side image upload with gallery management
+- **Enhanced Error Handling**: Robust error handling for settings API with fallback defaults
+- **Click Outside to Close**: Intuitive panel interaction with backdrop click detection
+
+### v0.1.0+ (Previous)
 - **Enhanced Prominence System**: Replaced single prominence values with ranges (lower/upper bounds)
 - **Advanced Label Positioning**: 9-directional label placement with customizable offsets
 - **Label Collision Management**: Three strategies for handling overlapping labels

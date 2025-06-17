@@ -18,6 +18,8 @@ export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
     setMapNameSettings,
     backgroundImage,
     setBackgroundImage,
+    backgroundColor,
+    setBackgroundColor,
     imageGallery,
     addToImageGallery,
     editMode,
@@ -91,6 +93,7 @@ export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
         const data = await response.json();
         const imageUrl = data.url;
         setBackgroundImage(imageUrl);
+        setBackgroundColor('#000000'); // Reset to default to use image
         addToImageGallery(imageUrl);
       } else {
         console.error('Upload failed');
@@ -106,6 +109,7 @@ export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
   const handleBgUrlSubmit = () => {
     if (bgUrlInput.trim()) {
       setBackgroundImage(bgUrlInput.trim());
+      setBackgroundColor('#000000'); // Reset to default to use image
       addToImageGallery(bgUrlInput.trim());
       setBgUrlInput('');
       setShowBgUrlDialog(false);
@@ -331,6 +335,31 @@ export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="panel-section">
+          <label>Map Image Border</label>
+          <div className="input-row">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={mapImageSettings.showBorder}
+                onChange={(e) => updateMapImageSettings({ showBorder: e.target.checked })}
+              />
+              <span>Show border</span>
+            </label>
+          </div>
+          {mapImageSettings.showBorder && (
+            <div className="input-row">
+              <label>Border Color:</label>
+              <input
+                type="color"
+                value={mapImageSettings.borderColor}
+                onChange={(e) => updateMapImageSettings({ borderColor: e.target.value })}
+                title="Border Color"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="panel-section">
           <label>Map scale (km per pixel)</label>
           <input
             type="range"
@@ -345,7 +374,7 @@ export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
 
         {/* Background Image Settings */}
         <div className="panel-section">
-          <label>Background Image</label>
+          <label>Background</label>
           <div className="input-row">
             <button 
               title="Upload" 
@@ -360,6 +389,21 @@ export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
             <button title="Pick from gallery" onClick={() => setShowBgGallery(v => !v)}>
               <FaRegImages />
             </button>
+            <input
+              type="color"
+              value={backgroundColor}
+              onChange={(e) => setBackgroundColor(e.target.value)}
+              title="Background Color"
+              style={{
+                width: '32px',
+                height: '32px',
+                padding: '0',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                backgroundColor: backgroundColor
+              }}
+            />
           </div>
           <input
             ref={bgFileInputRef}
@@ -386,11 +430,41 @@ export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
           {showBgGallery && (
             <div className="gallery">
               {imageGallery.map((img, i) => (
-                <img key={i} src={img} alt="gallery" className="gallery-img" onClick={() => setBackgroundImage(img)} />
+                <img 
+                  key={i} 
+                  src={img} 
+                  alt="gallery" 
+                  className="gallery-img" 
+                  onClick={() => {
+                    setBackgroundImage(img);
+                    setBackgroundColor('#000000'); // Reset to default to use image
+                  }} 
+                />
               ))}
             </div>
           )}
-          {backgroundImage && <img src={backgroundImage} alt="Selected background" className="selected-img" />}
+          
+          {/* Show selected background (image or color) */}
+          {backgroundColor && backgroundColor !== '#000000' ? (
+            <div className="selected-background">
+              <div 
+                className="selected-color-preview" 
+                style={{ 
+                  backgroundColor: backgroundColor,
+                  width: '100px',
+                  height: '100px',
+                  borderRadius: '12px',
+                  border: '2px solid #2563eb',
+                  marginTop: '8px'
+                }}
+              />
+              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', marginTop: '4px', display: 'block' }}>
+                Using background color: {backgroundColor}
+              </span>
+            </div>
+          ) : (
+            backgroundImage && <img src={backgroundImage} alt="Selected background" className="selected-img" />
+          )}
         </div>
       </div>
     </div>

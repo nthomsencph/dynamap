@@ -420,31 +420,33 @@ export default function Map() {
                 onCancel={handleDrawingCancel}
             />
 
-            {/* Settings Icon Button */}
-            <button
-                className="settings-fab"
-                style={{
-                    position: 'fixed',
-                    bottom: 24,
-                    right: 24,
-                    zIndex: 10000,
-                    background: '#222',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: 48,
-                    height: 48,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    cursor: 'pointer',
-                }}
-                onClick={() => setShowSettings(true)}
-                title="General settings"
-            >
-                <FaCog size={24} />
-            </button>
+            {/* Settings Icon Button - Only show when fully zoomed out */}
+            {currentZoom === fitZoom && (
+                <button
+                    className="settings-fab"
+                    style={{
+                        position: 'fixed',
+                        bottom: 24,
+                        right: 24,
+                        zIndex: 10000,
+                        background: '#222',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: 32,
+                        height: 32,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        cursor: 'pointer',
+                    }}
+                    onClick={() => setShowSettings(true)}
+                    title="General settings"
+                >
+                    <FaCog size={16} />
+                </button>
+            )}
 
             {showSettings && (
                 <GeneralSettingsPanel onClose={() => setShowSettings(false)} />

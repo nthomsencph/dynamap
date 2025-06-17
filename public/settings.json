@@ -1,24 +1,27 @@
 {
   "mapImageRoundness": 100,
+  "mapScale": 17.4,
   "mapImage": "/media/map.jpg",
-  "backgroundImage": "/media/parchment.jpeg",
-  "mapScale": 20,
-  "imageGallery": [
-    "/media/map.jpg",
-    "/media/parchment.jpeg",
-    "/media/404.jpeg"
-  ],
   "mapImageSettings": {
     "size": "contain",
     "position": "center",
     "customWidth": 4000,
     "customHeight": 3000,
-    "lockAspectRatio": true
+    "lockAspectRatio": true,
+    "showBorder": false,
+    "borderColor": "#000000"
   },
   "mapNameSettings": {
-    "content": "<p>POW map!</p>",
+    "content": "<p>A whole new world</p>",
     "show": true,
     "position": "center"
   },
+  "backgroundImage": "/media/parchment.jpeg",
+  "backgroundColor": "#000000",
+  "imageGallery": [
+    "/media/map.jpg",
+    "/media/parchment.jpeg",
+    "/media/404.jpeg"
+  ],
   "editMode": true
 }

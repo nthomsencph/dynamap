@@ -3,9 +3,16 @@ import { useMapSettings } from '../panels/MapSettingsContext';
 import { useEffect, useState } from 'react';
 
 export function MapImage() {
-  const { mapImage, mapImageSettings } = useMapSettings();
+  const { mapImage, mapImageSettings, mapImageRoundness } = useMapSettings();
   const [imageBounds, setImageBounds] = useState<[[number, number], [number, number]]>([[0, 0], [2000, 2000]]);
   const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Update CSS custom property for border color
+  useEffect(() => {
+    if (mapImageSettings.showBorder) {
+      document.documentElement.style.setProperty('--map-border-color', mapImageSettings.borderColor);
+    }
+  }, [mapImageSettings.showBorder, mapImageSettings.borderColor]);
 
   // Calculate bounds based on settings
   useEffect(() => {
@@ -121,12 +128,15 @@ export function MapImage() {
     return null; // Don't render until image is loaded and bounds are calculated
   }
   
+  // Create dynamic CSS class name based on border settings
+  const borderClass = mapImageSettings.showBorder ? 'map-image-with-border' : 'map-image-no-border';
+  
   return (
     <ImageOverlay
       url={mapImage}
       bounds={imageBounds}
       zIndex={1}
-      className="rounded-map"
+      className={`rounded-map ${borderClass}`}
       crossOrigin="anonymous"
       opacity={1}
       interactive={false}
