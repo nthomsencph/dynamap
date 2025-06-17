@@ -40,7 +40,6 @@ export function usePolygonDraw(
 
   // Cleanup function - more Leaflet-native approach
   const cleanupDrawControl = useCallback(() => {
-    console.log('cleanupDrawControl called');
     const map = mapRef.current;
     const drawControl = drawControlRef.current;
     const featureGroup = featureGroupRef.current;
@@ -72,7 +71,6 @@ export function usePolygonDraw(
 
   // Start drawing mode with all native tools enabled
   const startDrawing = useCallback(() => {
-    console.log('startDrawing called, isDrawing:', isDrawing);
     const map = mapRef.current;
     if (!map) return;
 
@@ -134,16 +132,11 @@ export function usePolygonDraw(
       console.log('Setting up draw event listeners');
 
       const handleDrawCreated = (e: L.LeafletEvent) => {
-        console.log('draw:created event fired', e);
         const layer = (e as any).layer;
         const layerType = (e as any).layerType;
         
-        console.log('Layer type:', layerType);
-        console.log('Layer:', layer);
-        
         // Only handle supported layer types
         if (!['polygon', 'circle', 'rectangle', 'polyline'].includes(layerType)) {
-          console.log('Unsupported layer type, ignoring');
           return;
         }
 
@@ -155,15 +148,23 @@ export function usePolygonDraw(
               const latlngs = (layer as L.Polygon).getLatLngs()[0] as L.LatLng[];
               const points = latlngs.map(latlng => [latlng.lat, latlng.lng] as [number, number]);
               result = { type: 'polygon', points };
-              console.log('Polygon result:', result);
               break;
-            case 'circle':
+            case 'circle': {
               const circle = layer as L.Circle;
-              const center = [circle.getLatLng().lat, circle.getLatLng().lng] as [number, number];
-              const radius = circle.getRadius();
-              result = { type: 'circle', points: [center], center, radius };
-              console.log('Circle result:', result);
+              const center = circle.getLatLng();
+              const radius = circle.getRadius(); // In map units for custom CRS
+              const numPoints = 32;
+              const points: [number, number][] = [];
+              for (let i = 0; i < numPoints; i++) {
+                const angle = (2 * Math.PI * i) / numPoints;
+                const lat = center.lat + radius * Math.sin(angle);
+                const lng = center.lng + radius * Math.cos(angle);
+                points.push([lat, lng]);
+              }
+              points.push(points[0]); // close the polygon
+              result = { type: 'circle', points };
               break;
+            }
             case 'rectangle':
               const rectangle = layer as L.Rectangle;
               const bounds = rectangle.getBounds();
@@ -172,43 +173,35 @@ export function usePolygonDraw(
                 [bounds.getNorthEast().lat, bounds.getNorthEast().lng]
               ];
               result = { type: 'rectangle', points: rectPoints, bounds: [rectPoints[0], rectPoints[1]] };
-              console.log('Rectangle result:', result);
               break;
             case 'polyline':
               const polyline = layer as L.Polyline;
               const polylineLatlngs = polyline.getLatLngs() as L.LatLng[];
               const polylinePoints = polylineLatlngs.map(latlng => [latlng.lat, latlng.lng] as [number, number]);
               result = { type: 'polyline', points: polylinePoints };
-              console.log('Polyline result:', result);
               break;
             default:
-              console.log('Unknown layer type, returning');
               return;
           }
           
           // Remove the drawn layer from the feature group
           const featureGroup = featureGroupRef.current;
           if (featureGroup) {
-            console.log('Removing layer from feature group');
             featureGroup.removeLayer(layer);
           }
           
-          console.log('Calling onComplete with result:', result);
           // Call onComplete with the result - this should open the RegionDialog
           onCompleteRef.current(result);
           
-          console.log('Cleaning up draw control');
           // Clean up the drawing mode after calling onComplete
           cleanupDrawControl();
         } catch (error) {
-          console.error('Error handling draw created event:', error);
           // Only cleanup on error
           cleanupDrawControl();
         }
       };
 
       const handleDrawStop = () => {
-        console.log('draw:drawstop event fired');
         // No-op: do not call stopDrawing here, as it causes drawing mode to close immediately after starting
       };
 
@@ -223,7 +216,6 @@ export function usePolygonDraw(
 
   // Stop drawing mode
   const stopDrawing = useCallback(() => {
-    console.log('[DRAWING_MODE] stopDrawing called');
     const map = mapRef.current;
     
     // Remove event listeners if they exist

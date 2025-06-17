@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useMap } from 'react-leaflet';
 import '@/css/ui/scale-bar.css';
+import { useMapSettings } from '../panels/MapSettingsContext';
 
 const BASE_PIXELS = 115;
-const BASE_KM = 2000;
 const BASE_ZOOM = -1;
 
 export const ScaleBar: React.FC = () => {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
+  const { mapScale } = useMapSettings();
 
   useEffect(() => {
     const onZoom = () => setZoom(map.getZoom());
@@ -18,7 +19,8 @@ export const ScaleBar: React.FC = () => {
     };
   }, []);
 
-  const km = BASE_KM / Math.pow(2, zoom - BASE_ZOOM);
+  // mapScale is km per pixel at BASE_ZOOM
+  const km = mapScale * BASE_PIXELS / Math.pow(2, zoom - BASE_ZOOM);
 
   return (
     <div className="custom-scale-bar-container">

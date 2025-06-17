@@ -18,6 +18,7 @@ import Dropdown from './Dropdown';
 import { FaFont } from 'react-icons/fa';
 import { BackColor } from './extensions/backgroundColorExtension';
 import { LineHeight } from './extensions/lineHeightExtension';
+import Placeholder from '@tiptap/extension-placeholder';
 
 interface LabelEditorProps {
   value: string;
@@ -26,6 +27,7 @@ interface LabelEditorProps {
   isRegion?: boolean;
   regionArea?: number;
   className?: string;
+  placeholder?: string;
 }
 
 const LabelEditor: React.FC<LabelEditorProps> = ({ 
@@ -34,7 +36,8 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
   text, 
   isRegion = false, 
   regionArea, 
-  className = '' 
+  className = '',
+  placeholder
 }) => {
   const lastTextRef = useRef(text);
 
@@ -52,6 +55,12 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
       TextStyle,
       LineHeight.configure({
         heights: ['50%', '75%', '80%', '100%', '125%', '150%', '175%', '200%']
+      }),
+      Placeholder.configure({
+        placeholder: placeholder || 'Enter text...',
+        emptyEditorClass: 'is-editor-empty',
+        showOnlyWhenEditable: true,
+        showOnlyCurrent: true,
       }),
     ],
     immediatelyRender: false,
@@ -245,10 +254,24 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
           <Dropdown
             icon={<AiOutlineFontSize size={20} style={{ color: '#fff' }} />}
             options={[
+              { label: '8px', value: '8px' },
+              { label: '10px', value: '10px' },
               { label: '12px', value: '12px' },
+              { label: '14px', value: '14px' },
               { label: '16px', value: '16px' },
+              { label: '18px', value: '18px' },
               { label: '20px', value: '20px' },
               { label: '24px', value: '24px' },
+              { label: '28px', value: '28px' },
+              { label: '32px', value: '32px' },
+              { label: '36px', value: '36px' },
+              { label: '40px', value: '40px' },
+              { label: '48px', value: '48px' },
+              { label: '56px', value: '56px' },
+              { label: '64px', value: '64px' },
+              { label: '72px', value: '72px' },
+              { label: '80px', value: '80px' },
+              { label: '96px', value: '96px' },
               ...(isRegion && regionArea != null ? [{ label: 'Area', value: `${getFontSizeForArea(regionArea)}px` }] : [])
             ]}
             selected={undefined}

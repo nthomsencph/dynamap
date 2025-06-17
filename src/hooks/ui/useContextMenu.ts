@@ -24,6 +24,7 @@ interface UseContextMenuProps {
   mapRef: React.RefObject<L.Map>;
   startDrawing: () => void; // Required: polygon drawing is the only way to add regions
   regions: Region[]; // Add regions data for overlapping region detection
+  editMode: boolean; // Whether edit mode is enabled
 }
 
 export function useContextMenu({
@@ -37,6 +38,7 @@ export function useContextMenu({
   mapRef,
   startDrawing,
   regions,
+  editMode,
 }: UseContextMenuProps) {
   const [menu, setMenu] = useState<ContextMenuState>({ 
     open: false, 
@@ -56,6 +58,16 @@ export function useContextMenu({
 
   // Type-safe handlers for different element types
   const handleContextMenu = useCallback((e: React.MouseEvent | L.LeafletMouseEvent) => {
+    // Check if edit mode is disabled - if so, prevent context menu
+    if (!editMode) {
+      if ('preventDefault' in e) {
+        e.preventDefault();
+      } else if ('originalEvent' in e && 'preventDefault' in e.originalEvent) {
+        e.originalEvent.preventDefault();
+      }
+      return;
+    }
+
     // Check if any panels are open - if so, prevent context menu
     if (hasOpenPanels()) {
       if ('preventDefault' in e) {
@@ -81,9 +93,15 @@ export function useContextMenu({
       y: clientY, 
       type: 'map'
     });
-  }, [hasOpenPanels]);
+  }, [hasOpenPanels, editMode]);
 
   const handleLocationContextMenu = useCallback((e: L.LeafletMouseEvent, location: Location) => {
+    // Check if edit mode is disabled - if so, prevent context menu
+    if (!editMode) {
+      e.originalEvent.preventDefault();
+      return;
+    }
+
     // Check if any panels are open - if so, prevent context menu
     if (hasOpenPanels()) {
       e.originalEvent.preventDefault();
@@ -105,9 +123,15 @@ export function useContextMenu({
       type: 'marker',
       location
     });
-  }, [hasOpenPanels]);
+  }, [hasOpenPanels, editMode]);
 
   const handleRegionContextMenu = useCallback((e: L.LeafletMouseEvent, region: Region) => {
+    // Check if edit mode is disabled - if so, prevent context menu
+    if (!editMode) {
+      e.originalEvent.preventDefault();
+      return;
+    }
+
     // Check if any panels are open - if so, prevent context menu
     if (hasOpenPanels()) {
       e.originalEvent.preventDefault();
@@ -147,7 +171,7 @@ export function useContextMenu({
       type: 'marker',
       region: targetRegion
     });
-  }, [hasOpenPanels, regions]);
+  }, [hasOpenPanels, regions, editMode]);
 
   const closeMenu = useCallback(() => {
     setMenu(m => ({ ...m, open: false }));

@@ -4,9 +4,11 @@ import type { RegionDialogProps } from '@/types/dialogs';
 import { DEFAULT_DIALOG_COLORS } from '@/types/dialogs';
 import { BaseDialog } from './BaseDialog';
 import { calculatePolygonAreaKm } from '@/app/utils/area';
+import { useMapSettings } from '../panels/MapSettingsContext';
 import '@/css/dialogs/base-dialog.css';
 
 export function RegionDialog({ open, mode, region, map, onSave, onDelete, onClose }: RegionDialogProps) {
+  const { mapScale } = useMapSettings();
   const validateForm = (form: Partial<Region>): string | null => {
     // Basic required fields
     if (!form.name?.trim()) return 'Please enter a name for the region.';
@@ -18,14 +20,14 @@ export function RegionDialog({ open, mode, region, map, onSave, onDelete, onClos
   const handleSave = (regionToSave: Region) => {
     let area = regionToSave.area;
     if (area === undefined && regionToSave.position && map) {
-      area = calculatePolygonAreaKm(regionToSave.position, map);
+      area = calculatePolygonAreaKm(regionToSave.position, map, mapScale);
     }
     onSave({ ...regionToSave, area });
   };
 
   const regionArea = region?.area !== undefined
     ? region.area
-    : (region?.position && map ? calculatePolygonAreaKm(region.position, map) : undefined);
+    : (region?.position && map ? calculatePolygonAreaKm(region.position, map, mapScale) : undefined);
 
   return (
     <BaseDialog<Region>

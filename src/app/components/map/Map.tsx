@@ -5,6 +5,7 @@ import L from "leaflet";
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import '@luomus/leaflet-smooth-wheel-zoom';
 import React from "react";
+import { FaCog } from 'react-icons/fa';
 
 // Types
 import type { Location } from "@/types/locations";
@@ -25,6 +26,7 @@ import { useRegions } from "@/hooks/elements/useRegions";
 import { useContextMenu } from "@/hooks/ui/useContextMenu";
 import { usePolygonDraw, type DrawingTool, type DrawingResult } from "@/hooks/elements/usePolygonDraw";
 import { usePanelStack, type PanelEntry } from "@/hooks/ui/usePanelStack";
+import { useMapSettings } from '../panels/MapSettingsContext';
 
 // Components
 import { ContextMenu } from "../ui/ContextMenu";
@@ -35,9 +37,11 @@ import { LocationDialog } from "../dialogs/LocationDialog";
 import { RegionDialog } from "../dialogs/RegionDialog";
 import { ConfirmDialog } from "../dialogs/ConfirmDialog";
 import { MapImage } from "./MapImage";
+import { MapName } from "../ui/MapName";
 import { LocationMarkers } from "../markers/LocationMarkers";
 import { RegionMarkers } from "../markers/RegionMarkers";
 import { UnifiedPanel } from "../panels/UnifiedPanel";
+import { GeneralSettingsPanel } from '../panels/GeneralSettingsPanel';
 
 // Styles
 import '@/css/markers/location-label.css';
@@ -45,6 +49,7 @@ import '@/css/ui/move-mode.css';
 
 export default function Map() {
     const mapRef = useRef<L.Map | null>(null);
+    const [leafletMap, setLeafletMap] = useState<L.Map | null>(null);
     const fitZoom = useFitZoom();
     useSmoothWheelZoom(mapRef, 2);
 
@@ -53,6 +58,9 @@ export default function Map() {
     const { regions, addRegion, updateRegion, deleteRegion } = useRegions();
     const locationDialog = useLocationDialog();
     const regionDialog = useRegionDialog();
+    
+    // Map settings
+    const { editMode } = useMapSettings();
     
     // Unified panel stack
     const { currentPanel, pushPanel, popPanel, clearStack, canGoBack } = usePanelStack();
@@ -96,10 +104,12 @@ export default function Map() {
             const radius = result.radius;
             points = Array.from({ length: numPoints }, (_, i) => {
                 const angle = (2 * Math.PI * i) / numPoints;
-                // Approximate: 1 deg lat ~ 111km, 1 deg lng ~ 111km * cos(lat)
-                // But here, just use radius in degrees for simplicity (works for small circles)
-                const dLat = (radius / 111000) * Math.cos(angle); // meters to degrees
-                const dLng = (radius / (111000 * Math.cos(centerLat * Math.PI / 180))) * Math.sin(angle);
+                // For custom coordinate system, use a more appropriate scale factor
+                // Since the radius is in meters but coordinates are in custom units,
+                // we need to scale it appropriately for the map
+                const scaleFactor = 0.1; // Increased scale factor for better visibility
+                const dLat = (radius * scaleFactor) * Math.cos(angle);
+                const dLng = (radius * scaleFactor) * Math.sin(angle);
                 return [centerLat + dLat, centerLng + dLng] as [number, number];
             });
             // Close polygon
@@ -231,6 +241,7 @@ export default function Map() {
         onDeleteRegion: handleDeleteRegion,
         startDrawing: startDrawing,
         regions: regions,
+        editMode: editMode,
     }), [
         handleAddLocation,
         handleEditLocation,
@@ -240,7 +251,8 @@ export default function Map() {
         handleEditRegion,
         handleDeleteRegion,
         startDrawing,
-        regions
+        regions,
+        editMode
     ]);
 
     // Context menu state and handlers
@@ -318,7 +330,7 @@ export default function Map() {
 
     // Zoom effect - debounced to prevent excessive re-renders
     useEffect(() => {
-        const map = mapRef.current;
+        const map = leafletMap;
         if (!map) return;
 
         const onZoomStart = () => {
@@ -327,12 +339,10 @@ export default function Map() {
 
         const onZoom = () => {
             const newZoom = map.getZoom();
-            
             // Clear existing timeout
             if (zoomTimeoutRef.current) {
                 clearTimeout(zoomTimeoutRef.current);
             }
-            
             // Debounce zoom updates
             zoomTimeoutRef.current = setTimeout(() => {
                 setCurrentZoom(newZoom);
@@ -341,18 +351,25 @@ export default function Map() {
 
         const onZoomEnd = () => {
             setIsZooming(false);
+            // If at minimum zoom (within threshold), smoothly recenter to MAP_CENTER if not already there
+            const zoomThreshold = 0.05;
+            if (Math.abs(map.getZoom() - fitZoom) < zoomThreshold) {
+                const threshold = 1e-6;
+                if (
+                    Math.abs(map.getCenter().lat - MAP_CENTER[0]) > threshold ||
+                    Math.abs(map.getCenter().lng - MAP_CENTER[1]) > threshold
+                ) {
+                    map.flyTo(MAP_CENTER, fitZoom, { animate: true, duration: 1 });
+                }
+            }
         };
 
         const onMove = () => {
             const center = map.getCenter();
         };
 
-        const onMoveStart = () => {
-        };
-
-        const onMoveEnd = () => {
-            const center = map.getCenter();
-        };
+        const onMoveStart = () => {};
+        const onMoveEnd = () => {};
 
         map.on('zoomstart', onZoomStart);
         map.on('zoom', onZoom);
@@ -360,7 +377,6 @@ export default function Map() {
         map.on('move', onMove);
         map.on('movestart', onMoveStart);
         map.on('moveend', onMoveEnd);
-        
         // Set initial zoom
         setCurrentZoom(map.getZoom());
 
@@ -371,18 +387,31 @@ export default function Map() {
             map.off('move', onMove);
             map.off('movestart', onMoveStart);
             map.off('moveend', onMoveEnd);
-            
             // Clear timeout on cleanup
             if (zoomTimeoutRef.current) {
                 clearTimeout(zoomTimeoutRef.current);
             }
         };
-    }, []);
+    }, [fitZoom, leafletMap]);
+
+    const [showSettings, setShowSettings] = useState(false);
+    const { mapImageRoundness } = useMapSettings();
+
+    useEffect(() => {
+        const percent = mapImageRoundness / 2;
+        const style = document.createElement('style');
+        style.id = 'dynamic-map-roundness';
+        style.innerHTML = `.leaflet-image-layer { border-radius: ${percent}% !important; }`;
+        const prev = document.getElementById('dynamic-map-roundness');
+        if (prev) prev.remove();
+        document.head.appendChild(style);
+        return () => { style.remove(); };
+    }, [mapImageRoundness]);
 
     return (
         <div 
             style={{ width: '100vw', height: '100vh', position: 'relative' }} 
-            onContextMenu={handleContextMenu}
+            onContextMenu={editMode ? handleContextMenu : (e) => e.preventDefault()}
         >
             {/* Drawing Mode Banner */}
             <DrawingModeBanner
@@ -390,6 +419,36 @@ export default function Map() {
                 currentTool={currentTool}
                 onCancel={handleDrawingCancel}
             />
+
+            {/* Settings Icon Button */}
+            <button
+                className="settings-fab"
+                style={{
+                    position: 'fixed',
+                    bottom: 24,
+                    right: 24,
+                    zIndex: 10000,
+                    background: '#222',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: 48,
+                    height: 48,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    cursor: 'pointer',
+                }}
+                onClick={() => setShowSettings(true)}
+                title="General settings"
+            >
+                <FaCog size={24} />
+            </button>
+
+            {showSettings && (
+                <GeneralSettingsPanel onClose={() => setShowSettings(false)} />
+            )}
 
             <MapContainer
                 center={MAP_CENTER}
@@ -403,10 +462,12 @@ export default function Map() {
                 preferCanvas={true}
                 renderer={L.canvas()}
                 scrollWheelZoom={false}
+                whenReady={((event: { target: L.Map }) => setLeafletMap(event.target)) as any}
             >
                 <ScaleBar />
                 <ProminenceLevel />
                 <MapImage />
+                <MapName />
                 <RegionMarkers
                     regions={regions}
                     currentZoom={currentZoom}
@@ -483,4 +544,3 @@ export default function Map() {
         </div>
     );
 }
-  

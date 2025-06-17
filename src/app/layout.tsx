@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '@/css/globals.css';
+import { MapSettingsProvider } from './components/panels/MapSettingsContext';
+import { BackgroundImage } from './components/ui/BackgroundImage';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +31,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <MapSettingsProvider>
+          <BackgroundImage />
+          {children}
+        </MapSettingsProvider>
         <ToastContainer
           position="bottom-right"
           autoClose={5000}
