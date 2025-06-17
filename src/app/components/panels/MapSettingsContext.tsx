@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 
 interface MapImageSettings {
   size: 'cover' | 'contain' | 'auto' | 'custom';
@@ -16,6 +16,12 @@ interface MapNameSettings {
   content: string;
   show: boolean;
   position: 'center' | 'top-left' | 'top-right' | 'bottom-right' | 'bottom-left';
+}
+
+interface FogOfWarReveal {
+  x: number;
+  y: number;
+  radius: number;
 }
 
 interface MapSettingsContextType {
@@ -37,6 +43,12 @@ interface MapSettingsContextType {
   addToImageGallery: (url: string) => void;
   editMode: boolean;
   setEditMode: (v: boolean) => void;
+  fogOfWarEnabled: boolean;
+  setFogOfWarEnabled: (v: boolean) => void;
+  fogOfWarReveals: FogOfWarReveal[];
+  setFogOfWarReveals: (r: FogOfWarReveal[]) => void;
+  fogOfWarEditMode: boolean;
+  setFogOfWarEditMode: (v: boolean) => void;
 }
 
 const MapSettingsContext = createContext<MapSettingsContextType | undefined>(undefined);
@@ -67,6 +79,9 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
     '/media/404.jpeg',
   ]);
   const [editMode, setEditMode] = useState(true);
+  const [fogOfWarEnabled, setFogOfWarEnabled] = useState(false);
+  const [fogOfWarReveals, setFogOfWarReveals] = useState<FogOfWarReveal[]>([]);
+  const [fogOfWarEditMode, setFogOfWarEditMode] = useState(false);
 
   const addToImageGallery = (url: string) => {
     if (!imageGallery.includes(url)) {
@@ -94,6 +109,8 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
         if (typeof data.backgroundColor === 'string') setBackgroundColor(data.backgroundColor);
         if (Array.isArray(data.imageGallery)) setImageGallery(data.imageGallery);
         if (typeof data.editMode === 'boolean') setEditMode(data.editMode);
+        if (typeof data.fogOfWarEnabled === 'boolean') setFogOfWarEnabled(data.fogOfWarEnabled);
+        if (Array.isArray(data.fogOfWarReveals)) setFogOfWarReveals(data.fogOfWarReveals);
       })
       .catch(error => {
         console.error('MapSettings: Error loading settings:', error);
@@ -101,36 +118,46 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
       });
   }, []);
 
-  // Save changes to API
+  // Debounced save to API
+  const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
-    fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        mapImageRoundness, 
-        mapScale, 
-        mapImage, 
-        mapImageSettings,
-        mapNameSettings,
-        backgroundImage, 
-        backgroundColor,
-        imageGallery,
-        editMode
-      }),
-    })
-    .then(res => {
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      return res.json();
-    })
-    .then(data => {
-      console.log('MapSettings: Settings saved successfully:', data);
-    })
-    .catch(error => {
-      console.error('MapSettings: Error saving settings:', error);
-    });
-  }, [mapImageRoundness, mapScale, mapImage, mapImageSettings, mapNameSettings, backgroundImage, backgroundColor, imageGallery, editMode]);
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          mapImageRoundness, 
+          mapScale, 
+          mapImage, 
+          mapImageSettings,
+          mapNameSettings,
+          backgroundImage, 
+          backgroundColor,
+          imageGallery,
+          editMode,
+          fogOfWarEnabled,
+          fogOfWarReveals
+        }),
+      })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        console.log('MapSettings: Settings saved successfully:', data);
+      })
+      .catch(error => {
+        console.error('MapSettings: Error saving settings:', error);
+      });
+    }, 500);
+    return () => {
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    };
+  }, [mapImageRoundness, mapScale, mapImage, mapImageSettings, mapNameSettings, backgroundImage, backgroundColor, imageGallery, editMode, fogOfWarEnabled, fogOfWarReveals]);
 
   return (
     <MapSettingsContext.Provider value={{ 
@@ -151,7 +178,13 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
       imageGallery,
       addToImageGallery,
       editMode,
-      setEditMode
+      setEditMode,
+      fogOfWarEnabled,
+      setFogOfWarEnabled,
+      fogOfWarReveals,
+      setFogOfWarReveals,
+      fogOfWarEditMode,
+      setFogOfWarEditMode
     }}>
       {children}
     </MapSettingsContext.Provider>

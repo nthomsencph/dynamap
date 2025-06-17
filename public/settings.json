@@ -1,5 +1,5 @@
 {
-  "mapImageRoundness": 100,
+  "mapImageRoundness": 26,
   "mapScale": 17.4,
   "mapImage": "/media/map.jpg",
   "mapImageSettings": {
@@ -12,8 +12,8 @@
     "borderColor": "#000000"
   },
   "mapNameSettings": {
-    "content": "<p>A whole new world</p>",
-    "show": true,
+    "content": "",
+    "show": false,
     "position": "center"
   },
   "backgroundImage": "/media/parchment.jpeg",
@@ -23,5 +23,8 @@
     "/media/parchment.jpeg",
     "/media/404.jpeg"
   ],
-  "editMode": true
+  "editMode": true,
+  "fogOfWarEnabled": false,
+  "fogOfWarReveals": [
+  ]
 }

@@ -23,7 +23,11 @@ export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
     imageGallery,
     addToImageGallery,
     editMode,
-    setEditMode
+    setEditMode,
+    fogOfWarEnabled,
+    setFogOfWarEnabled,
+    fogOfWarEditMode,
+    setFogOfWarEditMode
   } = useMapSettings();
   const [showMapGallery, setShowMapGallery] = React.useState(false);
   const [showBgGallery, setShowBgGallery] = React.useState(false);
@@ -464,6 +468,45 @@ export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             backgroundImage && <img src={backgroundImage} alt="Selected background" className="selected-img" />
+          )}
+        </div>
+
+        {/* Fog of War Settings */}
+        <div className="panel-section">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={fogOfWarEnabled}
+              onChange={e => setFogOfWarEnabled(e.target.checked)}
+            />
+            <span>Enable Fog of War</span>
+          </label>
+          <small style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '4px' }}>
+            When enabled, the map will be covered by a dark fog. Use the edit mode to reveal areas for players.
+          </small>
+          {fogOfWarEnabled && (
+            <button
+              style={{
+                marginTop: '10px',
+                background: fogOfWarEditMode ? '#2563eb' : 'rgba(255,255,255,0.1)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
+              onClick={() => {
+                if (!fogOfWarEditMode) {
+                  setFogOfWarEditMode(true);
+                  if (onClose) onClose(); // Close panel when entering edit mode
+                } else {
+                  setFogOfWarEditMode(false);
+                }
+              }}
+            >
+              {fogOfWarEditMode ? 'Exit Fog of War Edit Mode' : 'Edit Fog of War'}
+            </button>
           )}
         </div>
       </div>
