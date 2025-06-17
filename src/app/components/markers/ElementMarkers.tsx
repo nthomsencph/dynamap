@@ -5,7 +5,6 @@ import { MapElement } from '@/types/elements';
 import { calculatePolygonCenter } from '@/app/utils/area';
 import { shouldShowElement } from '@/app/utils/zoom';
 import type { PanelEntry } from '@/hooks/ui/usePanelStack';
-import { useLabelCollisionHandling } from '@/hooks/ui/useLabelCollisionHandling';
 
 // Navigation type for panels
 export type ElementType = 'location' | 'region';
@@ -85,26 +84,25 @@ export class MarkerErrorBoundary extends React.Component<
   }
 }
 
-export function ElementMarkers<T extends MapElement, U extends MapElement = T>({
-  elements,
-  currentZoom,
-  fitZoom,
-  onContextMenu,
-  panelWidth = 450,
-  currentPanel,
-  getId = (element: T) => element.id,
-  shouldShow = (element: T, currentZoom: number, fitZoom: number) => 
-    shouldShowElement(element.prominence, currentZoom, fitZoom),
-  getPosition = (element: T) => {
-    const pos = element.position;
-    return Array.isArray(pos[0]) 
-      ? calculatePolygonCenter(pos as [number, number][])
-      : pos as [number, number];
-  },
-  onElementClick,
-  renderMarker,
-  onOtherElementClick,
-}: ElementMarkersProps<T, U>) {
+export function ElementMarkers<T extends MapElement, U extends MapElement = T>(props: ElementMarkersProps<T, U>) {
+  const {
+    elements,
+    currentZoom,
+    fitZoom,
+    onContextMenu,
+    panelWidth = 450,
+    currentPanel,
+    getId = (element: T) => element.id,
+    shouldShow = (element: T, currentZoom: number, fitZoom: number) => shouldShowElement(element.prominence, currentZoom, fitZoom),
+    getPosition = (element: T) => {
+      const pos = element.position;
+      return Array.isArray(pos[0]) ? calculatePolygonCenter(pos as [number, number][]) : pos as [number, number];
+    },
+    onElementClick,
+    renderMarker,
+    onOtherElementClick,
+  } = props;
+
   const [previousMapCenter, setPreviousMapCenter] = useState<[number, number] | null>(null);
   const [isZooming, setIsZooming] = useState(false);
   const [lastStableZoom, setLastStableZoom] = useState(currentZoom);
@@ -205,8 +203,7 @@ export function ElementMarkers<T extends MapElement, U extends MapElement = T>({
         <React.Fragment key={getId(el)}>
           {renderMarker(el, {
             onClick: () => {
-              const elementType: ElementType = Array.isArray(el.position[0]) ? 'region' : 'location';
-              handleElementClick(el, elementType);
+              handleElementClick(el, el.elementType);
             },
             onContextMenu: (e: L.LeafletMouseEvent) => handleContextMenu(e, el),
             markerRef: (marker: any) => {

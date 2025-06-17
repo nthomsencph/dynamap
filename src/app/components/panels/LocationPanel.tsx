@@ -31,14 +31,7 @@ export function LocationPanel({
     (region: MapElement) => onRegionClick?.(region as Region),
     [onRegionClick]
   );
-
-  // Debug logging for containingRegions and current location
-  console.log(
-    "DEBUG: containingRegions in LocationPanel",
-    containingRegions?.map(r => ({ id: r.id, name: r.name }))
-  );
-  console.log("DEBUG: current location", { id: location.id, name: location.name });
-
+  
   return (
     <BasePanel
       element={location}

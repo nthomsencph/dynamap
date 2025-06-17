@@ -13,6 +13,7 @@ export function useRegions() {
       const response = await fetch('/api/regions');
       if (!response.ok) throw new Error('Failed to fetch regions');
       const data = await response.json();
+      
       // Combine state updates to reduce re-renders
       setRegions(data);
       setLoading(false);
@@ -28,21 +29,17 @@ export function useRegions() {
   }, []);
 
   // Add a new region
-  const addRegion = useCallback(async (region: Omit<Region, 'id'>) => {
-    try {
-      const response = await fetch('/api/regions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...region, id: crypto.randomUUID() }),
-      });
-      if (!response.ok) throw new Error('Failed to add region');
-      const newRegion = await response.json();
-      setRegions(prev => [...prev, newRegion]);
-      return newRegion;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add region');
-      throw err;
-    }
+  const addRegion = useCallback(async (region: Region) => {
+    const response = await fetch('/api/regions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(region),
+    });
+
+    if (!response.ok) throw new Error('Failed to add region');
+    const newRegion = await response.json();
+    setRegions(prev => [...prev, newRegion]);
+    return newRegion;
   }, []);
 
   // Update an existing region

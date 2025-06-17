@@ -8,11 +8,15 @@ import '@/css/dialogs/base-dialog.css';
 
 export function LocationDialog({ open, mode, location, onSave, onDelete, onClose }: LocationDialogProps) {
   const validateForm = (form: Partial<Location>): string | null => {
-    const requiredFields = ['name', 'type', 'position', 'color', 'icon'] as const;
-    for (const key of requiredFields) {
-      if (!form[key]?.toString().trim()) {
-        return `${key.charAt(0).toUpperCase() + key.slice(1)} is required`;
-      }
+    // Check required text fields
+    if (!form.name?.toString().trim()) {
+      return 'Name is required';
+    }
+    if (!form.type?.toString().trim()) {
+      return 'Type is required';
+    }
+    if (!form.position) {
+      return 'Position is required';
     }
     return null;
   };

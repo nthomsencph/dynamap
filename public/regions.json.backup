@@ -37,8 +37,7 @@
     "prominence": {
       "lower": 0,
       "upper": 5
-    },
-    "elementType": "region"
+    }
   },
   {
     "color": "#2563eb",
@@ -80,7 +79,6 @@
     "type": "Island",
     "label": "Another region",
     "id": "1bda9efb-6200-42d4-a2b3-78854789aacc",
-    "area": 2311682.419659735,
-    "elementType": "region"
+    "area": 2311682.419659735
   }
 ]

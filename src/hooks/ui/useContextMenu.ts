@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
 import L from 'leaflet';
+import { findContainingRegions } from '@/app/utils/containment';
 
 interface ContextMenuState {
   open: boolean;
@@ -22,6 +23,7 @@ interface UseContextMenuProps {
   onDeleteRegion: (region: Region) => void;
   mapRef: React.RefObject<L.Map>;
   startDrawing: () => void; // Required: polygon drawing is the only way to add regions
+  regions: Region[]; // Add regions data for overlapping region detection
 }
 
 export function useContextMenu({
@@ -34,6 +36,7 @@ export function useContextMenu({
   onDeleteRegion,
   mapRef,
   startDrawing,
+  regions,
 }: UseContextMenuProps) {
   const [menu, setMenu] = useState<ContextMenuState>({ 
     open: false, 
@@ -119,14 +122,32 @@ export function useContextMenu({
     const clientX = e.originalEvent.clientX;
     const clientY = e.originalEvent.clientY;
     
+    // Find all regions containing this right-click point
+    const clickPoint: [number, number] = [e.latlng.lat, e.latlng.lng];
+    const allContainingRegions = findContainingRegions(clickPoint, regions);
+    
+    let targetRegion = region; // Default to the clicked region
+    
+    if (allContainingRegions.length > 0) {
+      // Find the smallest containing region (first in the sorted list)
+      targetRegion = allContainingRegions[0];
+      
+      console.log('🔍 useContextMenu: Context menu for overlapping regions:', {
+        clickPoint,
+        clickedRegion: { id: region.id, name: region.name },
+        smallestRegion: { id: targetRegion.id, name: targetRegion.name },
+        allContainingRegions: allContainingRegions.map(r => ({ id: r.id, name: r.name, area: r.area }))
+      });
+    }
+    
     setMenu({ 
       open: true, 
       x: clientX, 
       y: clientY, 
       type: 'marker',
-      region
+      region: targetRegion
     });
-  }, [hasOpenPanels]);
+  }, [hasOpenPanels, regions]);
 
   const closeMenu = useCallback(() => {
     setMenu(m => ({ ...m, open: false }));

@@ -23,4 +23,5 @@ export interface Region extends MapElement {
   showBorder: boolean;
   showHighlight: boolean;  // Whether to show the area fill
   area?: number;  // Calculated area of the region in square pixels
+  areaFadeDuration?: number;  // Duration in milliseconds for the fade-in animation (default: 800)
 } 

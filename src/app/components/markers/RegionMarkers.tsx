@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Polygon, Marker, useMap } from "react-leaflet";
 import L from 'leaflet';
 import type { Region } from "@/types/regions";
@@ -8,6 +8,7 @@ import { findContainingRegions } from '@/app/utils/containment';
 import { ElementMarkers, MarkerErrorBoundary } from './ElementMarkers';
 import type { PanelEntry } from '@/hooks/ui/usePanelStack';
 import { calculatePolygonCenter } from '@/app/utils/area';
+import { calculateLabelOffset, applyLabelOffset } from '@/app/utils/labelAlignment';
 
 // Import region label styles
 import '@/css/markers/region-label.css';
@@ -17,7 +18,7 @@ const regionLabelIconCache = new Map<string, L.DivIcon>();
 
 function createRegionLabelDivIcon(region: Region) {
   // Create a cache key
-  const cacheKey = `region-label-${region.id}-${region.label || ''}-${region.labelCollisionStrategy || 'None'}`;
+  const cacheKey = `region-label-${region.id}-${region.label || ''}`;
   
   // Return cached icon if it exists
   if (regionLabelIconCache.has(cacheKey)) {
@@ -29,7 +30,6 @@ function createRegionLabelDivIcon(region: Region) {
     html: `<div
       class="map-label region-label"
       id="${region.id}"
-      data-collision-strategy="${region.labelCollisionStrategy || 'None'}"
       style="pointer-events: none;"
     >${region.label || ''}</div>`,
     iconSize: [1, 1],
@@ -61,12 +61,188 @@ function RegionMarkersComponent({
   panelWidth = 450
 }: RegionMarkersProps) {
   const map = useMap();
+  const [zoom, setZoom] = useState(map.getZoom());
+  const [fadeInRegions, setFadeInRegions] = useState<Set<string>>(new Set());
+  const [regionOpacities, setRegionOpacities] = useState<Record<string, number>>({});
+  const polygonRefs = useRef<Record<string, L.Polygon | null>>({});
+
+  // Initial fade-in for all regions on mount
+  useEffect(() => {
+    if (regions.length > 0 && fadeInRegions.size === 0) {
+      // Add all regions to fade-in set
+      const allRegionIds = new Set(regions.map(r => r.id));
+      setFadeInRegions(allRegionIds);
+      
+      // Initialize all regions with 0 opacity
+      const initialOpacities: Record<string, number> = {};
+      regions.forEach(region => {
+        initialOpacities[region.id] = 0;
+      });
+      setRegionOpacities(initialOpacities);
+
+      // Animate each region
+      regions.forEach(region => {
+        const fadeDuration = region.areaFadeDuration ?? 800;
+        const steps = 10;
+        const stepDuration = fadeDuration / steps;
+        const opacityStep = 0.8 / steps;
+
+        let currentStep = 0;
+        const fadeInterval = setInterval(() => {
+          currentStep++;
+          const currentOpacity = Math.min(currentStep * opacityStep, 0.8);
+          
+          setRegionOpacities(prev => ({
+            ...prev,
+            [region.id]: currentOpacity
+          }));
+
+          if (currentStep >= steps) {
+            clearInterval(fadeInterval);
+          }
+        }, stepDuration);
+      });
+    }
+  }, [regions, fadeInRegions.size]);
+
+  useEffect(() => {
+    const onZoom = () => {
+      const newZoom = map.getZoom();
+      setZoom(newZoom);
+    };
+    map.on('zoom', onZoom);
+    setZoom(map.getZoom());
+    return () => {
+      map.off('zoom', onZoom);
+    };
+  }, [map]);
+
+  // Handle fade-in effect when zoom ends
+  useEffect(() => {
+    const handleZoomStart = () => {
+      // Clear fade-in state when zoom starts
+      setFadeInRegions(new Set());
+      setRegionOpacities({});
+    };
+
+    const handleZoomEnd = () => {
+      // Start fade-in animation for all visible regions
+      const visibleRegionIds = new Set(regions.map(r => r.id));
+      setFadeInRegions(visibleRegionIds);
+      
+      // Initialize all regions with 0 opacity
+      const initialOpacities: Record<string, number> = {};
+      regions.forEach(region => {
+        initialOpacities[region.id] = 0;
+      });
+      setRegionOpacities(initialOpacities);
+
+      // Animate each region with its individual fade duration
+      regions.forEach(region => {
+        const fadeDuration = region.areaFadeDuration ?? 800;
+        const steps = 10;
+        const stepDuration = fadeDuration / steps;
+        const opacityStep = 0.8 / steps;
+
+        let currentStep = 0;
+        const fadeInterval = setInterval(() => {
+          currentStep++;
+          const currentOpacity = Math.min(currentStep * opacityStep, 0.8);
+          
+          setRegionOpacities(prev => ({
+            ...prev,
+            [region.id]: currentOpacity
+          }));
+
+          if (currentStep >= steps) {
+            clearInterval(fadeInterval);
+          }
+        }, stepDuration);
+      });
+    };
+
+    map.on('zoomstart', handleZoomStart);
+    map.on('zoomend', handleZoomEnd);
+
+    return () => {
+      map.off('zoomstart', handleZoomStart);
+      map.off('zoomend', handleZoomEnd);
+    };
+  }, [map, regions]);
+
+  // Handle fade-in for newly created regions
+  useEffect(() => {
+    // Get current region IDs
+    const currentRegionIds = new Set(regions.map(r => r.id));
+    
+    // Find regions that are not in fadeInRegions (newly added)
+    const newRegionIds = regions.filter(region => !fadeInRegions.has(region.id)).map(r => r.id);
+    
+    if (newRegionIds.length > 0) {
+      // Add new regions to fade-in set
+      setFadeInRegions(prev => new Set([...prev, ...newRegionIds]));
+      
+      // Initialize new regions with 0 opacity
+      setRegionOpacities(prev => {
+        const newOpacities = { ...prev };
+        newRegionIds.forEach(id => {
+          if (newOpacities[id] === undefined) {
+            newOpacities[id] = 0;
+          }
+        });
+        return newOpacities;
+      });
+
+      // Animate each new region
+      newRegionIds.forEach(regionId => {
+        const region = regions.find(r => r.id === regionId);
+        if (!region) return;
+
+        const fadeDuration = region.areaFadeDuration ?? 800;
+        const steps = 10;
+        const stepDuration = fadeDuration / steps;
+        const opacityStep = 0.8 / steps;
+
+        let currentStep = 0;
+        const fadeInterval = setInterval(() => {
+          currentStep++;
+          const currentOpacity = Math.min(currentStep * opacityStep, 0.8);
+          
+          setRegionOpacities(prev => ({
+            ...prev,
+            [regionId]: currentOpacity
+          }));
+
+          if (currentStep >= steps) {
+            clearInterval(fadeInterval);
+          }
+        }, stepDuration);
+      });
+    }
+  }, [regions, fadeInRegions]);
 
   const handleRegionClick = useCallback((region: Region) => {
+    // Find all regions containing this region's centroid
+    const centroid = calculatePolygonCenter(region.position);
+    const allContainingRegions = findContainingRegions(centroid, regions);
+    
+    console.log('🔍 Region click debug:', {
+      regionId: region.id,
+      regionName: region.name,
+      regionCentroid: centroid,
+      allContainingRegionsCount: allContainingRegions.length,
+      allContainingRegions: allContainingRegions.map(r => ({
+        id: r.id,
+        name: r.name,
+        area: r.area,
+        type: r.type
+      }))
+    });
+    
     if (onElementClick) {
       onElementClick(region);
     }
-  }, [onElementClick]);
+  }, [onElementClick, regions]);
 
   const handleContextMenu = useCallback((e: L.LeafletMouseEvent, type: 'marker' | 'map', region?: Region) => {
     onContextMenu(e, type, region);
@@ -80,27 +256,79 @@ function RegionMarkersComponent({
     currentZoom: number;
     type: string;
     isZooming: boolean;
+    labelRef: (node: HTMLDivElement | null) => void;
   }) => {
+    // Enhanced validation for region position
+    if (!region || !region.id) {
+      console.warn('RegionMarkers: Region is missing or has no ID:', region);
+      return null;
+    }
+    
     if (!Array.isArray(region.position) || region.position.length < 3) {
-      console.error('RegionMarkers: Invalid position for region:', region);
+      console.warn('RegionMarkers: Invalid position for region:', {
+        id: region.id,
+        name: region.name,
+        position: region.position,
+        positionType: typeof region.position,
+        positionLength: Array.isArray(region.position) ? region.position.length : 'not array'
+      });
       return null;
     }
 
+    // Validate that all position points are valid coordinates
+    const hasValidCoordinates = region.position.every(point => 
+      Array.isArray(point) && 
+      point.length === 2 && 
+      typeof point[0] === 'number' && 
+      typeof point[1] === 'number' &&
+      !isNaN(point[0]) && 
+      !isNaN(point[1])
+    );
+    
+    if (!hasValidCoordinates) {
+      console.warn('RegionMarkers: Invalid coordinates in region position:', {
+        id: region.id,
+        name: region.name,
+        position: region.position
+      });
+      return null;
+    }
+
+    // Always render labels if they have content and showLabel is not false
     const showLabel = region.showLabel !== false && region.label;
     const centroid = calculatePolygonCenter(region.position);
+    const shouldFadeIn = fadeInRegions.has(region.id);
+    const currentOpacity = regionOpacities[region.id] ?? (shouldFadeIn ? 0 : 0.8);
+
+    // Calculate label position based on alignment
+    let labelPosition = centroid;
+    if (showLabel && region.labelPosition && region.labelPosition.direction !== 'Center') {
+      // Use default size for label positioning calculations
+      const defaultLabelSize = { width: 120, height: 32 };
+      
+      // Calculate the offset based on label position settings
+      const offset = calculateLabelOffset(region, defaultLabelSize.width, defaultLabelSize.height);
+      
+      // Apply the offset to the centroid
+      labelPosition = applyLabelOffset(centroid, offset);
+    }
 
     return (
       <>
+        {!opts.isZooming && (
         <Polygon
           key={region.id + '-polygon'}
           positions={region.position}
           pathOptions={{
             color: region.color,
             weight: region.showBorder ? 2 : 0,
-            opacity: 0.8,
-            fillOpacity: region.showHighlight !== false ? 0.2 : 0,
+              opacity: currentOpacity,
+              fillOpacity: region.showHighlight !== false ? (shouldFadeIn ? currentOpacity * 0.25 : 0.2) : 0,
           }}
-          ref={opts.markerRef}
+            ref={(ref) => {
+              polygonRefs.current[region.id] = ref;
+              opts.markerRef(ref);
+            }}
           eventHandlers={{
             contextmenu: opts.onContextMenu,
             click: (e: L.LeafletMouseEvent) => {
@@ -124,10 +352,11 @@ function RegionMarkersComponent({
             },
           }}
         />
+        )}
         {showLabel && (
           <Marker
             key={region.id + '-label'}
-            position={centroid}
+            position={labelPosition}
             icon={createRegionLabelDivIcon(region)}
             interactive={false}
             zIndexOffset={2000}
@@ -135,12 +364,48 @@ function RegionMarkersComponent({
         )}
       </>
     );
-  }, [regions, handleRegionClick]);
+  }, [regions, handleRegionClick, fadeInRegions, regionOpacities]);
 
   return (
     <ElementMarkers
-      elements={regions}
-      currentZoom={currentZoom}
+      elements={regions.filter(region => {
+        // Filter out invalid regions before passing to ElementMarkers
+        if (!region || !region.id) {
+          console.warn('RegionMarkers: Filtering out region with no ID:', region);
+          return false;
+        }
+        
+        if (!Array.isArray(region.position) || region.position.length < 3) {
+          console.warn('RegionMarkers: Filtering out region with invalid position:', {
+            id: region.id,
+            name: region.name,
+            position: region.position
+          });
+          return false;
+        }
+        
+        // Validate coordinates
+        const hasValidCoordinates = region.position.every(point => 
+          Array.isArray(point) && 
+          point.length === 2 && 
+          typeof point[0] === 'number' && 
+          typeof point[1] === 'number' &&
+          !isNaN(point[0]) && 
+          !isNaN(point[1])
+        );
+        
+        if (!hasValidCoordinates) {
+          console.warn('RegionMarkers: Filtering out region with invalid coordinates:', {
+            id: region.id,
+            name: region.name,
+            position: region.position
+          });
+          return false;
+        }
+        
+        return true;
+      })}
+      currentZoom={zoom}
       fitZoom={fitZoom}
       onContextMenu={handleContextMenu}
       panelWidth={panelWidth}
@@ -151,7 +416,6 @@ function RegionMarkersComponent({
   );
 }
 
-// Export with error boundary
 export function RegionMarkers(props: RegionMarkersProps) {
   return (
     <MarkerErrorBoundary componentName="RegionMarkers">

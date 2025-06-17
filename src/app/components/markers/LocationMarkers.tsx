@@ -7,6 +7,7 @@ import { createLocationIcon, createLocationLabelDivIcon } from '@/app/utils/map-
 import { findContainingRegions } from '@/app/utils/containment';
 import { ElementMarkers, MarkerErrorBoundary } from './ElementMarkers';
 import type { PanelEntry } from '@/hooks/ui/usePanelStack';
+import { calculateLabelOffset, applyLabelOffset } from '@/app/utils/labelAlignment';
 
 interface LocationMarkersProps {
   locations: Location[];
@@ -29,7 +30,13 @@ function LocationMarkersComponent({
 }: LocationMarkersProps) {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
-
+  
+  // Debug logging (uncomment if needed)
+  // console.log('[LABEL-MARKERS] LocationMarkers rendering with:', {
+  //   totalLocations: locations.length,
+  //   hiddenLabelIds: Array.from(hiddenLabelIds)
+  // });
+  
   useEffect(() => {
     const onZoom = () => {
       const newZoom = map.getZoom();
@@ -76,6 +83,7 @@ function LocationMarkersComponent({
     currentZoom: number;
     type: string;
     isZooming: boolean;
+    labelRef: (node: HTMLDivElement | null) => void;
   }) => {
     if (!Array.isArray(location.position) || location.position.length !== 2) {
       console.error('LocationMarkers: Invalid position for location:', location);
@@ -84,7 +92,22 @@ function LocationMarkersComponent({
 
     const icon = createLocationIcon(location, opts.currentZoom);
     const labelHtml = location.label || location.name || '';
+    // Always render labels if they have content and showLabel is not false
     const showLabel = location.showLabel !== false && labelHtml;
+
+
+    // Calculate label position based on alignment
+    let labelPosition = location.position;
+    if (showLabel && location.labelPosition && location.labelPosition.direction !== 'Center') {
+      // Use default size for label positioning calculations
+      const defaultLabelSize = { width: 120, height: 32 };
+      
+      // Calculate the offset based on label position settings
+      const offset = calculateLabelOffset(location, defaultLabelSize.width, defaultLabelSize.height);
+      
+      // Apply the offset to the location position
+      labelPosition = applyLabelOffset(location.position, offset);
+    }
 
     return (
       <>
@@ -102,7 +125,7 @@ function LocationMarkersComponent({
         {showLabel && (
           <Marker
             key={location.id + '-label'}
-            position={location.position}
+            position={labelPosition}
             icon={createLocationLabelDivIcon(location, opts.currentZoom)}
             interactive={false}
             zIndexOffset={2000}
@@ -110,7 +133,7 @@ function LocationMarkersComponent({
         )}
       </>
     );
-  }, []);
+  }, [map]);
 
   return (
     <ElementMarkers
@@ -126,7 +149,6 @@ function LocationMarkersComponent({
   );
 }
 
-// Export with error boundary
 export function LocationMarkers(props: LocationMarkersProps) {
   return (
     <MarkerErrorBoundary componentName="LocationMarkers">

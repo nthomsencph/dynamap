@@ -9,6 +9,7 @@ import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import FontFamily from '@tiptap/extension-font-family';
 import FontSize from '@tiptap/extension-font-size';
+import Placeholder from '@tiptap/extension-placeholder';
 import {
   Bold,
   Italic,
@@ -46,8 +47,6 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
 }) => {
   // Use ref to avoid stale closure issues
   const elementsRef = useRef(elements);
-  const isSettingContentRef = useRef(false);
-  const lastValueRef = useRef(value);
   
   // Update ref whenever elements change
   useEffect(() => {
@@ -93,22 +92,17 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
         },
       }),
       mentionExtension,
+      Placeholder.configure({
+        placeholder: 'Type your description here...',
+        emptyEditorClass: 'is-editor-empty',
+        showOnlyWhenEditable: true,
+        showOnlyCurrent: true,
+      }),
     ],
     content: value,
     onUpdate: ({ editor }) => {
-      // Don't trigger onChange when we're programmatically setting content
-      if (!isSettingContentRef.current) {
-        const newContent = editor.getHTML();
-        // Only trigger onChange if the content actually changed and it's not just the default empty content
-        if (newContent !== lastValueRef.current && newContent !== '<p style="text-align: left"></p>') {
-          console.log('🔍 DescriptionEditor: onUpdate triggered', {
-            content: newContent,
-            contentLength: newContent?.length
-          });
-          lastValueRef.current = newContent;
-          onChange(newContent);
-        }
-      }
+      const newContent = editor.getHTML();
+      onChange(newContent);
     },
     editorProps: {
       attributes: {
@@ -119,14 +113,6 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
     },
   });
 
-  console.log('🔍 DescriptionEditor: Editor created/updated', {
-    value,
-    valueLength: value?.length,
-    editorExists: !!editor,
-    editorContent: editor?.getHTML(),
-    editorContentLength: editor?.getHTML()?.length
-  });
-
   // Set initial alignment to left when editor is created
   useEffect(() => {
     if (editor) {
@@ -134,13 +120,10 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
     }
   }, [editor]);
 
-  // Sync content with value prop
+  // Sync editor content when value prop changes
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
-      isSettingContentRef.current = true;
-      lastValueRef.current = value;
-      editor.commands.setContent(value, true); // Parse as HTML to render links properly
-      isSettingContentRef.current = false;
+      editor.commands.setContent(value || '', true);
     }
   }, [value, editor]);
 

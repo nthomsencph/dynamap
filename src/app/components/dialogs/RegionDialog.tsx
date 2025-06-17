@@ -8,6 +8,7 @@ import '@/css/dialogs/base-dialog.css';
 
 export function RegionDialog({ open, mode, region, map, onSave, onDelete, onClose }: RegionDialogProps) {
   const validateForm = (form: Partial<Region>): string | null => {
+    // Basic required fields
     if (!form.name?.trim()) return 'Please enter a name for the region.';
     if (!form.type?.trim()) return 'Please select or create a type for the region.';
     if (!form.position?.length) return 'Region must have a position.';
@@ -55,6 +56,17 @@ export function RegionDialog({ open, mode, region, map, onSave, onDelete, onClos
             defaultValue: true,
             getValue: (element) => element?.showHighlight !== false,
             onChange: (element, value) => ({ ...element, showHighlight: value as boolean })
+          },
+          {
+            id: 'areaFadeDuration',
+            label: 'Area fade duration',
+            type: 'range',
+            min: 0,
+            max: 2000,
+            defaultValue: 800,
+            getValue: (element) => element?.areaFadeDuration ?? 800,
+            onChange: (element, value) => ({ ...element, areaFadeDuration: value as number }),
+            showWhen: (element) => (element?.showBorder !== false) || (element?.showHighlight !== false)
           }
         ]
       }}

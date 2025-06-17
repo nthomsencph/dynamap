@@ -39,15 +39,18 @@ export function createLocationLabelDivIcon(location: Location, zoom: number = 0)
   // Use the same scaling as in createLocationIcon
   const scale = Math.pow(2, zoom);
   const iconSize = baseSize * scale;
+  
+  const labelHtml = location.label || location.name || '';
+  const labelId = location.id;
+  
   // Offset the label by the icon's height so it appears above the icon
   return L.divIcon({
     className: 'map-label-icon',
     html: `<div
       class="map-label custom-pin-label"
-      id="${location.id}"
-      data-collision-strategy="${location.labelCollisionStrategy || 'None'}"
+      id="${labelId}"
       style="pointer-events: none;"
-    >${location.label || location.name || ''}</div>`,
+    >${labelHtml}</div>`,
     iconSize: [1, 1],
     iconAnchor: [0, iconSize], // Bottom center, offset by icon height
   });

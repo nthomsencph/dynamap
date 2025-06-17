@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
 import type { Location } from "@/types/locations";
 
-// Default values for required MapElement properties
-const DEFAULT_PROMINENCE = 5;
-
 export function useLocations() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(false);
@@ -16,13 +13,8 @@ export function useLocations() {
       const res = await fetch("/api/locations");
       if (!res.ok) throw new Error("Failed to fetch locations");
       const data = await res.json();
-      // Add default prominence to locations that don't have it
-      const locationsWithDefaults = data.map((loc: Location) => ({
-        ...loc,
-        prominence: loc.prominence ?? DEFAULT_PROMINENCE,
-      }));
       // Combine state updates to reduce re-renders
-      setLocations(locationsWithDefaults);
+      setLocations(data);
       setLoading(false);
       setError(null);
     } catch (err: any) {
@@ -33,14 +25,6 @@ export function useLocations() {
 
   // Add a new location
   const addLocation = useCallback(async (location: Location) => {
-    // Default showLabel to true if not set
-    if (typeof location.showLabel === 'undefined') {
-      location.showLabel = true;
-    }
-    // Add default prominence if not set
-    if (typeof location.prominence === 'undefined') {
-      location.prominence = DEFAULT_PROMINENCE;
-    }
     const res = await fetch("/api/locations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

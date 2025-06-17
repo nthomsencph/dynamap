@@ -13,26 +13,24 @@ import type { Region } from "@/types/regions";
 // Constants
 import { MAP_CENTER } from '@/constants/map';
 
-// Utils
-import { shouldShowElement } from '@/app/utils/zoom';
-
 // Hooks
 import { useFitZoom } from "@/hooks/view/useFitZoom";
 import { useSmoothWheelZoom } from "@/hooks/view/useSmoothWheelZoom";
+import { useSearchPanelZoom } from "@/hooks/view/useSearchPanelZoom";
 import { useMoveLocation } from "@/hooks/elements/useMoveLocation";
 import { useLocationDialog } from "@/hooks/dialogs/useLocationDialog";
 import { useRegionDialog } from "@/hooks/dialogs/useRegionDialog";
 import { useLocations } from "@/hooks/elements/useLocations";
 import { useRegions } from "@/hooks/elements/useRegions";
 import { useContextMenu } from "@/hooks/ui/useContextMenu";
-import { usePolygonDraw } from "@/hooks/elements/usePolygonDraw";
+import { usePolygonDraw, type DrawingTool, type DrawingResult } from "@/hooks/elements/usePolygonDraw";
 import { usePanelStack, type PanelEntry } from "@/hooks/ui/usePanelStack";
-import { useLabelCollisionHandling } from "@/hooks/ui/useLabelCollisionHandling";
 
 // Components
 import { ContextMenu } from "../ui/ContextMenu";
 import { ScaleBar } from '../ui/ScaleBar';
 import { ProminenceLevel } from '../ui/ProminenceLevel';
+import { DrawingModeBanner } from '../ui/DrawingModeBanner';
 import { LocationDialog } from "../dialogs/LocationDialog";
 import { RegionDialog } from "../dialogs/RegionDialog";
 import { ConfirmDialog } from "../dialogs/ConfirmDialog";
@@ -59,6 +57,13 @@ export default function Map() {
     // Unified panel stack
     const { currentPanel, pushPanel, popPanel, clearStack, canGoBack } = usePanelStack();
     
+    // Search panel zoom functionality
+    const { handleSearchElementClick } = useSearchPanelZoom({ 
+        mapRef, 
+        fitZoom, 
+        pushPanel 
+    });
+    
     // Memoize the move location handlers to prevent re-renders
     const moveLocationHandlers = useMemo(() => ({
         updateLocation,
@@ -72,13 +77,40 @@ export default function Map() {
     );
 
     // Memoize the polygon draw callback to prevent re-renders
-    const handlePolygonComplete = useCallback((points: [number, number][]) => {
-        // When polygon drawing is complete, open the region dialog
+    const handlePolygonComplete = useCallback((result: DrawingResult) => {
+        let points: [number, number][] = result.points;
+        if (result.type === 'rectangle' && result.bounds) {
+            // Rectangle: convert bounds to 4 corners (SW, NW, NE, SE, SW)
+            const [[swLat, swLng], [neLat, neLng]] = result.bounds;
+            points = [
+                [swLat, swLng], // SW
+                [neLat, swLng], // NW
+                [neLat, neLng], // NE
+                [swLat, neLng], // SE
+                [swLat, swLng], // Close polygon
+            ];
+        } else if (result.type === 'circle' && result.center && result.radius) {
+            // Circle: approximate as 32-point polygon
+            const numPoints = 32;
+            const [centerLat, centerLng] = result.center;
+            const radius = result.radius;
+            points = Array.from({ length: numPoints }, (_, i) => {
+                const angle = (2 * Math.PI * i) / numPoints;
+                // Approximate: 1 deg lat ~ 111km, 1 deg lng ~ 111km * cos(lat)
+                // But here, just use radius in degrees for simplicity (works for small circles)
+                const dLat = (radius / 111000) * Math.cos(angle); // meters to degrees
+                const dLng = (radius / (111000 * Math.cos(centerLat * Math.PI / 180))) * Math.sin(angle);
+                return [centerLat + dLat, centerLng + dLng] as [number, number];
+            });
+            // Close polygon
+            points.push(points[0]);
+        }
+        // When drawing is complete, open the region dialog with the polygon points
         regionDialog.openCreate(points);
     }, [regionDialog.openCreate]);
 
     // Polygon drawing hook
-    const { startDrawing } = usePolygonDraw(
+    const { isDrawing, currentTool, startDrawing, stopDrawing } = usePolygonDraw(
         mapRef as React.RefObject<L.Map>,
         handlePolygonComplete
     );
@@ -96,12 +128,11 @@ export default function Map() {
 
     // Panel navigation handlers
     const handleElementClick = useCallback((element: Location | Region) => {
-        const elementType = Array.isArray(element.position[0]) ? 'region' : 'location';
         const entry: PanelEntry = {
             id: element.id,
-            elementType,
+            elementType: element.elementType,
             element,
-            metadata: elementType === 'region' ? {
+            metadata: element.elementType === 'region' ? {
                 containingRegions: (element as any).containingRegions,
                 regionToDisplay: (element as any).regionToDisplay
             } : {
@@ -110,6 +141,37 @@ export default function Map() {
         };
         pushPanel(entry);
     }, [pushPanel]);
+
+    // Handle opening search panel
+    const handleOpenSearch = useCallback(() => {
+        const searchEntry: PanelEntry = {
+            id: 'search-panel',
+            elementType: 'search',
+            metadata: {
+                searchQuery: ''
+            }
+        };
+        pushPanel(searchEntry);
+    }, [pushPanel]);
+
+    // Handle keyboard shortcuts for search panel
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Check for CMD+F (Mac) or CTRL+F (Windows/Linux)
+            if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+                e.preventDefault(); // Prevent browser's find functionality
+                e.stopPropagation();
+                handleOpenSearch();
+            }
+        };
+
+        // Add event listener with capture to ensure we catch it before the browser
+        document.addEventListener('keydown', handleKeyDown, true);
+        
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown, true);
+        };
+    }, [handleOpenSearch]);
 
     const handlePanelClose = useCallback(() => {
         clearStack();
@@ -133,8 +195,13 @@ export default function Map() {
         if (mapRef.current) {
             mapRef.current.setView(position, mapRef.current.getZoom());
         }
-        startDrawing();
+        startDrawing(); // No argument
     }, [startDrawing]);
+
+    // Handle drawing cancellation
+    const handleDrawingCancel = useCallback(() => {
+        stopDrawing();
+    }, [stopDrawing]);
 
     const handleEditLocation = useCallback((location: Location) => {
         locationDialog.openEdit(location);
@@ -163,6 +230,7 @@ export default function Map() {
         onEditRegion: handleEditRegion,
         onDeleteRegion: handleDeleteRegion,
         startDrawing: startDrawing,
+        regions: regions,
     }), [
         handleAddLocation,
         handleEditLocation,
@@ -171,7 +239,8 @@ export default function Map() {
         handleAddRegion,
         handleEditRegion,
         handleDeleteRegion,
-        startDrawing
+        startDrawing,
+        regions
     ]);
 
     // Context menu state and handlers
@@ -190,17 +259,6 @@ export default function Map() {
     const [currentZoom, setCurrentZoom] = useState(fitZoom);
     const [isZooming, setIsZooming] = useState(false);
     const zoomTimeoutRef = useRef<number | undefined>(undefined);
-
-    // Get elements that have collision strategies (for collision detection)
-    const visibleElements = useMemo(() => {
-        const elementsWithStrategies = [...locations, ...regions].filter(el => 
-            el.labelCollisionStrategy && el.labelCollisionStrategy !== 'None'
-        );
-        return elementsWithStrategies;
-    }, [locations, regions]);
-
-    // Unified collision handling for all elements (only when map is available)
-    useLabelCollisionHandling(visibleElements, mapRef.current!, isZooming);
 
     // Save handlers for dialogs - memoized to prevent re-renders
     const handleSaveLocation = useCallback(async (location: Location) => {
@@ -326,6 +384,13 @@ export default function Map() {
             style={{ width: '100vw', height: '100vh', position: 'relative' }} 
             onContextMenu={handleContextMenu}
         >
+            {/* Drawing Mode Banner */}
+            <DrawingModeBanner
+                isVisible={isDrawing}
+                currentTool={currentTool}
+                onCancel={handleDrawingCancel}
+            />
+
             <MapContainer
                 center={MAP_CENTER}
                 zoom={fitZoom}
@@ -369,6 +434,9 @@ export default function Map() {
                     onClose={handlePanelClose}
                     onBack={canGoBack ? handlePanelBack : undefined}
                     onElementClick={handleElementClick}
+                    onSearchElementClick={handleSearchElementClick}
+                    locations={locations}
+                    regions={regions}
                 />
             )}
 

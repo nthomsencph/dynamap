@@ -2,15 +2,17 @@ import { useState, useCallback, useMemo } from 'react';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
 
-export type ElementType = 'location' | 'region';
+export type ElementType = 'location' | 'region' | 'search';
 
 export interface PanelEntry {
   id: string;
   elementType: ElementType;
-  element: Location | Region;
+  element?: Location | Region; // Optional for search panels
   metadata?: {
     containingRegions?: Region[];
     regionToDisplay?: Region;
+    // Search panel specific metadata
+    searchQuery?: string;
     // Any other context-specific data
   };
 }

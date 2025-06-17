@@ -35,19 +35,44 @@ export function calculateProminenceLevel(currentZoom: number, fitZoom: number): 
   // prominence 1 = fitZoom + 2.7
   // So we can calculate prominence directly:
   const zoomOffset = currentZoom - fitZoom;
-  return 10 - (zoomOffset / 0.3);
+  return Math.max(0, 10 - (zoomOffset / 0.3));
 }
 
 /**
  * Check if a map element should be visible at the current zoom level
- * @param prominence The prominence level of the map elememt
+ * @param prominence The prominence range of the map element (with lower and upper bounds)
  * @param currentZoom The current zoom level
  * @param fitZoom The zoom level that fits the map in viewport
- * @returns boolean indicating if the map elememt should be visible
+ * @returns boolean indicating if the map element should be visible
  */
-export function shouldShowElement(prominence: number, currentZoom: number, fitZoom: number): boolean {
+export function shouldShowElement(prominence: { lower: number; upper: number } | number, currentZoom: number, fitZoom: number): boolean {
   const currentProminence = calculateProminenceLevel(currentZoom, fitZoom);
-  // Show map elememt when current prominence level is less than or equal to the map elememt's prominence
-  // e.g., a map elememt with prominence 5 should show when current prominence is 5.0 or lower
-  return currentProminence <= prominence;
+  
+  // Handle legacy single prominence values
+  if (typeof prominence === 'number') {
+    return currentProminence <= prominence;
+  }
+  
+  // Handle new prominence range
+  const { lower, upper } = prominence;
+  
+  // Element shows if current prominence is within the range
+  // lower = 0 means no lower bound (always show if upper bound is met)
+  const meetsLowerBound = lower === 0 || currentProminence >= lower;
+  const meetsUpperBound = currentProminence <= upper;
+  
+  return meetsLowerBound && meetsUpperBound;
+}
+
+/**
+ * Calculate the optimal zoom level for an element based on its upper prominence value
+ * @param upperProminence The upper prominence bound of the element
+ * @param fitZoom The zoom level that fits the map in viewport
+ * @param offset Optional offset from the upper bound (default: 0.01)
+ * @returns The optimal zoom level
+ */
+export function getOptimalZoomForElement(upperProminence: number, fitZoom: number, offset: number = 0.01): number {
+  const targetProminence = upperProminence - offset;
+  const zoomOffset = 3 - (targetProminence * 0.3);
+  return fitZoom + zoomOffset;
 }

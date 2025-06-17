@@ -24,8 +24,7 @@
     "labelPosition": {
       "direction": "Center",
       "offset": 10
-    },
-    "elementType": "location"
+    }
   },
   {
     "position": [
@@ -45,33 +44,6 @@
     "labelCollisionStrategy": "Hide",
     "iconSize": 12,
     "label": "test 123",
-    "id": "47165f83-ab9f-4cfe-b0b0-dfed669f524c",
-    "elementType": "location"
-  },
-  {
-    "color": "#ffffff",
-    "icon": "Fa6PlaceOfWorship",
-    "showLabel": true,
-    "labelPosition": {
-      "direction": "Center",
-      "offset": 10
-    },
-    "prominence": {
-      "lower": 0,
-      "upper": 5
-    },
-    "description": "<p style=\"text-align: left\">Yo yo yo</p>",
-    "image": "",
-    "fields": {},
-    "elementType": "location",
-    "position": [
-      642.4603909471554,
-      799.3452110324595
-    ],
-    "name": "In a region yo",
-    "type": "Ruin",
-    "iconSize": 12,
-    "label": "In a region yo",
-    "id": "0b31eef4-81ca-4c5f-9e53-e9fa6f21d7b5"
+    "id": "47165f83-ab9f-4cfe-b0b0-dfed669f524c"
   }
 ]

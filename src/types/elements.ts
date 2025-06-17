@@ -90,17 +90,40 @@ export type ElementIcon = keyof typeof ELEMENT_ICONS;
 
 export type LabelCollisionStrategy = 'None' | 'Hide' | 'Conquer';
 
+export type LabelDirection = 
+  | 'Center'           // Default: centered on the element
+  | 'Left top'         // Top-left corner
+  | 'Mid top'          // Top center
+  | 'Right top'        // Top-right corner
+  | 'Left mid'         // Left center
+  | 'Right mid'        // Right center
+  | 'Left bottom'      // Bottom-left corner
+  | 'Mid bottom'       // Bottom center
+  | 'Right bottom';    // Bottom-right corner
+
+export interface LabelPosition {
+  direction: LabelDirection;
+  offset: number;      // Offset in coordinate units
+}
+
+export interface ProminenceRange {
+  lower: number;       // Minimum prominence level (0-10, 0 = no lower bound)
+  upper: number;       // Maximum prominence level (1-10)
+}
+
 export interface MapElement {
   id: string;
   name?: string;
   label?: string;
   showLabel?: boolean; // Whether to show the label above the icon
+  labelPosition?: LabelPosition; // How to position the label relative to the element
   description?: string;
   image?: string;
   color: string;
-  prominence: number;
+  prominence: ProminenceRange;
   icon: ElementIcon; // User-selected icon key
   type: string; // The type of the element (e.g. 'City', 'Kingdom', etc.)
+  elementType: 'location' | 'region'; // Explicit type to avoid Array.isArray checks
   position: [number, number] | [number, number][]; // Single point for locations, array of points for regions
   fields: { [key: string]: string }; // Dictionary of custom field names and values, always initialized as empty
   /**

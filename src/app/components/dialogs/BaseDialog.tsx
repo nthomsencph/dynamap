@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import type { DialogTab } from '@/types/dialogs';
 import { ELEMENT_ICONS, type ElementIcon, type MapElement } from '@/types/elements';
+import type { Location } from '@/types/locations';
+import type { Region } from '@/types/regions';
 import DescriptionEditor from '@/app/components/editor/DescriptionEditor';
 import LabelEditor from '@/app/components/editor/LabelEditor';
+import Toggle from 'react-toggle';
+import "react-toggle/style.css";
 import { IoAdd, IoCheckmark } from 'react-icons/io5';
+import { Tooltip } from '@/app/components/ui/Tooltip';
 import '@/css/dialogs/base-dialog.css';
 import { useTypes } from '@/hooks/elements/useTypes';
 import { useLocations } from '@/hooks/elements/useLocations';
@@ -30,6 +35,7 @@ interface BaseDialogProps<T extends MapElement> {
       defaultValue: number | boolean;
       getValue: (element: Partial<T>) => number | boolean;
       onChange: (element: Partial<T>, value: number | boolean) => Partial<T>;
+      showWhen?: (element: Partial<T>) => boolean;
     }>;
   };
   richTextEditorProps?: {
@@ -63,9 +69,18 @@ export function BaseDialog<T extends MapElement>({
     color: defaultColor,
     icon: DEFAULT_ICON,
     showLabel: true,
-    prominence: 5,
-    labelCollisionStrategy: 'None',
+    labelPosition: { direction: 'Center', offset: 10.0 },
+    prominence: { lower: 0, upper: 5 },
+    description: '',
+    image: '',
     fields: {},
+    elementType: typeCategory === 'regions' ? 'region' : 'location',
+    // Region-specific defaults
+    ...(typeCategory === 'regions' && {
+      showBorder: true,
+      showHighlight: true,
+      areaFadeDuration: 800,
+    }),
   } as unknown as Partial<T>);
 
   const [activeTab, setActiveTab] = useState<DialogTab>('Content');
@@ -76,6 +91,7 @@ export function BaseDialog<T extends MapElement>({
   const [iconGalleryBg, setIconGalleryBg] = useState<'light' | 'dark'>('dark');
   const [error, setError] = useState<string | null>(null);
   const [labelAutoInitialized, setLabelAutoInitialized] = useState(false);
+  const [showIconGallery, setShowIconGallery] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -86,10 +102,60 @@ export function BaseDialog<T extends MapElement>({
           description: element.description,
           descriptionLength: element.description?.length
         });
+        
+        // Create base defaults
+        const defaults = {
+          color: defaultColor,
+          icon: DEFAULT_ICON,
+          showLabel: true,
+          labelPosition: { direction: 'Center', offset: 10.0 },
+          prominence: { lower: 0, upper: 5 },
+          description: '',
+          image: '',
+          fields: {},
+          elementType: typeCategory === 'regions' ? 'region' : 'location',
+          // Region-specific defaults
+          ...(typeCategory === 'regions' && {
+            showBorder: true,
+            showHighlight: true,
+            areaFadeDuration: 800,
+          }),
+        };
+        
+        // Merge defaults with element, ensuring required properties are always set
         setForm({
+          ...defaults,
           ...element,
-          fields: element.fields || {},  // Ensure fields is always initialized
+          fields: element.fields || defaults.fields,
+          labelPosition: element.labelPosition || defaults.labelPosition,
+          prominence: element.prominence || defaults.prominence,
+          description: element.description || defaults.description,
         });
+        
+        console.log('🔍 BaseDialog: Final form state:', {
+          description: element.description,
+          descriptionLength: element.description?.length,
+          finalDescription: element.description || defaults.description
+        });
+      } else {
+        // For create mode, use defaults
+        setForm({
+          color: defaultColor,
+          icon: DEFAULT_ICON,
+          showLabel: true,
+          labelPosition: { direction: 'Center', offset: 10.0 },
+          prominence: { lower: 0, upper: 5 },
+          description: '',
+          image: '',
+          fields: {},
+          elementType: typeCategory === 'regions' ? 'region' : 'location',
+          // Region-specific defaults
+          ...(typeCategory === 'regions' && {
+            showBorder: true,
+            showHighlight: true,
+            areaFadeDuration: 800,
+          }),
+        } as unknown as Partial<T>);
       }
       // Set labelAutoInitialized based on mode, not element presence
       setLabelAutoInitialized(mode === 'edit');
@@ -100,7 +166,7 @@ export function BaseDialog<T extends MapElement>({
       setLabelAutoInitialized(false);
     }
     setError(null);
-  }, [open, element, mode]);
+  }, [open, element, mode, defaultColor, typeCategory]);
 
   useEffect(() => {
     if (!open) return;
@@ -167,8 +233,22 @@ export function BaseDialog<T extends MapElement>({
   };
 
   const handleColorChange = (color: string) => setForm(prev => ({ ...prev, color }));
-  const handleProminenceChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm(prev => ({ ...prev, prominence: Number(e.target.value) }));
+  const handleProminenceChange = (type: 'lower' | 'upper', value: number) => {
+    setForm(prev => {
+      const currentProminence = prev.prominence || { lower: 0, upper: 5 };
+      const newProminence = { ...currentProminence, [type]: value };
+      
+      // Ensure lower <= upper
+      if (type === 'lower' && value > newProminence.upper) {
+        newProminence.upper = value;
+      }
+      if (type === 'upper' && value < newProminence.lower) {
+        newProminence.lower = value;
+      }
+      
+      return { ...prev, prominence: newProminence };
+    });
+  };
   const handleIconSelect = (icon: ElementIcon) => setForm(prev => ({ ...prev, icon }));
 
   const handleAddField = () => {
@@ -188,19 +268,6 @@ export function BaseDialog<T extends MapElement>({
     setForm(prev => {
       const { [key]: _, ...rest } = (prev.fields || {}) as Record<string, string>;
       return { ...prev, fields: rest };
-    });
-  };
-
-  const handleUpdateField = (oldKey: string, newKey: string, newValue: string) => {
-    setForm(prev => {
-      const { [oldKey]: _, ...rest } = (prev.fields || {}) as Record<string, string>;
-      return {
-        ...prev,
-        fields: {
-          ...rest,
-          [newKey]: newValue,
-        },
-      };
     });
   };
 
@@ -224,27 +291,56 @@ export function BaseDialog<T extends MapElement>({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const validationError = validateForm(form);
+    
+    // Ensure form has required values before validation
+    const formToValidate = {
+      ...form,
+    } as T;
+    
+    // Add default values for styling fields if they're not explicitly set
+    if (stylingFields?.fields) {
+      stylingFields.fields.forEach(field => {
+        if ((formToValidate as any)[field.id] === undefined) {
+          (formToValidate as any)[field.id] = field.defaultValue;
+        }
+      });
+    }
+    
+    // If showLabel is true but no custom label is provided, use the name as the label
+    if (!formToValidate.label?.trim() && formToValidate.name) {
+      formToValidate.label = formToValidate.name;
+    }
+    
+    // Debug logging for form data
+    console.log('🔍 BaseDialog: Form data being saved:', {
+      form: form,
+      formToValidate: formToValidate,
+      labelPosition: formToValidate.labelPosition,
+      showLabel: formToValidate.showLabel,
+      label: formToValidate.label,
+      typeCategory: typeCategory,
+      // Region-specific debug info
+      ...(typeCategory === 'regions' && {
+        showBorder: (formToValidate as any).showBorder,
+        showHighlight: (formToValidate as any).showHighlight,
+        areaFadeDuration: (formToValidate as any).areaFadeDuration,
+      })
+    });
+    
+    const validationError = validateForm(formToValidate);
     if (validationError) {
       setError(validationError);
       return;
     }
 
     const id = mode === 'create' ? crypto.randomUUID() : form.id!;
-    onSave({ ...form, id } as T);
+    const elementType = typeCategory === 'regions' ? 'region' : 'location';
+    onSave({ ...formToValidate, id, elementType } as T);
     setForm({} as Partial<T>);
   };
 
   // Get all elements for mentions
   const allElements = [...(locations || []), ...(regions || [])];
-
-  // Debug logging for description
-  console.log('🔍 BaseDialog: Rendering DescriptionEditor with value:', {
-    formDescription: form.description,
-    formDescriptionLength: form.description?.length,
-    elementDescription: element?.description,
-    elementDescriptionLength: element?.description?.length
-  });
 
   return (
     <>
@@ -281,61 +377,84 @@ export function BaseDialog<T extends MapElement>({
         <form onSubmit={handleSubmit}>
           {activeTab === 'Content' && (
             <div className="dialog-tab-content">
-              <label>Name
-                <input name="name" value={form.name || ''} onChange={handleChange} required />
-              </label>
-              <div className="dialog-field-wrapper">
-                <span className="dialog-field-label">Description</span>
-                <div className="dialog-field">
-                  <DescriptionEditor
-                    value={form.description ?? ''}
-                    onChange={html => setForm(f => ({ ...f, description: html }))}
-                    elements={allElements}
-                    rows={4}
-                    className="description-editor-no-toolbar-tab"
-                  />
-                </div>
+              <div className="dialog-field">
+                <input
+                  type="text"
+                  name="name"
+                  value={form.name || ''}
+                  onChange={handleChange}
+                  placeholder="Type name here..."
+                />
               </div>
-              <div className="dialog-row">
-                <label className="dialog-row-label" htmlFor="type">Type:</label>
-                <div className="dialog-field type-field">
-                  {!isAddingType ? (
-                    <>
-                      <select
-                        id="type"
-                        name="type"
-                        value={form.type || ''}
-                        onChange={handleChange}
-                        required
+
+              <div className="dialog-field">
+                <Tooltip text="Categorize this element by type (e.g., 'Castle', 'Village'). You can create new types if needed." position="right" />
+                <div className="type-field">
+                  <select
+                    name="type"
+                    value={form.type || ''}
+                    onChange={handleChange}
+                  >
+                    <option value="">Select type</option>
+                    {types[typeCategory].map(type => (
+                      <option 
+                        key={type} 
+                        value={type}
                       >
-                        <option value="">Select type</option>
-                        {types[typeCategory].map((t: string) => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                      <button type="button" onClick={() => setIsAddingType(true)} className="type-add-button" title="Add new type">
-                        <IoAdd size={20} />
-                      </button>
-                    </>
-                  ) : (
-                    <>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  {isAddingType ? (
+                    <div className="type-add">
                       <input
                         type="text"
+                        className="type-input"
                         value={newType}
                         onChange={e => setNewType(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleAddType(); }}
-                        placeholder="Enter new type"
-                        autoFocus
-                        className="type-input"
+                        placeholder="New type name"
                       />
-                      <button type="button" onClick={handleAddType} disabled={!newType.trim()} className="type-add-button">
-                        <IoCheckmark size={20} />
+                      <button
+                        type="button"
+                        className="type-add-button"
+                        onClick={handleAddType}
+                        disabled={!newType.trim()}
+                      >
+                        <IoCheckmark size={18} />
                       </button>
-                    </>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="type-add-button"
+                      onClick={() => setIsAddingType(true)}
+                      title="Add new type"
+                    >
+                      <IoAdd size={18} />
+                    </button>
                   )}
                 </div>
               </div>
-              <label>Image URL
-                <input name="image" value={form.image || ''} onChange={handleChange} />
-              </label>
+
+              <div className="dialog-field">
+                <DescriptionEditor
+                  value={form.description || ''}
+                  onChange={value => setForm(f => ({ ...f, description: value }))}
+                  elements={[...locations, ...regions] as Array<Location | Region>}
+                  {...richTextEditorProps}
+                />
+              </div>
+
+              <div className="dialog-field">
+                <Tooltip text="Optional: Add an image that will be displayed when this element is selected" position="right" />
+                <input
+                  type="text"
+                  name="image"
+                  value={form.image || ''}
+                  onChange={handleChange}
+                  placeholder="Enter image URL..."
+                />
+              </div>
             </div>
           )}
           {activeTab === 'Styling' && (
@@ -353,33 +472,288 @@ export function BaseDialog<T extends MapElement>({
                 </div>
               </div>
               <div className="dialog-row">
-                <label className="dialog-row-label" htmlFor="showLabel">Show label:</label>
-                <input
-                  type="checkbox"
+                <label className="dialog-row-label" htmlFor="showLabel">
+                  <span>Show label</span>
+                  <Tooltip text="Toggle whether to display the element's name as a label" position="right" />
+                </label>
+                <Toggle
                   id="showLabel"
-                  name="showLabel"
-                  checked={form.showLabel !== false}
-                  onChange={e => setForm(f => ({ ...f, showLabel: e.target.checked }))}
+                  checked={form.showLabel === true}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, showLabel: e.target.checked }))}
+                  aria-label="Show label"
                 />
               </div>
-              {form.showLabel !== false && (
+              <div className={`label-settings-container ${form.showLabel === true ? 'expanded' : 'collapsed'}`}>
                 <div className="dialog-row">
-                  <label className="dialog-row-label" htmlFor="labelCollisionStrategy">Label collision strategy:</label>
-                  <select
-                    id="labelCollisionStrategy"
-                    name="labelCollisionStrategy"
-                    value={form.labelCollisionStrategy || 'None'}
-                    onChange={e => setForm(f => ({ ...f, labelCollisionStrategy: e.target.value as 'None' | 'Hide' | 'Conquer' }))}
-                  >
-                    <option value="None">None (always show label)</option>
-                    <option value="Hide">Hide (hide if overlaps)</option>
-                    <option value="Conquer">Conquer (hide others if overlaps)</option>
-                  </select>
+                  <label className="dialog-row-label" htmlFor="labelDirection">
+                    <span>Label direction</span>
+                    <Tooltip text="Choose where to position the label relative to the icon" position="right" />
+                  </label>
+                  <div className="direction-picker">
+                    <div className="direction-grid">
+                      <button
+                        type="button"
+                        className={`direction-btn ${form.labelPosition?.direction === 'Left top' ? 'selected' : ''}`}
+                        onClick={() => setForm(f => ({ 
+                          ...f, 
+                          labelPosition: { 
+                            direction: 'Left top', 
+                            offset: (f.labelPosition as any)?.offset || 10.0 
+                          }
+                        }))}
+                        title="Left top"
+                      >
+                        ↖
+                      </button>
+                      <button
+                        type="button"
+                        className={`direction-btn ${form.labelPosition?.direction === 'Mid top' ? 'selected' : ''}`}
+                        onClick={() => setForm(f => ({ 
+                          ...f, 
+                          labelPosition: { 
+                            direction: 'Mid top', 
+                            offset: (f.labelPosition as any)?.offset || 10.0 
+                          }
+                        }))}
+                        title="Mid top"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        className={`direction-btn ${form.labelPosition?.direction === 'Right top' ? 'selected' : ''}`}
+                        onClick={() => setForm(f => ({ 
+                          ...f, 
+                          labelPosition: { 
+                            direction: 'Right top', 
+                            offset: (f.labelPosition as any)?.offset || 10.0 
+                          }
+                        }))}
+                        title="Right top"
+                      >
+                        ↗
+                      </button>
+                      <button
+                        type="button"
+                        className={`direction-btn ${form.labelPosition?.direction === 'Left mid' ? 'selected' : ''}`}
+                        onClick={() => setForm(f => ({ 
+                          ...f, 
+                          labelPosition: { 
+                            direction: 'Left mid', 
+                            offset: (f.labelPosition as any)?.offset || 10.0 
+                          }
+                        }))}
+                        title="Left mid"
+                      >
+                        ←
+                      </button>
+                      <button
+                        type="button"
+                        className={`direction-btn ${form.labelPosition?.direction === 'Center' ? 'selected' : ''}`}
+                        onClick={() => setForm(f => ({ 
+                          ...f, 
+                          labelPosition: { 
+                            direction: 'Center', 
+                            offset: (f.labelPosition as any)?.offset || 10.0 
+                          }
+                        }))}
+                        title="Center"
+                      >
+                        •
+                      </button>
+                      <button
+                        type="button"
+                        className={`direction-btn ${form.labelPosition?.direction === 'Right mid' ? 'selected' : ''}`}
+                        onClick={() => setForm(f => ({ 
+                          ...f, 
+                          labelPosition: { 
+                            direction: 'Right mid', 
+                            offset: (f.labelPosition as any)?.offset || 10.0 
+                          }
+                        }))}
+                        title="Right mid"
+                      >
+                        →
+                      </button>
+                      <button
+                        type="button"
+                        className={`direction-btn ${form.labelPosition?.direction === 'Left bottom' ? 'selected' : ''}`}
+                        onClick={() => setForm(f => ({ 
+                          ...f, 
+                          labelPosition: { 
+                            direction: 'Left bottom', 
+                            offset: (f.labelPosition as any)?.offset || 10.0 
+                          }
+                        }))}
+                        title="Left bottom"
+                      >
+                        ↙
+                      </button>
+                      <button
+                        type="button"
+                        className={`direction-btn ${form.labelPosition?.direction === 'Mid bottom' ? 'selected' : ''}`}
+                        onClick={() => setForm(f => ({ 
+                          ...f, 
+                          labelPosition: { 
+                            direction: 'Mid bottom', 
+                            offset: (f.labelPosition as any)?.offset || 10.0 
+                          }
+                        }))}
+                        title="Mid bottom"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        className={`direction-btn ${form.labelPosition?.direction === 'Right bottom' ? 'selected' : ''}`}
+                        onClick={() => setForm(f => ({ 
+                          ...f, 
+                          labelPosition: { 
+                            direction: 'Right bottom', 
+                            offset: (f.labelPosition as any)?.offset || 10.0 
+                          }
+                        }))}
+                        title="Right bottom"
+                      >
+                        ↘
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="dialog-row">
+                  <label className="dialog-row-label" htmlFor="labelOffset">
+                    <span>Label offset</span>
+                    <Tooltip text="Adjust the distance between the icon and its label" position="right" />
+                  </label>
+                  <div className="dialog-slider-wrapper">
+                    <input
+                      type="range"
+                      id="labelOffset"
+                      name="labelOffset"
+                      min={1}
+                      max={50}
+                      value={form.labelPosition?.offset || 10.0}
+                      onChange={e => setForm(f => ({ 
+                        ...f, 
+                        labelPosition: { 
+                          direction: (f.labelPosition as any)?.direction || 'Center', 
+                          offset: Number(e.target.value) 
+                        }
+                      }))}
+                    />
+                    <span className="dialog-slider-value">{form.labelPosition?.offset || 10.0}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="dialog-row">
+                <label className="dialog-row-label" htmlFor="prominence">
+                  <span>Prominence</span>
+                  <Tooltip text="Set the zoom levels at which this element is visible (0 = always hidden, 10 = always visible)" />
+                </label>
+                <div className="dialog-slider-wrapper">
+                  <div className="dual-range-slider">
+                    <input
+                      type="range"
+                      id="prominence-lower"
+                      min={0}
+                      max={10}
+                      value={(form.prominence as any)?.lower ?? 0}
+                      onChange={(e) => handleProminenceChange('lower', Number(e.target.value))}
+                      className="range-slider range-lower"
+                    />
+                    <input
+                      type="range"
+                      id="prominence-upper"
+                      min={1}
+                      max={10}
+                      value={(form.prominence as any)?.upper ?? 5}
+                      onChange={(e) => handleProminenceChange('upper', Number(e.target.value))}
+                      className="range-slider range-upper"
+                    />
+                  </div>
+                  <span className="dialog-slider-value">
+                    {(form.prominence as any)?.lower ?? 0}-{(form.prominence as any)?.upper ?? 5}
+                  </span>
+                </div>
+              </div>
+              <div className="dialog-row">
+                <label className="dialog-row-label" htmlFor="color">
+                  <span>Icon color</span>
+                  <Tooltip text="Choose the color for this element's icon" />
+                </label>
+                <input
+                  type="color"
+                  id="color"
+                  name="color"
+                  value={form.color || defaultColor}
+                  onChange={e => handleColorChange(e.target.value)}
+                />
+              </div>
+              <div className="dialog-row">
+                <label className="dialog-row-label">
+                  <span>Icon</span>
+                  <Tooltip text="Click to select an icon for this element" />
+                </label>
+                <button
+                  type="button"
+                  className={`icon-display-btn ${getColorBrightness(form.color || defaultColor) > 0.5 ? 'dark' : 'light'}`}
+                  onClick={() => setShowIconGallery(true)}
+                  title="Click to change icon"
+                >
+                  {form.icon && ELEMENT_ICONS[form.icon as ElementIcon] ? (
+                    React.createElement(ELEMENT_ICONS[form.icon as ElementIcon].icon, {
+                      size: 32,
+                      color: form.color || defaultColor
+                    })
+                  ) : (
+                    <div className="icon-placeholder">?</div>
+                  )}
+                </button>
+              </div>
+              {showIconGallery && (
+                <div className="icon-gallery-overlay" onClick={() => setShowIconGallery(false)}>
+                  <div className="icon-gallery-popup" onClick={e => e.stopPropagation()}>
+                    <div className="icon-gallery-header">
+                      <h3>Select Icon</h3>
+                      <button
+                        type="button"
+                        className="icon-gallery-close"
+                        onClick={() => setShowIconGallery(false)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className={`icon-picker-grid ${iconGalleryBg}`}>
+                      {Object.entries(ELEMENT_ICONS).map(([key, { icon: Icon, label }]) => (
+                        <button
+                          type="button"
+                          key={key}
+                          className={`icon-picker-btn${form.icon === key ? ' selected' : ''}`}
+                          onClick={() => {
+                            handleIconSelect(key as ElementIcon);
+                            setShowIconGallery(false);
+                          }}
+                          title={label}
+                        >
+                          <Icon size={28} color={form.color || defaultColor} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
-              {stylingFields?.fields.map(field => (
+              {stylingFields?.fields
+                .filter(field => !field.showWhen || field.showWhen(form))
+                .map(field => (
                 <div key={field.id} className="dialog-row">
-                  <label className="dialog-row-label" htmlFor={field.id}>{field.label}:</label>
+                  <label className="dialog-row-label" htmlFor={field.id}>
+                    <span>{field.label}</span>
+                    <Tooltip text={field.id === 'iconSize' ? 
+                      "Adjust the size of the icon on the map" : 
+                      field.id === 'areaFadeDuration' ? 
+                      "Set how long the area highlight animation lasts" :
+                      "Configure this setting"} />
+                  </label>
                   {field.type === 'range' ? (
                     <div className="dialog-slider-wrapper">
                       <input
@@ -392,59 +766,19 @@ export function BaseDialog<T extends MapElement>({
                         onChange={e => setForm(prev => field.onChange(prev, Number(e.target.value)))}
                       />
                       <span className="dialog-slider-value">
-                        {field.getValue(form)}{field.id === 'iconSize' ? 'px' : ''}
+                        {field.getValue(form)}{field.id === 'iconSize' ? '' : field.id === 'areaFadeDuration' ? '' : ''}
                       </span>
                     </div>
                   ) : (
-                    <input
-                      type="checkbox"
+                    <Toggle
                       id={field.id}
-                      name={field.id}
                       checked={field.getValue(form) as boolean}
-                      onChange={e => setForm(prev => field.onChange(prev, e.target.checked))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(prev => field.onChange(prev, e.target.checked))}
+                      aria-label={field.label}
                     />
                   )}
                 </div>
               ))}
-              <div className="dialog-row">
-                <label className="dialog-row-label" htmlFor="prominence">Prominence:</label>
-                <div className="dialog-slider-wrapper">
-                  <input
-                    type="range"
-                    id="prominence"
-                    name="prominence"
-                    min={1}
-                    max={10}
-                    value={form.prominence || 5}
-                    onChange={handleProminenceChange}
-                  />
-                  <span className="dialog-slider-value">{form.prominence}</span>
-                </div>
-              </div>
-              <div className="dialog-row">
-                <label className="dialog-row-label" htmlFor="color">Icon color:</label>
-                <input
-                  type="color"
-                  id="color"
-                  name="color"
-                  value={form.color || defaultColor}
-                  onChange={e => handleColorChange(e.target.value)}
-                />
-              </div>
-              <label>Icon</label>
-              <div className={`icon-picker-grid ${iconGalleryBg}`}>
-                {Object.entries(ELEMENT_ICONS).map(([key, { icon: Icon, label }]) => (
-                  <button
-                    type="button"
-                    key={key}
-                    className={`icon-picker-btn${form.icon === key ? ' selected' : ''}`}
-                    onClick={() => handleIconSelect(key as ElementIcon)}
-                    title={label}
-                  >
-                    <Icon size={28} color={form.color || defaultColor} />
-                  </button>
-                ))}
-              </div>
             </div>
           )}
           {activeTab === 'Fields' && (

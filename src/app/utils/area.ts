@@ -1,4 +1,6 @@
 import L from 'leaflet';
+import type { Location } from '@/types/locations';
+import type { Region } from '@/types/regions';
 
 // Constants from ScaleBar component
 const BASE_PIXELS = 115;
@@ -125,4 +127,22 @@ export function calculatePolygonCenter(points: [number, number][]): [number, num
   area *= 0.5;
   const factor = 1 / (6 * area);
   return [cx * factor, cy * factor];
+}
+
+/**
+ * Calculate the center position of a map element (location or region)
+ * @param element The location or region element
+ * @returns The center position as [lat, lng]
+ */
+export function getElementCenter(element: Location | Region): [number, number] {
+  if (element.elementType === 'region') {
+    // Region: calculate the center of the polygon
+    const positions = element.position as [number, number][];
+    const centerLat = positions.reduce((sum, pos) => sum + pos[0], 0) / positions.length;
+    const centerLng = positions.reduce((sum, pos) => sum + pos[1], 0) / positions.length;
+    return [centerLat, centerLng];
+  } else {
+    // Location: use the single position
+    return element.position as [number, number];
+  }
 }

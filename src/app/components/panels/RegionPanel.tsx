@@ -39,15 +39,6 @@ export function RegionPanel({
   // Debug logging in useEffect to avoid re-renders
   React.useEffect(() => {
     console.log('🔍 RegionPanel: Render #', renderCount.current, 'for region:', region.id);
-    console.log('🔍 RegionPanel: Props received:', {
-      hasOnLocationClick: !!onLocationClick,
-      hasOnRegionClick: !!onRegionClick,
-      hasHandleLocationClick: !!handleLocationClick,
-      hasHandleRegionClick: !!handleRegionClick,
-      regionId: region.id,
-      containingRegionsCount: containingRegions?.length || 0,
-      containingRegionIds: containingRegions?.map(r => r.id) || []
-    });
   });
 
   // Find child regions (fully contained within this region, not self)
@@ -110,13 +101,6 @@ export function RegionPanel({
       handleLocationClick(location);
     }
   }, [handleLocationClick, onLocationClick, handleLocationClick]);
-
-  // Debug logging for containingRegions and current region
-  console.log(
-    "DEBUG: containingRegions in RegionPanel",
-    containingRegions?.map(r => ({ id: r.id, name: r.name }))
-  );
-  console.log("DEBUG: current region", { id: region.id, name: region.name });
 
   // Memoize the regions section render function
   const renderRegionsSection = React.useMemo(() => {

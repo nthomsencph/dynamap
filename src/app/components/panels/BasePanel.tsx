@@ -6,6 +6,7 @@ import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
 import { useLocations } from '@/hooks/elements/useLocations';
 import { useRegions } from '@/hooks/elements/useRegions';
+import { usePanelWidth } from '@/hooks/ui/usePanelWidth';
 import { pointInPolygon } from '@/app/utils/area';
 
 // Helper function to find locations within a region
@@ -54,6 +55,9 @@ export function BasePanel({
   const { regions } = useRegions();
   const locationsRef = useRef(locations);
   const regionsRef = useRef(regions);
+  
+  // Panel width management
+  const { width, isDragging, handleMouseDown } = usePanelWidth();
 
   // Update refs when data changes
   useEffect(() => {
@@ -175,8 +179,6 @@ export function BasePanel({
       return null;
     }
 
-    console.log('🔍 Rendering pill path with', pathPills.length, 'pills:', pathPills.map(p => p.region.name));
-
     return (
       <div className="path-section">
         <div className="path-pills">
@@ -225,13 +227,9 @@ export function BasePanel({
     if (pathPills && pathPills.length > 0) {
       const pillContainer = document.querySelector('.path-pills');
       if (pillContainer) {
-        console.log('🔍 Found pill container, scrolling to end');
-        // Use setTimeout to ensure DOM is updated
         setTimeout(() => {
           pillContainer.scrollLeft = pillContainer.scrollWidth;
         }, 0);
-      } else {
-        console.log('🔍 Pill container not found');
       }
     }
   }, [pathPills]);
@@ -245,7 +243,15 @@ export function BasePanel({
       <div 
         className={`sidepanel ${className}`} 
         onClick={e => e.stopPropagation()}
+        style={{ width: `${width}px` }}
       >
+        {/* Draggable handle */}
+        <div 
+          className="sidepanel-drag-handle"
+          onMouseDown={handleMouseDown}
+          style={{ cursor: 'col-resize' }}
+        />
+        
         <div className={`sidepanel-content ${contentClassName}`}>
           <div className="sidepanel-topbar" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         {onBack && (

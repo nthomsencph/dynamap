@@ -16,7 +16,7 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
 ### Advanced Features
 - **Dynamic Font Sizing**: Region labels automatically scale based on polygon area
 - **Mention System**: Link locations and regions within descriptions using @mentions
-- **Prominence System**: Visibility-based system for map elements with prominence levels
+- **Prominence System**: Advanced visibility-based system with prominence ranges (lower/upper bounds)
 - **Context Menu**: Right-click context menus for quick actions on map elements
 - **Move Mode**: Drag-and-drop functionality for relocating locations
 - **Polygon Drawing**: Interactive drawing mode for creating custom regions
@@ -25,12 +25,31 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
 - **Smooth Zoom**: Enhanced zoom experience with smooth wheel zoom
 - **Icon Gallery**: Extensive collection of themed icons (castles, dungeons, landmarks, etc.)
 
-### UI/UX Features
+### Enhanced UI/UX Features
 - **Responsive Design**: Modern UI with Tailwind CSS and SASS
 - **Tab-based Dialogs**: Organized editing interface with Content, Styling, and Fields tabs
 - **Color-aware Backgrounds**: Icon galleries adapt to color brightness
 - **Keyboard Shortcuts**: Escape key to close dialogs, intuitive navigation
 - **Form Validation**: Proper validation for all user inputs
+- **Panel Navigation**: Stack-based navigation system with back/forward functionality
+- **Hierarchical Navigation**: Breadcrumb-style navigation showing regional hierarchy
+- **Smart Map Positioning**: Automatic map centering when opening panels
+- **Region Animations**: Smooth fade-in animations for regions with customizable duration
+
+### Label System
+- **Advanced Label Positioning**: 9-directional label placement (Center, Left top, Mid top, Right top, Left mid, Right mid, Left bottom, Mid bottom, Right bottom)
+- **Label Collision Strategies**: Three strategies for handling overlapping labels:
+  - `None`: Show label regardless of overlap (default)
+  - `Hide`: Hide this label if it overlaps with another
+  - `Conquer`: Show this label and hide the other if they overlap
+- **Dynamic Label Scaling**: Labels scale with zoom level for optimal readability
+- **Custom Label Offsets**: Adjustable distance between element and label
+
+### Prominence System
+- **Prominence Ranges**: Elements now use lower and upper prominence bounds instead of single values
+- **Flexible Visibility**: Set minimum and maximum zoom levels for element visibility
+- **Real-time Prominence Display**: Current prominence level shown on map
+- **Toast Notifications**: Informative messages when elements are outside visibility range
 
 ## Tech Stack
 
@@ -101,15 +120,29 @@ interface MapElement {
   name?: string;
   label?: string;
   showLabel?: boolean;
+  labelPosition?: LabelPosition; // New: Advanced label positioning
   description?: string;
   image?: string;
   color: string;
-  prominence: number;
+  prominence: ProminenceRange; // Updated: Now uses range instead of single value
   icon: ElementIcon;
   type: string;
   position: [number, number] | [number, number][];
   fields: { [key: string]: string };
+  labelCollisionStrategy?: LabelCollisionStrategy; // New: Label collision handling
 }
+
+interface ProminenceRange {
+  lower: number;       // Minimum prominence level (0-10, 0 = no lower bound)
+  upper: number;       // Maximum prominence level (1-10)
+}
+
+interface LabelPosition {
+  direction: LabelDirection; // 9-directional positioning
+  offset: number;      // Offset in coordinate units
+}
+
+type LabelCollisionStrategy = 'None' | 'Hide' | 'Conquer';
 ```
 
 ### Locations
@@ -117,6 +150,7 @@ interface MapElement {
 - Custom icons from extensive icon gallery
 - Rich text descriptions with mentions
 - Custom fields for metadata
+- Icon size scaling with zoom level
 
 ### Regions
 - Polygon positions `[number, number][]`
@@ -124,6 +158,8 @@ interface MapElement {
 - Dynamic label sizing based on area
 - Rich text descriptions with mentions
 - Custom fields for metadata
+- Area fade-in animations with customizable duration
+- Area calculation in square kilometers
 
 ## Getting Started
 
@@ -191,6 +227,21 @@ Add custom metadata to any element:
 - **Zoom**: Use mouse wheel or zoom controls
 - **Fit to Elements**: Use the fit zoom functionality
 - **Context Menu**: Right-click for quick actions
+- **Panel Navigation**: Click elements to open panels, use back button for navigation
+
+### Prominence System
+
+- **Set Visibility Ranges**: Configure lower and upper prominence bounds for elements
+- **Monitor Current Level**: View current prominence level in the bottom-left corner
+- **Automatic Hiding**: Elements automatically show/hide based on zoom level
+- **Toast Notifications**: Get informed when elements are outside visibility range
+
+### Label Management
+
+- **Position Labels**: Choose from 9 directional positions relative to elements
+- **Adjust Offsets**: Fine-tune the distance between elements and labels
+- **Handle Collisions**: Set collision strategies to manage overlapping labels
+- **Dynamic Scaling**: Labels automatically scale with zoom level
 
 ## Development Guidelines
 
@@ -234,6 +285,7 @@ Add custom metadata to any element:
 - Debounce zoom updates to prevent excessive re-renders
 - Use dynamic imports for heavy components
 - Optimize map element rendering
+- Implement proper cleanup for animations and event listeners
 
 ## Data Storage
 
@@ -248,6 +300,20 @@ Use the migration script to update data structure:
 ```bash
 npm run migrate-locations
 ```
+
+## Recent Updates
+
+### v0.1.0+ (Current)
+- **Enhanced Prominence System**: Replaced single prominence values with ranges (lower/upper bounds)
+- **Advanced Label Positioning**: 9-directional label placement with customizable offsets
+- **Label Collision Management**: Three strategies for handling overlapping labels
+- **Panel Navigation**: Stack-based navigation with back/forward functionality
+- **Hierarchical Navigation**: Breadcrumb-style navigation showing regional relationships
+- **Region Animations**: Smooth fade-in animations with customizable duration
+- **Smart Map Positioning**: Automatic centering when opening panels
+- **Improved Performance**: Debounced zoom updates and optimized rendering
+- **Enhanced Type Safety**: More comprehensive TypeScript definitions
+- **Better Error Handling**: Improved validation and error recovery
 
 ## Contributing
 

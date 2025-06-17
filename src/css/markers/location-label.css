@@ -25,7 +25,7 @@
   box-shadow: none;
   padding: 4px 6px 2px 6px;
   min-height: 1.2em;
-  border: 2px solid magenta !important;
+/*  border: 2px solid magenta !important;*/
 }
 
 /* Style for labels with background color */

@@ -19,48 +19,13 @@ export function findContainingRegions(
       pointInPolygon(clickPoint, region.position)
     );
   
-    console.log('🔍 findContainingRegions debug:', {
-      clickPoint,
-      totalRegions: regions.length,
-      containingRegionsCount: containingRegions.length,
-      containingRegionsBeforeSort: containingRegions.map(r => ({
-        id: r.id,
-        name: r.name,
-        area: r.area,
-        calculatedArea: getArea(r.position),
-        type: r.type
-      }))
-    });
-  
     // Sort by area (smallest first)
     const sortedRegions = containingRegions.sort((a, b) => {
       // Use calculated areas instead of stored areas since stored areas appear to be incorrect
       const areaA = getArea(a.position);
       const areaB = getArea(b.position);
       
-      console.log('🔍 Sorting comparison:', {
-        regionA: { id: a.id, name: a.name, area: areaA, storedArea: a.area, calculatedArea: getArea(a.position) },
-        regionB: { id: b.id, name: b.name, area: areaB, storedArea: b.area, calculatedArea: getArea(b.position) },
-        comparison: areaA - areaB,
-        result: areaA - areaB < 0 ? 'A < B (A comes first)' : 'B < A (B comes first)'
-      });
-      
       return areaA - areaB;
-    });
-    
-    console.log('🔍 Sorted regions:', sortedRegions.map(r => ({
-      id: r.id,
-      name: r.name,
-      area: r.area,
-      calculatedArea: getArea(r.position),
-      type: r.type
-    })));
-    
-    console.log('🔍 First region (should be smallest):', {
-      id: sortedRegions[0]?.id,
-      name: sortedRegions[0]?.name,
-      area: sortedRegions[0]?.area,
-      calculatedArea: sortedRegions[0] ? getArea(sortedRegions[0].position) : null
     });
     
     return sortedRegions;

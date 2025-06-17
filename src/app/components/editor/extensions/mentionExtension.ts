@@ -3,10 +3,7 @@ import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
 
 function getElementType(element: Location | Region): 'region' | 'location' {
-  if (Array.isArray((element as Region).position?.[0])) {
-    return 'region';
-  }
-  return 'location';
+  return element.elementType;
 }
 
 interface MentionItem {
