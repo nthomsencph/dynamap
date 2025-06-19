@@ -3,7 +3,7 @@ import { Marker, useMap } from "react-leaflet";
 import L from 'leaflet';
 import type { Location } from "@/types/locations";
 import type { Region } from "@/types/regions";
-import { createLocationIcon, createLocationLabelDivIcon } from '@/app/utils/map-icons';
+import { createLocationIcon, createLocationLabelDivIcon } from '@/app/utils/mapIcons';
 import { findContainingRegions } from '@/app/utils/containment';
 import { ElementMarkers, MarkerErrorBoundary } from './ElementMarkers';
 import type { PanelEntry } from '@/hooks/ui/usePanelStack';

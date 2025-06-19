@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from 'react';
-import { useMapSettings } from '../panels/MapSettingsContext';
+import { useMapSettings } from '../map/MapSettingsContext';
 
 export function BackgroundImage() {
   const { backgroundImage, backgroundColor } = useMapSettings();

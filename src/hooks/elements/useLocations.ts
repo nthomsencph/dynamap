@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState, useMemo } from "react";
-import type { Location } from "@/types/locations";
+import { useState, useEffect, useCallback } from 'react';
+import type { Location } from '@/types/locations';
 
 export function useLocations() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -33,11 +33,15 @@ export function useLocations() {
     if (!res.ok) throw new Error("Failed to add location");
     const newLocation = await res.json();
     setLocations((prev) => [...prev, newLocation]);
+    
     return newLocation;
   }, []);
 
   // Update a location
   const updateLocation = useCallback(async (location: Location) => {
+    // Get the previous location state for change tracking
+    const previousLocation = locations.find(loc => loc.id === location.id);
+    
     const res = await fetch("/api/locations", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -50,11 +54,15 @@ export function useLocations() {
       const filtered = prev.filter(loc => loc.id !== updated.id);
       return [...filtered, updated];
     });
+    
     return updated;
-  }, []);
+  }, [locations]);
 
   // Delete a location
   const deleteLocation = useCallback(async (id: string) => {
+    // Get the location before deleting it for the timeline event
+    const locationToDelete = locations.find(loc => loc.id === id);
+    
     const res = await fetch("/api/locations", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -62,14 +70,18 @@ export function useLocations() {
     });
     if (!res.ok) throw new Error("Failed to delete location");
     setLocations((prev) => prev.filter((loc) => loc.id !== id));
-  }, []);
+    
+    // Create timeline event
+    if (locationToDelete) {
+      // timeline event logic would be here
+    }
+  }, [locations]);
 
   useEffect(() => {
     fetchLocations();
   }, []);
 
-  // Memoize the return value to prevent unnecessary re-renders
-  const result = useMemo(() => ({
+  return {
     locations,
     loading,
     error,
@@ -77,7 +89,5 @@ export function useLocations() {
     addLocation,
     updateLocation,
     deleteLocation,
-  }), [locations, loading, error]); // Remove callback functions from dependencies
-
-  return result;
+  };
 } 

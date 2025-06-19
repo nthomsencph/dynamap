@@ -4,7 +4,7 @@ import type { RegionDialogProps } from '@/types/dialogs';
 import { DEFAULT_DIALOG_COLORS } from '@/types/dialogs';
 import { BaseDialog } from './BaseDialog';
 import { calculatePolygonAreaKm } from '@/app/utils/area';
-import { useMapSettings } from '../panels/MapSettingsContext';
+import { useMapSettings } from '../map/MapSettingsContext';
 import '@/css/dialogs/base-dialog.css';
 
 export function RegionDialog({ open, mode, region, map, onSave, onDelete, onClose }: RegionDialogProps) {

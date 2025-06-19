@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { FaImage, FaUpload, FaLink, FaRegImages, FaRulerCombined, FaLock, FaUnlock } from 'react-icons/fa';
-import './GeneralSettingsPanel.css';
-import { useMapSettings } from './MapSettingsContext';
+import '@/css/panels/settings-panel.css'
+import { useMapSettings } from '../map/MapSettingsContext';
 import LabelEditor from '../editor/LabelEditor';
 
 export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
@@ -24,10 +24,14 @@ export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
     addToImageGallery,
     editMode,
     setEditMode,
-    fogOfWarEnabled,
-    setFogOfWarEnabled,
-    fogOfWarEditMode,
-    setFogOfWarEditMode
+    startYear,
+    setStartYear,
+    showTimeline,
+    setShowTimeline,
+    showTimelineWhenZoomed,
+    setShowTimelineWhenZoomed,
+    showSettingsWhenZoomed,
+    setShowSettingsWhenZoomed
   } = useMapSettings();
   const [showMapGallery, setShowMapGallery] = React.useState(false);
   const [showBgGallery, setShowBgGallery] = React.useState(false);
@@ -166,6 +170,65 @@ export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
           </label>
           <small style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '4px' }}>
             When enabled, you can add, edit, and delete map elements via right-click context menu.
+          </small>
+        </div>
+
+        {/* Timeline Settings */}
+        <div className="panel-section">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={showTimeline}
+              onChange={(e) => setShowTimeline(e.target.checked)}
+            />
+            <span>Show timeline</span>
+          </label>
+          <small style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '4px' }}>
+            When enabled, the timeline slider is visible and accessible at all zoom levels.
+          </small>
+        </div>
+
+        <div className="panel-section">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={showTimelineWhenZoomed}
+              onChange={(e) => setShowTimelineWhenZoomed(e.target.checked)}
+            />
+            <span>Show timeline when zoomed</span>
+          </label>
+          <small style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '4px' }}>
+            When enabled, the timeline button remains visible even when zoomed in on the map.
+          </small>
+        </div>
+
+        <div className="panel-section">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={showSettingsWhenZoomed}
+              onChange={(e) => setShowSettingsWhenZoomed(e.target.checked)}
+            />
+            <span>Show settings when zoomed</span>
+          </label>
+          <small style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '4px' }}>
+            When enabled, the settings button remains visible even when zoomed in on the map.
+          </small>
+        </div>
+
+        {/* Start Year Setting */}
+        <div className="panel-section">
+          <label>Start Year</label>
+          <input
+            type="number"
+            value={startYear}
+            onChange={(e) => setStartYear(Number(e.target.value))}
+            min="1"
+            max="9999"
+            placeholder="2024"
+          />
+          <small style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '4px' }}>
+            The year that the timeline slider starts from. This affects the minimum year shown in the timeline.
           </small>
         </div>
 
@@ -468,45 +531,6 @@ export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             backgroundImage && <img src={backgroundImage} alt="Selected background" className="selected-img" />
-          )}
-        </div>
-
-        {/* Fog of War Settings */}
-        <div className="panel-section">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={fogOfWarEnabled}
-              onChange={e => setFogOfWarEnabled(e.target.checked)}
-            />
-            <span>Enable Fog of War</span>
-          </label>
-          <small style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '4px' }}>
-            When enabled, the map will be covered by a dark fog. Use the edit mode to reveal areas for players.
-          </small>
-          {fogOfWarEnabled && (
-            <button
-              style={{
-                marginTop: '10px',
-                background: fogOfWarEditMode ? '#2563eb' : 'rgba(255,255,255,0.1)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '8px 16px',
-                cursor: 'pointer',
-                fontWeight: 600
-              }}
-              onClick={() => {
-                if (!fogOfWarEditMode) {
-                  setFogOfWarEditMode(true);
-                  if (onClose) onClose(); // Close panel when entering edit mode
-                } else {
-                  setFogOfWarEditMode(false);
-                }
-              }}
-            >
-              {fogOfWarEditMode ? 'Exit Fog of War Edit Mode' : 'Edit Fog of War'}
-            </button>
           )}
         </div>
       </div>

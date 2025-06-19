@@ -26,7 +26,7 @@ import { useRegions } from "@/hooks/elements/useRegions";
 import { useContextMenu } from "@/hooks/ui/useContextMenu";
 import { usePolygonDraw, type DrawingTool, type DrawingResult } from "@/hooks/elements/usePolygonDraw";
 import { usePanelStack, type PanelEntry } from "@/hooks/ui/usePanelStack";
-import { useMapSettings } from '../panels/MapSettingsContext';
+import { useMapSettings } from './MapSettingsContext';
 
 // Components
 import { ContextMenu } from "../ui/ContextMenu";
@@ -41,13 +41,13 @@ import { MapName } from "../ui/MapName";
 import { LocationMarkers } from "../markers/LocationMarkers";
 import { RegionMarkers } from "../markers/RegionMarkers";
 import { UnifiedPanel } from "../panels/UnifiedPanel";
-import { GeneralSettingsPanel } from '../panels/GeneralSettingsPanel';
-import { FogOverlay } from "./FogOverlay";
-import { FogEditOverlay } from "./FogEditOverlay";
+import { GeneralSettingsPanel } from '../panels/SettingsPanel';
+import { TimelineIcon } from '../timeline/TimelineIcon';
 
 // Styles
 import '@/css/markers/location-label.css';
 import '@/css/ui/move-mode.css';
+import '@/css/ui/timeline-slider.css';
 
 export default function Map() {
     const mapRef = useRef<L.Map | null>(null);
@@ -62,7 +62,7 @@ export default function Map() {
     const regionDialog = useRegionDialog();
     
     // Map settings
-    const { editMode, mapImageRoundness, fogOfWarEnabled, fogOfWarEditMode, fogOfWarReveals, mapImage, mapImageSettings } = useMapSettings();
+    const { editMode, mapImageRoundness, mapImage, mapImageSettings, showTimelineWhenZoomed, showSettingsWhenZoomed } = useMapSettings();
     
     // Unified panel stack
     const { currentPanel, pushPanel, popPanel, clearStack, canGoBack } = usePanelStack();
@@ -516,25 +516,8 @@ export default function Map() {
                 onCancel={handleDrawingCancel}
             />
 
-            {/* Fog of War Overlay */}
-            {fogOfWarEnabled && leafletMap && imageLoaded && (
-                <FogOverlay
-                    reveals={fogOfWarReveals}
-                    map={leafletMap}
-                    bounds={imageBounds}
-                />
-            )}
-
-            {/* Fog of War Edit Overlay */}
-            {fogOfWarEditMode && leafletMap && imageLoaded && (
-              <FogEditOverlay 
-                map={leafletMap}
-                bounds={imageBounds}
-              />
-            )}
-
-            {/* Settings Icon Button - Only show when fully zoomed out */}
-            {currentZoom === fitZoom && (
+            {/* Settings Icon Button - Show based on zoom settings */}
+            {(currentZoom === fitZoom || showSettingsWhenZoomed) && (
                 <button
                     className="settings-fab"
                     style={{
@@ -559,6 +542,11 @@ export default function Map() {
                 >
                     <FaCog size={16} />
                 </button>
+            )}
+
+            {/* Timeline Button - Show based on zoom settings */}
+            {(currentZoom === fitZoom || showTimelineWhenZoomed) && (
+                <TimelineIcon />
             )}
 
             {showSettings && (

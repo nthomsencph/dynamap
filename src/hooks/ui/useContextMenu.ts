@@ -53,7 +53,17 @@ export function useContextMenu({
 
   // Helper function to check if any panels are open
   const hasOpenPanels = useCallback(() => {
-    return document.querySelectorAll('.sidepanel-backdrop').length > 0;
+    // Check for sidepanel-backdrop elements, but exclude TimelineSlider backdrop
+    const sidepanelBackdrops = document.querySelectorAll('.sidepanel-backdrop');
+    for (const backdrop of sidepanelBackdrops) {
+      // Skip if this backdrop is from TimelineSlider (it doesn't have the sidepanel-backdrop class)
+      // Only consider actual sidepanels that should block context menus
+      const parentSidepanel = backdrop.closest('.sidepanel');
+      if (parentSidepanel) {
+        return true;
+      }
+    }
+    return false;
   }, []);
 
   // Type-safe handlers for different element types

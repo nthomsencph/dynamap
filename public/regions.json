@@ -1,46 +1,5 @@
 [
   {
-    "position": [
-      [
-        694.8033304622452,
-        752.2250933103646
-      ],
-      [
-        677.5768016078093,
-        890.0373241458512
-      ],
-      [
-        574.2176284811944,
-        887.1662360034453
-      ],
-      [
-        588.5730691932242,
-        749.3540051679587
-      ]
-    ],
-    "fields": {},
-    "labelPosition": {
-      "direction": "Center",
-      "offset": 10
-    },
-    "description": "<p style=\"text-align: left\">pus'tahW</p>",
-    "name": "A region",
-    "type": "Continent",
-    "showLabel": true,
-    "icon": "MdCastle",
-    "showBorder": true,
-    "showHighlight": true,
-    "areaFadeDuration": 800,
-    "label": "A region",
-    "id": "53726168-4a70-4e43-8308-28959fbf6e1f",
-    "area": 531568.9981096408,
-    "prominence": {
-      "lower": 0,
-      "upper": 5
-    },
-    "elementType": "region"
-  },
-  {
     "color": "#2563eb",
     "icon": "MdCastle",
     "showLabel": true,
@@ -52,241 +11,35 @@
       "lower": 0,
       "upper": 5
     },
-    "description": "<p style=\"text-align: left\">ffffffffffff?pustahWffffff</p>",
+    "description": "<p style=\"text-align: left\">A wonderful place :) But in year two it rained a bit :(</p>",
     "image": "",
     "fields": {},
-    "showBorder": true,
-    "showHighlight": true,
+    "elementType": "region",
+    "showBorder": false,
+    "showHighlight": false,
     "areaFadeDuration": 800,
     "position": [
       [
-        817,
-        881
+        891,
+        951
       ],
       [
-        810,
-        981
+        890.5,
+        1030.5
       ],
       [
-        735,
-        977
+        813.5,
+        1046
       ],
       [
-        749,
-        866
+        804,
+        962
       ]
     ],
-    "name": "Another region",
+    "name": "Cursed Shores",
     "type": "Island",
-    "label": "Another region",
-    "id": "1bda9efb-6200-42d4-a2b3-78854789aacc",
-    "area": 2311682.419659735,
-    "elementType": "region"
-  },
-  {
-    "color": "#2563eb",
-    "icon": "MdCastle",
-    "showLabel": true,
-    "labelPosition": {
-      "direction": "Center",
-      "offset": 10
-    },
-    "prominence": {
-      "lower": 0,
-      "upper": 5
-    },
-    "description": "<p style=\"text-align: left\"></p>",
-    "image": "",
-    "fields": {},
-    "elementType": "region",
-    "showBorder": true,
-    "showHighlight": true,
-    "areaFadeDuration": 800,
-    "position": [
-      [
-        1188.6304909560724,
-        1644.702031841351
-      ],
-      [
-        1210.9511750113718,
-        1642.5036363448528
-      ],
-      [
-        1232.4140876960096,
-        1635.9929329614138
-      ],
-      [
-        1252.1944213120557,
-        1625.4201243708155
-      ],
-      [
-        1269.5320287315842,
-        1611.1915176778948
-      ],
-      [
-        1283.760635424505,
-        1593.8539102583663
-      ],
-      [
-        1294.3334440151032,
-        1574.0735766423202
-      ],
-      [
-        1300.8441473985422,
-        1552.6106639576824
-      ],
-      [
-        1303.0425428950405,
-        1530.289979902383
-      ],
-      [
-        1300.8441473985422,
-        1507.9692958470837
-      ],
-      [
-        1294.3334440151032,
-        1486.506383162446
-      ],
-      [
-        1283.760635424505,
-        1466.7260495463997
-      ],
-      [
-        1269.5320287315842,
-        1449.3884421268713
-      ],
-      [
-        1252.1944213120557,
-        1435.1598354339505
-      ],
-      [
-        1232.4140876960096,
-        1424.5870268433523
-      ],
-      [
-        1210.9511750113718,
-        1418.0763234599133
-      ],
-      [
-        1188.6304909560724,
-        1415.877927963415
-      ],
-      [
-        1166.309806900773,
-        1418.0763234599133
-      ],
-      [
-        1144.8468942161353,
-        1424.5870268433523
-      ],
-      [
-        1125.0665606000891,
-        1435.1598354339505
-      ],
-      [
-        1107.7289531805607,
-        1449.3884421268713
-      ],
-      [
-        1093.50034648764,
-        1466.7260495463997
-      ],
-      [
-        1082.9275378970417,
-        1486.5063831624457
-      ],
-      [
-        1076.4168345136027,
-        1507.9692958470837
-      ],
-      [
-        1074.2184390171044,
-        1530.289979902383
-      ],
-      [
-        1076.4168345136027,
-        1552.6106639576824
-      ],
-      [
-        1082.9275378970417,
-        1574.0735766423202
-      ],
-      [
-        1093.50034648764,
-        1593.8539102583663
-      ],
-      [
-        1107.7289531805607,
-        1611.1915176778948
-      ],
-      [
-        1125.0665606000891,
-        1625.4201243708155
-      ],
-      [
-        1144.846894216135,
-        1635.9929329614138
-      ],
-      [
-        1166.309806900773,
-        1642.5036363448528
-      ],
-      [
-        1188.6304909560724,
-        1644.702031841351
-      ]
-    ],
-    "name": "Fifth circle",
-    "type": "Region",
-    "label": "Fifth circle",
-    "id": "35c153f7-b436-4e8b-88a8-fc214a53cbc2",
-    "area": 12358437.569806024
-  },
-  {
-    "color": "#2563eb",
-    "icon": "MdCastle",
-    "showLabel": true,
-    "labelPosition": {
-      "direction": "Center",
-      "offset": 10
-    },
-    "prominence": {
-      "lower": 0,
-      "upper": 5
-    },
-    "description": "<p style=\"text-align: left\"></p>",
-    "image": "",
-    "fields": {},
-    "elementType": "region",
-    "showBorder": true,
-    "showHighlight": true,
-    "areaFadeDuration": 800,
-    "position": [
-      [
-        1041,
-        1176
-      ],
-      [
-        1111,
-        1176
-      ],
-      [
-        1111,
-        1259
-      ],
-      [
-        1041,
-        1259
-      ],
-      [
-        1041,
-        1176
-      ]
-    ],
-    "name": "First square",
-    "type": "Continent",
-    "label": "First square",
-    "id": "fa7006ba-1a6a-4594-8d4f-8f4ce3b13b89",
-    "area": 1757277.8827977316
+    "label": "<p><span style=\"font-size: 28px\">Cursed Shores</span></p>",
+    "id": "1e1cf4c2-8073-498e-87fa-431290280650",
+    "area": 2047603.7249999996
   }
 ]

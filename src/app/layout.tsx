@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '@/css/globals.css';
-import { MapSettingsProvider } from './components/panels/MapSettingsContext';
+import { MapSettingsProvider } from './components/map/MapSettingsContext';
 import { BackgroundImage } from './components/ui/BackgroundImage';
 
 const geistSans = Geist({

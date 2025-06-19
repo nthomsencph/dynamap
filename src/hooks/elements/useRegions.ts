@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Region } from '@/types/regions';
 
 export function useRegions() {
@@ -39,29 +39,38 @@ export function useRegions() {
     if (!response.ok) throw new Error('Failed to add region');
     const newRegion = await response.json();
     setRegions(prev => [...prev, newRegion]);
+    
     return newRegion;
   }, []);
 
   // Update an existing region
   const updateRegion = useCallback(async (region: Region) => {
+    // Get the previous region state for change tracking
+    const previousRegion = regions.find(reg => reg.id === region.id);
+    
     try {
       const response = await fetch('/api/regions', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(region),
+        body: JSON.stringify(region)
       });
+
       if (!response.ok) throw new Error('Failed to update region');
       const updatedRegion = await response.json();
       setRegions(prev => prev.map(r => r.id === region.id ? updatedRegion : r));
+      
       return updatedRegion;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update region');
       throw err;
     }
-  }, []);
+  }, [regions]);
 
   // Delete a region
   const deleteRegion = useCallback(async (regionId: string) => {
+    // Get the region before deleting it for the timeline event
+    const regionToDelete = regions.find(reg => reg.id === regionId);
+    
     try {
       const response = await fetch('/api/regions', {
         method: 'DELETE',
@@ -74,17 +83,18 @@ export function useRegions() {
       setError(err instanceof Error ? err.message : 'Failed to delete region');
       throw err;
     }
-  }, []);
+  }, [regions]);
 
   // Memoize the return value to prevent unnecessary re-renders
-  const result = useMemo(() => ({
+  const result = {
     regions,
     loading,
     error,
+    fetchRegions,
     addRegion,
     updateRegion,
     deleteRegion,
-  }), [regions, loading, error]); // Remove callback functions from dependencies
+  };
 
   return result;
 }

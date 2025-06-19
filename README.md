@@ -52,6 +52,63 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
 - **Smooth Zoom**: Enhanced zoom experience with smooth wheel zoom
 - **Icon Gallery**: Extensive collection of themed icons (castles, dungeons, landmarks, etc.)
 
+### Timeline System
+- **Interactive Timeline Navigation**: Comprehensive timeline system for managing map states across different years
+- **Timeline Slider**: Compact, minimalistic timeline interface with smooth navigation controls
+- **Year-based Navigation**: Navigate between specific years with precise year selection
+- **Entry-based System**: Efficient change-based timeline storing only changes per snapshot
+- **Epoch Management**: Create and manage time periods (epochs) with custom names, date ranges, and styling
+- **Epoch Features**:
+  - Custom epoch names and descriptions
+  - Year prefix and suffix options
+  - Restart at zero functionality for relative year counting
+  - Show/hide end date option
+  - Color-coded epoch display
+  - Rich text descriptions with formatting
+- **Note System**: Add contextual notes to specific years with rich text editing
+- **Note Features**:
+  - Multiple notes per year
+  - Rich text descriptions with full formatting
+  - Notification-style floating widgets
+  - Individual close buttons for each note
+  - Smooth slide-in animations from the right
+- **Timeline Controls**:
+  - Previous/Next year navigation
+  - Previous/Next entry navigation
+  - Direct year input and selection
+  - Play/Pause timeline functionality
+  - Entry-based navigation for quick jumps
+- **Context Menu Integration**: Right-click support for timeline elements
+  - Right-click notes to edit them
+  - Right-click epoch banners to edit epochs
+  - Context menus appear above timeline elements
+- **Edit Mode Integration**: Timeline editing features only available when edit mode is enabled
+  - Add new notes and epochs
+  - Edit existing timeline elements
+  - Context menu functionality
+- **Zoom-based Visibility**: Timeline and settings buttons can be configured to show/hide based on zoom level
+  - "Show timeline when zoomed" setting
+  - "Show settings when zoomed" setting
+  - Maintains UI cleanliness at different zoom levels
+- **Timeline Data Management**:
+  - Efficient storage using change-based system
+  - Automatic data migration from legacy systems
+  - Structured timeline entries with notes and epochs
+  - API endpoints for timeline CRUD operations
+- **Timeline UI Components**:
+  - TimelineIcon: Floating timeline button with consistent styling
+  - TimelineSlider: Main timeline interface with navigation controls
+  - TimelineNotes: Notification-style note display
+  - NoteDialog: Rich text editor for creating/editing notes
+  - NotePanel: Full-screen note viewing interface
+  - EpochDialog: Epoch creation and editing interface
+  - EpochPanel: Epoch information and note browsing interface
+- **Timeline Integration**:
+  - Seamless integration with existing map elements
+  - Automatic data refresh when navigating timeline
+  - Proper z-index management for all timeline components
+  - Non-interfering backdrop design for wheel zoom support
+
 ### Enhanced UI/UX Features
 - **Responsive Design**: Modern UI with Tailwind CSS and SASS
 - **Tab-based Dialogs**: Organized editing interface with Content, Styling, and Fields tabs
@@ -98,6 +155,7 @@ dynamap/
 ├── public/                    # Static files and data
 │   ├── locations.json        # Location data storage
 │   ├── regions.json          # Region data storage
+│   ├── timeline.json         # Timeline data storage
 │   ├── types.json            # Type definitions
 │   ├── settings.json         # Map settings and preferences
 │   ├── uploads/              # User uploaded images
@@ -107,6 +165,7 @@ dynamap/
 │   │   ├── api/             # API routes for CRUD operations
 │   │   │   ├── locations/   # Location API endpoints
 │   │   │   ├── regions/     # Region API endpoints
+│   │   │   ├── timeline/    # Timeline API endpoints
 │   │   │   ├── settings/    # Settings API endpoint
 │   │   │   └── upload/      # Image upload API endpoint
 │   │   ├── components/      # React components
@@ -115,6 +174,7 @@ dynamap/
 │   │   │   ├── map/         # Map-related components
 │   │   │   ├── markers/     # Map marker components
 │   │   │   ├── panels/      # Side panel components
+│   │   │   ├── timeline/    # Timeline system components
 │   │   │   └── ui/          # Reusable UI components
 │   │   ├── utils/           # App-specific utilities
 │   │   ├── layout.tsx       # Root layout
@@ -122,6 +182,7 @@ dynamap/
 │   ├── css/                 # Global styles and component CSS
 │   ├── hooks/               # Custom React hooks
 │   │   ├── elements/        # Hooks for managing locations and regions
+│   │   ├── timeline/        # Hooks for timeline management
 │   │   ├── dialogs/         # Dialog management hooks
 │   │   ├── ui/              # UI interaction hooks
 │   │   └── view/            # Map view and zoom hooks
@@ -129,6 +190,7 @@ dynamap/
 │   │   ├── elements.ts      # Core element interfaces
 │   │   ├── locations.ts     # Location-specific types
 │   │   ├── regions.ts       # Region-specific types
+│   │   ├── timeline.ts      # Timeline system types
 │   │   ├── dialogs.ts       # Dialog state types
 │   │   └── editor/          # Rich text editor types
 │   ├── constants/           # Application constants
@@ -178,15 +240,26 @@ interface LabelPosition {
 type LabelCollisionStrategy = 'None' | 'Hide' | 'Conquer';
 ```
 
+### Coordinate System
+
+Dynamap uses a custom pixel-based coordinate system rather than geographic coordinates:
+- The map is based on a 2000x2000 pixel grid
+- Scale is defined in kilometers per pixel (configurable in settings)
+- Default scale: 2000 km = 115 pixels at base zoom
+- All coordinates are stored in pixel values
+- Drawing tools (like circles) automatically convert from geographic units to pixel units
+
 ### Locations
-- Single point positions `[number, number]`
+- Single point positions `[number, number]` in pixel coordinates
 - Custom icons from extensive icon gallery
 - Rich text descriptions with mentions
 - Custom fields for metadata
 - Icon size scaling with zoom level
 
 ### Regions
-- Polygon positions `[number, number][]`
+- Polygon positions `[number, number][]` in pixel coordinates
+- Support for both manual polygon drawing and circle-to-polygon conversion
+- Circle drawing automatically converts radius from meters to pixels using map scale
 - Custom styling (fill color, border, opacity)
 - Dynamic label sizing based on area
 - Rich text descriptions with mentions
@@ -297,19 +370,56 @@ Add custom metadata to any element:
 - **Context Menu Control**: When disabled, right-click context menus are disabled
 - **Persistent Setting**: Your preference is saved across sessions
 
+### Timeline System
+
+#### Accessing the Timeline
+- Click the timeline button (timeline icon) in the bottom-right corner
+- The timeline slider appears with current year and epoch information
+- Use the navigation controls to move between years
+
+#### Timeline Navigation
+- **Year Navigation**: Use the previous/next year buttons to move one year at a time
+- **Entry Navigation**: Use the previous/next entry buttons to jump between timeline entries
+- **Direct Year Selection**: Click on the year display to enter a specific year
+- **Epoch Information**: View current epoch details in the banner at the top
+
+#### Creating Timeline Elements
+1. **Add Notes**: Click the "+ Note" button to add a contextual note for the current year
+2. **Add Epochs**: Click the "+ Epoch" button to create a new time period
+3. **Edit Elements**: Right-click on notes or epoch banners to edit them
+
+#### Epoch Management
+- **Epoch Names**: Give your time periods descriptive names
+- **Date Ranges**: Set start and end years for each epoch
+- **Year Formatting**: Add prefixes and suffixes to year displays
+- **Restart at Zero**: Enable relative year counting (Year 1, Year 2, etc.)
+- **Show End Date**: Optionally hide the epoch end year
+- **Color Coding**: Assign colors to visually distinguish epochs
+- **Rich Descriptions**: Add detailed descriptions with full formatting
+
+#### Note System
+- **Multiple Notes**: Add several notes to the same year
+- **Rich Text Editing**: Use the full rich text editor for note content
+- **Notification Display**: Notes appear as floating widgets below the timeline
+- **Individual Controls**: Each note has its own close button
+- **Smooth Animations**: Notes slide in from the right with staggered timing
+
+#### Timeline Settings
+- **Show Timeline When Zoomed**: Control timeline button visibility at different zoom levels
+- **Show Settings When Zoomed**: Control settings button visibility at different zoom levels
+- **Edit Mode Integration**: Timeline editing features require edit mode to be enabled
+
+#### Context Menu Integration
+- **Note Editing**: Right-click on notes to edit them
+- **Epoch Editing**: Right-click on epoch banners to edit epochs
+- **Proper Layering**: Context menus appear above timeline elements
+
 ### Prominence System
 
 - **Set Visibility Ranges**: Configure lower and upper prominence bounds for elements
 - **Monitor Current Level**: View current prominence level in the bottom-left corner
 - **Automatic Hiding**: Elements automatically show/hide based on zoom level
 - **Toast Notifications**: Get informed when elements are outside visibility range
-
-### Label Management
-
-- **Position Labels**: Choose from 9 directional positions relative to elements
-- **Adjust Offsets**: Fine-tune the distance between elements and labels
-- **Handle Collisions**: Set collision strategies to manage overlapping labels
-- **Dynamic Scaling**: Labels automatically scale with zoom level
 
 ## Development Guidelines
 
@@ -360,6 +470,7 @@ Add custom metadata to any element:
 The application uses JSON files for data persistence:
 - `public/locations.json` - Location data
 - `public/regions.json` - Region data
+- `public/timeline.json` - Timeline data (entries, epochs, notes)
 - `public/types.json` - Type definitions
 - `public/settings.json` - Map settings and preferences (automatically managed)
 
@@ -383,7 +494,24 @@ npm run migrate-locations
 
 ## Recent Updates
 
-### v0.2.0+ (Current)
+### v0.2.1+ (Current)
+- **Timeline System**: Comprehensive timeline navigation system for managing map states across different years
+  - Interactive timeline slider with year-based navigation
+  - Epoch management with custom names, date ranges, and styling options
+  - Note system with rich text editing and notification-style display
+  - Context menu integration for timeline elements
+  - Edit mode integration for timeline editing features
+  - Zoom-based visibility settings for timeline and settings buttons
+  - Efficient change-based timeline storage system
+  - Proper z-index management for all timeline components
+  - Non-interfering backdrop design supporting wheel zoom
+- **Custom Coordinate System**: Implemented pixel-based coordinate system for precise mapping
+- **Circle Drawing Improvements**: Enhanced circle-to-polygon conversion with proper scaling
+- **Scale Bar Integration**: Added visual scale indicator showing km/pixel ratio
+- **Drawing Tool Enhancements**: Better handling of geographic to pixel coordinate conversion
+- **Improved Error Handling**: Added defensive checks for GeoJSON conversion in region drawing
+
+### v0.2.0+
 - **General Settings Panel**: Comprehensive settings interface with slide-in panel design
 - **Map Image Customization**: Full control over map image with upload, URL, and gallery options
 - **Dynamic Map Sizing**: Cover, contain, auto, and custom dimension options with aspect ratio locking

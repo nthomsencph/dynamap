@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useMap } from 'react-leaflet';
-import { useMapSettings } from '../panels/MapSettingsContext';
+import { useMapSettings } from '../map/MapSettingsContext';
 import { useFitZoom } from '@/hooks/view/useFitZoom';
 import '@/css/ui/map-name.css';
 

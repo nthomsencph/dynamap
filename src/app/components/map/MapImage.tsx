@@ -1,5 +1,5 @@
 import { ImageOverlay } from "react-leaflet";
-import { useMapSettings } from '../panels/MapSettingsContext';
+import { useMapSettings } from './MapSettingsContext';
 import { useEffect, useState } from 'react';
 
 export function MapImage() {

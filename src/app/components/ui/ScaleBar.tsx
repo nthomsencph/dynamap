@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useMap } from 'react-leaflet';
 import '@/css/ui/scale-bar.css';
-import { useMapSettings } from '../panels/MapSettingsContext';
+import { useMapSettings } from '../map/MapSettingsContext';
 
 const BASE_PIXELS = 115;
 const BASE_ZOOM = -1;

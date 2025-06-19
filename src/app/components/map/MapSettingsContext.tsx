@@ -18,12 +18,6 @@ interface MapNameSettings {
   position: 'center' | 'top-left' | 'top-right' | 'bottom-right' | 'bottom-left';
 }
 
-interface FogOfWarReveal {
-  x: number;
-  y: number;
-  radius: number;
-}
-
 interface MapSettingsContextType {
   mapImageRoundness: number;
   setMapImageRoundness: (v: number) => void;
@@ -43,12 +37,14 @@ interface MapSettingsContextType {
   addToImageGallery: (url: string) => void;
   editMode: boolean;
   setEditMode: (v: boolean) => void;
-  fogOfWarEnabled: boolean;
-  setFogOfWarEnabled: (v: boolean) => void;
-  fogOfWarReveals: FogOfWarReveal[];
-  setFogOfWarReveals: (r: FogOfWarReveal[]) => void;
-  fogOfWarEditMode: boolean;
-  setFogOfWarEditMode: (v: boolean) => void;
+  startYear: number;
+  setStartYear: (v: number) => void;
+  showTimeline: boolean;
+  setShowTimeline: (v: boolean) => void;
+  showTimelineWhenZoomed: boolean;
+  setShowTimelineWhenZoomed: (v: boolean) => void;
+  showSettingsWhenZoomed: boolean;
+  setShowSettingsWhenZoomed: (v: boolean) => void;
 }
 
 const MapSettingsContext = createContext<MapSettingsContextType | undefined>(undefined);
@@ -79,9 +75,10 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
     '/media/404.jpeg',
   ]);
   const [editMode, setEditMode] = useState(true);
-  const [fogOfWarEnabled, setFogOfWarEnabled] = useState(false);
-  const [fogOfWarReveals, setFogOfWarReveals] = useState<FogOfWarReveal[]>([]);
-  const [fogOfWarEditMode, setFogOfWarEditMode] = useState(false);
+  const [startYear, setStartYear] = useState(2024);
+  const [showTimeline, setShowTimeline] = useState(true);
+  const [showTimelineWhenZoomed, setShowTimelineWhenZoomed] = useState(true);
+  const [showSettingsWhenZoomed, setShowSettingsWhenZoomed] = useState(true);
 
   const addToImageGallery = (url: string) => {
     if (!imageGallery.includes(url)) {
@@ -109,8 +106,10 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
         if (typeof data.backgroundColor === 'string') setBackgroundColor(data.backgroundColor);
         if (Array.isArray(data.imageGallery)) setImageGallery(data.imageGallery);
         if (typeof data.editMode === 'boolean') setEditMode(data.editMode);
-        if (typeof data.fogOfWarEnabled === 'boolean') setFogOfWarEnabled(data.fogOfWarEnabled);
-        if (Array.isArray(data.fogOfWarReveals)) setFogOfWarReveals(data.fogOfWarReveals);
+        if (typeof data.startYear === 'number') setStartYear(data.startYear);
+        if (typeof data.showTimeline === 'boolean') setShowTimeline(data.showTimeline);
+        if (typeof data.showTimelineWhenZoomed === 'boolean') setShowTimelineWhenZoomed(data.showTimelineWhenZoomed);
+        if (typeof data.showSettingsWhenZoomed === 'boolean') setShowSettingsWhenZoomed(data.showSettingsWhenZoomed);
       })
       .catch(error => {
         console.error('MapSettings: Error loading settings:', error);
@@ -137,8 +136,10 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
           backgroundColor,
           imageGallery,
           editMode,
-          fogOfWarEnabled,
-          fogOfWarReveals
+          startYear,
+          showTimeline,
+          showTimelineWhenZoomed,
+          showSettingsWhenZoomed
         }),
       })
       .then(res => {
@@ -157,7 +158,7 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
     return () => {
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
     };
-  }, [mapImageRoundness, mapScale, mapImage, mapImageSettings, mapNameSettings, backgroundImage, backgroundColor, imageGallery, editMode, fogOfWarEnabled, fogOfWarReveals]);
+  }, [mapImageRoundness, mapScale, mapImage, mapImageSettings, mapNameSettings, backgroundImage, backgroundColor, imageGallery, editMode, startYear, showTimeline, showTimelineWhenZoomed, showSettingsWhenZoomed]);
 
   return (
     <MapSettingsContext.Provider value={{ 
@@ -179,12 +180,14 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
       addToImageGallery,
       editMode,
       setEditMode,
-      fogOfWarEnabled,
-      setFogOfWarEnabled,
-      fogOfWarReveals,
-      setFogOfWarReveals,
-      fogOfWarEditMode,
-      setFogOfWarEditMode
+      startYear,
+      setStartYear,
+      showTimeline,
+      setShowTimeline,
+      showTimelineWhenZoomed,
+      setShowTimelineWhenZoomed,
+      showSettingsWhenZoomed,
+      setShowSettingsWhenZoomed
     }}>
       {children}
     </MapSettingsContext.Provider>
@@ -192,7 +195,9 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
 }
 
 export function useMapSettings() {
-  const ctx = useContext(MapSettingsContext);
-  if (!ctx) throw new Error('useMapSettings must be used within MapSettingsProvider');
-  return ctx;
+  const context = useContext(MapSettingsContext);
+  if (context === undefined) {
+    throw new Error('useMapSettings must be used within a MapSettingsProvider');
+  }
+  return context;
 } 

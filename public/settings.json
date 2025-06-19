@@ -1,5 +1,5 @@
 {
-  "mapImageRoundness": 26,
+  "mapImageRoundness": 100,
   "mapScale": 17.4,
   "mapImage": "/media/map.jpg",
   "mapImageSettings": {
@@ -12,8 +12,8 @@
     "borderColor": "#000000"
   },
   "mapNameSettings": {
-    "content": "",
-    "show": false,
+    "content": "<p><span style=\"font-family: 'UnifrakturMaguntia', cursive\">A world of joy</span></p>",
+    "show": true,
     "position": "center"
   },
   "backgroundImage": "/media/parchment.jpeg",
@@ -24,7 +24,9 @@
     "/media/404.jpeg"
   ],
   "editMode": true,
-  "fogOfWarEnabled": false,
-  "fogOfWarReveals": [
-  ]
+  "startYear": 0,
+  "showTimeline": true,
+  "timelineEditMode": false,
+  "showTimelineWhenZoomed": true,
+  "showSettingsWhenZoomed": true
 }

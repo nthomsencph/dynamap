@@ -1,0 +1,113 @@
+/* Timeline Notes Container */
+.timeline-notes-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10003; /* Between TimelineSlider (10002) and sidepanels (10004) */
+  pointer-events: none;
+  margin-top: 180px; /* Reduced space - closer to compact TimelineSlider */
+}
+
+/* Individual Note Widget */
+.timeline-note-widget {
+  width: 380px;
+  background: rgba(0, 0, 0, 0.95);
+  color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  pointer-events: auto;
+  animation: slideInFromRight 0.4s ease-out forwards;
+  margin-bottom: 6px; /* Reduced space between notes */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  /* Start off-screen */
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.timeline-note-widget:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(4px);
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Note Widget Header */
+.timeline-note-widget-header {
+  display: flex;
+  align-items: flex-start; /* Changed to flex-start for top alignment */
+  justify-content: space-between;
+  padding: 6px 12px 0px 12px; /* Removed bottom padding */
+  /* Removed border-bottom - no horizontal line */
+  /* Removed background - no lighter background */
+}
+
+.timeline-note-widget-title {
+  font-size: 12px; /* Slightly smaller */
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.3;
+  flex: 1;
+  margin-right: 8px;
+  display: flex;
+  align-items: flex-start; /* Changed to flex-start for top alignment */
+}
+
+.timeline-note-widget-close {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 2px; /* Reduced padding */
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.timeline-note-widget-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Note Widget Description */
+.timeline-note-widget-description {
+  padding: 0px 12px 6px 12px; /* Removed top padding, kept bottom padding */
+  font-size: 11px; /* Slightly smaller */
+  color: #9ca3af;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start; /* Changed to flex-start for top alignment */
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .timeline-notes-container {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    margin-top: 280px; /* Reduced space for mobile */
+  }
+  
+  .timeline-note-widget {
+    width: 100%;
+    max-width: none;
+  }
+} 

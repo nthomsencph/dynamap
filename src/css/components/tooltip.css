@@ -22,7 +22,7 @@
 
 .tooltip {
   position: absolute;
-  z-index: 10000;
+  z-index: 10008;
   background: #1a1a1a;
   color: #fff;
   padding: 8px 12px;
