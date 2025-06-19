@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 
-interface MapImageSettings {
+export interface MapImageSettings {
   size: 'cover' | 'contain' | 'auto' | 'custom';
   position: 'center' | 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
   customWidth: number;
@@ -96,7 +96,6 @@ export function MapSettingsProvider({ children }: { children: React.ReactNode })
         return res.json();
       })
       .then(data => {
-        console.log('MapSettings: Loaded settings from API:', data);
         if (typeof data.mapImageRoundness === 'number') setMapImageRoundness(data.mapImageRoundness);
         if (typeof data.mapScale === 'number') setMapScale(data.mapScale);
         if (typeof data.mapImage === 'string') setMapImage(data.mapImage);

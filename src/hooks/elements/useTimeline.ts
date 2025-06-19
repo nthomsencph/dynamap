@@ -39,17 +39,23 @@ export function useTimeline() {
       setEntries(data.entries || []);
       setEpochs(data.epochs || []);
       
-      // Set current year to the latest entry if no current year is set
-      if (data.entries && data.entries.length > 0 && currentYear === 0) {
-        const latestYear = Math.max(...data.entries.map(e => e.year));
-        setCurrentYear(latestYear);
+      // Only set current year if it hasn't been set yet (avoid overriding user navigation)
+      if (data.entries && data.entries.length > 0) {
+        setCurrentYear(prevYear => {
+          if (prevYear === 0) {
+            // Start with the earliest year instead of the latest
+            const earliestYear = Math.min(...data.entries.map(e => e.year));
+            return earliestYear;
+          }
+          return prevYear;
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch timeline');
     } finally {
       setLoading(false);
     }
-  }, [currentYear]);
+  }, []); // Remove currentYear dependency
 
   // Create a new timeline entry
   const createEntry = useCallback(async (entry: TimelineEntry) => {
@@ -129,8 +135,10 @@ export function useTimeline() {
 
   // Navigate to a specific year
   const navigateToYear = useCallback(async (year: number) => {
+    console.log('useTimeline: navigateToYear called with year:', year, 'current year was:', currentYear);
     setCurrentYear(year);
-  }, []);
+    console.log('useTimeline: setCurrentYear called, new year should be:', year);
+  }, [currentYear]);
 
   // Get entry for a specific year
   const getEntryForYear = useCallback((year: number) => {
@@ -244,7 +252,12 @@ export function useTimeline() {
 
   useEffect(() => {
     fetchTimeline();
-  }, [fetchTimeline]);
+  }, []); // Remove currentYear from dependencies to prevent infinite loops
+
+  // Debug: Log when currentYear changes
+  useEffect(() => {
+    console.log('useTimeline: currentYear changed to:', currentYear);
+  }, [currentYear]);
 
   return {
     // New structure

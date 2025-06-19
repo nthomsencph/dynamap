@@ -1,58 +1,38 @@
 {
   "entries": [
     {
-      "year": 0,
-      "notes": [
-        {
-          "id": "43433f45-51c8-4ac1-961f-2ad3c2ee4210",
-          "title": "test note2",
-          "description": "<p style=\"text-align: left\">fdfdfd</p>",
-          "createdAt": "2025-06-18T22:41:28.799Z",
-          "updatedAt": "2025-06-18T22:41:28.823Z"
+      "year": 1,
+      "changes": {
+        "modified": {
+          "locations": {
+            "07e24bb6-0d16-4443-8776-a048134fc8e6": {
+              "description": "<p style=\"text-align: left\">Muur AR1 | Now in AR2</p>"
+            }
+          },
+          "regions": {}
         },
-        {
-          "id": "c543b3ca-30c4-4781-8cb2-b345a34dd699",
-          "title": "Sup",
-          "description": "<p style=\"text-align: left\">YO!</p>",
-          "createdAt": "2025-06-18T22:43:04.124Z",
-          "updatedAt": "2025-06-18T22:43:04.124Z"
-        },
-        {
-          "id": "ab9a13bb-7664-4af2-b4d4-62208559b2ee",
-          "title": "A third note",
-          "description": "<p style=\"text-align: left\">YAP</p>",
-          "createdAt": "2025-06-18T22:44:14.358Z",
-          "updatedAt": "2025-06-18T22:44:14.358Z"
-        },
-        {
-          "id": "746c6937-ea99-469a-a08d-1d16bba939a8",
-          "title": "Fourth note",
-          "description": "<p style=\"text-align: left\">SUUUP</p>",
-          "createdAt": "2025-06-18T22:47:05.872Z",
-          "updatedAt": "2025-06-18T22:47:05.872Z"
-        },
-        {
-          "id": "f011a8d5-66db-4197-ad3f-44995dda76d3",
-          "title": "Untitled",
-          "description": "<p style=\"text-align: right\"></p>",
-          "createdAt": "2025-06-19T00:31:20.406Z",
-          "updatedAt": "2025-06-19T00:31:20.406Z"
-        },
-        {
-          "id": "ec803f5a-3dd1-4ad3-bb5c-c2ba02168cea",
-          "title": "Settlement of the Cursed Shores",
-          "description": "<p style=\"text-align: left\">The cursed shores were settled by Dave Bobcat</p>",
-          "createdAt": "2025-06-19T00:55:09.125Z",
-          "updatedAt": "2025-06-19T00:55:09.125Z"
-        },
-        {
-          "id": "61b22e01-f7f5-4691-9afe-4ad634f397e3",
-          "title": "On the Blessed Lands",
-          "description": "<p style=\"text-align: left\">It used to to be the center of the world.</p>",
-          "createdAt": "2025-06-19T01:13:23.819Z",
-          "updatedAt": "2025-06-19T01:13:23.819Z"
+        "deleted": {
+          "locations": [],
+          "regions": []
         }
-      ]
+      }
+    },
+    {
+      "year": 2,
+      "changes": {
+        "modified": {
+          "locations": {
+            "07e24bb6-0d16-4443-8776-a048134fc8e6": {
+              "description": "<p style=\"text-align: left\">Muur AR1 | Now in AR2 | Now in AR3</p>"
+            }
+          },
+          "regions": {}
+        },
+        "deleted": {
+          "locations": [],
+          "regions": []
+        }
+      }
     }
   ],
   "epochs": [

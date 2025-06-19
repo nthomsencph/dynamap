@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useCallback, useEffect } from 'react';
 import { FaPlay, FaPause, FaStepForward, FaStepBackward, FaEdit, FaSave, FaTimes, FaPlus, FaCalendar } from 'react-icons/fa';
-import { useTimeline } from '@/hooks/elements/useTimeline';
+import { useTimelineContext } from '@/contexts/TimelineContext';
 import { useLocations } from '@/hooks/elements/useLocations';
 import { useRegions } from '@/hooks/elements/useRegions';
 import { useMapSettings } from '@/app/components/map/MapSettingsContext';
@@ -34,10 +34,10 @@ export function TimelineSlider({
     createEntry,
     createEpoch,
     updateEpoch
-  } = useTimeline();
+  } = useTimelineContext();
 
-  const { fetchLocations } = useLocations();
-  const { fetchRegions } = useRegions();
+  const { fetchLocations } = useLocations(currentYear);
+  const { fetchRegions } = useRegions(currentYear);
   const { editMode } = useMapSettings();
 
   const [isNavigating, setIsNavigating] = useState(false);
@@ -64,17 +64,20 @@ export function TimelineSlider({
 
   // Navigate to a specific year
   const handleNavigateToYear = useCallback(async (year: number) => {
+    console.log('TimelineController: Navigating to year', year, 'current year is', currentYear);
     setIsNavigating(true);
     try {
       await navigateToYear(year);
-      // Refresh map data after navigation
-      await Promise.all([fetchLocations(), fetchRegions()]);
+      console.log('TimelineController: Navigation completed to year', year);
+      // The hooks will automatically refresh with timeline-aware data
+      // No need to manually fetch locations and regions
     } catch (err) {
+      console.error('TimelineController: Navigation failed:', err);
       toast.error('Failed to navigate to year');
     } finally {
       setIsNavigating(false);
     }
-  }, [navigateToYear, fetchLocations, fetchRegions]);
+  }, [navigateToYear, currentYear]);
 
   // Navigate to next entry
   const handleNextEntry = useCallback(() => {
@@ -202,16 +205,14 @@ export function TimelineSlider({
     setIsEpochDialogOpen(true);
   };
 
-  // Calculate year range for slider
-  const sliderYearRange = {
-    min: yearRange.min > 0 ? yearRange.min - 10 : currentYear - 10,
-    max: yearRange.max > 0 ? yearRange.max + 10 : currentYear + 10
-  };
-
   const displayYear = currentEpoch && currentEpoch.restartAtZero
     ? (currentYear - currentEpoch.startYear + 1)
     : currentYear;
-  const yearLabel = `${currentEpoch?.yearPrefix || ''}${displayYear}${currentEpoch?.yearSuffix || ''}`;
+  const yearLabel = `${currentEpoch?.yearPrefix || ''} ${displayYear} ${currentEpoch?.yearSuffix || ''}`;
+
+  // Debug logging
+  console.log('TimelineController: Current year:', currentYear, 'Display year:', displayYear, 'Year label:', yearLabel);
+  console.log('TimelineController: Current epoch:', currentEpoch?.name, 'Entries:', entries.length);
 
   // Auto-show notes when TimelineSlider opens and there are notes
   useEffect(() => {

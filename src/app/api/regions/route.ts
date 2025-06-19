@@ -31,40 +31,4 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     return NextResponse.json({ error: 'Failed to save region' }, { status: 500 });
   }
-}
-
-export async function PUT(req: NextRequest) {
-  try {
-    const updatedRegion: Region = await req.json();
-    if (!updatedRegion.id) {
-      return NextResponse.json({ error: 'Missing id' }, { status: 400 });
-    }
-    const data = await fs.readFile(regionsPath, 'utf-8');
-    let regions: Region[] = JSON.parse(data);
-    const idx = regions.findIndex((r: Region) => r.id === updatedRegion.id);
-    if (idx === -1) {
-      return NextResponse.json({ error: 'Region not found' }, { status: 404 });
-    }
-    regions[idx] = updatedRegion;
-    await fs.writeFile(regionsPath, JSON.stringify(regions, null, 2), 'utf-8');
-    return NextResponse.json(updatedRegion);
-  } catch (err) {
-    return NextResponse.json({ error: 'Failed to update region' }, { status: 500 });
-  }
-}
-
-export async function DELETE(req: NextRequest) {
-  try {
-    const { id } = await req.json();
-    if (!id) {
-      return NextResponse.json({ error: 'Missing id' }, { status: 400 });
-    }
-    const data = await fs.readFile(regionsPath, 'utf-8');
-    let regions: Region[] = JSON.parse(data);
-    const newRegions = regions.filter((r: Region) => r.id !== id);
-    await fs.writeFile(regionsPath, JSON.stringify(newRegions, null, 2), 'utf-8');
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    return NextResponse.json({ error: 'Failed to delete region' }, { status: 500 });
-  }
 } 

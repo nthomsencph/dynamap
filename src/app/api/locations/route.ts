@@ -2,13 +2,59 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { Location } from '@/types/locations';
+import { buildChangeMap, getLocationStateForYear } from '@/app/utils/timeline-changes';
+import type { TimelineData } from '@/types/timeline';
 
 const locationsPath = path.join(process.cwd(), 'public', 'locations.json');
+const TIMELINE_FILE = path.join(process.cwd(), 'public', 'timeline.json');
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const yearParam = searchParams.get('year');
+    
     const data = await fs.readFile(locationsPath, 'utf-8');
-    return NextResponse.json(JSON.parse(data));
+    const allLocations: Location[] = JSON.parse(data);
+    
+    // If no year parameter, return all locations as-is
+    if (!yearParam) {
+      return NextResponse.json(allLocations);
+    }
+    
+    const targetYear = parseInt(yearParam);
+    if (isNaN(targetYear)) {
+      return NextResponse.json({ error: 'Invalid year parameter' }, { status: 400 });
+    }
+    
+    // Read timeline data for reconstruction
+    let timelineData: TimelineData;
+    try {
+      const timelineFile = await fs.readFile(TIMELINE_FILE, 'utf-8');
+      timelineData = JSON.parse(timelineFile);
+    } catch (err) {
+      // If no timeline file, return all locations as-is
+      return NextResponse.json(allLocations);
+    }
+    
+    // If no timeline entries, return all locations as-is
+    if (!timelineData.entries || timelineData.entries.length === 0) {
+      return NextResponse.json(allLocations);
+    }
+    
+    // Build change map for efficient lookup
+    const changeMap = buildChangeMap(timelineData.entries);
+    
+    // Reconstruct locations for target year
+    const reconstructedLocations = allLocations
+      .map(location => getLocationStateForYear(location, targetYear, changeMap))
+      .filter((location): location is Location => location !== null);
+    
+    // If reconstruction resulted in no locations, fall back to current state
+    if (reconstructedLocations.length === 0 && allLocations.length > 0) {
+      return NextResponse.json(allLocations);
+    }
+    
+    return NextResponse.json(reconstructedLocations);
   } catch (err) {
     return NextResponse.json([], { status: 200 }); // Return empty array if file doesn't exist
   }
@@ -30,41 +76,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(newLocation);
   } catch (err) {
     return NextResponse.json({ error: 'Failed to save location' }, { status: 500 });
-  }
-}
-
-export async function DELETE(req: NextRequest) {
-  try {
-    const { id } = await req.json();
-    if (!id) {
-      return NextResponse.json({ error: 'Missing id' }, { status: 400 });
-    }
-    const data = await fs.readFile(locationsPath, 'utf-8');
-    let locations: Location[] = JSON.parse(data);
-    const newLocations = locations.filter((p: Location) => p.id !== id);
-    await fs.writeFile(locationsPath, JSON.stringify(newLocations, null, 2), 'utf-8');
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    return NextResponse.json({ error: 'Failed to delete location' }, { status: 500 });
-  }
-}
-
-export async function PUT(req: NextRequest) {
-  try {
-    const updatedLocation: Location = await req.json();
-    if (!updatedLocation.id) {
-      return NextResponse.json({ error: 'Missing id' }, { status: 400 });
-    }
-    const data = await fs.readFile(locationsPath, 'utf-8');
-    let locations: Location[] = JSON.parse(data);
-    const idx = locations.findIndex((p: Location) => p.id === updatedLocation.id);
-    if (idx === -1) {
-      return NextResponse.json({ error: 'Location not found' }, { status: 404 });
-    }
-    locations[idx] = updatedLocation;
-    await fs.writeFile(locationsPath, JSON.stringify(locations, null, 2), 'utf-8');
-    return NextResponse.json(updatedLocation);
-  } catch (err) {
-    return NextResponse.json({ error: 'Failed to update location' }, { status: 500 });
   }
 } 

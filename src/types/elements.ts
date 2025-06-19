@@ -126,6 +126,7 @@ export interface MapElement {
   elementType: 'location' | 'region'; // Explicit type to avoid Array.isArray checks
   position: [number, number] | [number, number][]; // Single point for locations, array of points for regions
   fields: { [key: string]: string }; // Dictionary of custom field names and values, always initialized as empty
+  creationYear: number; // The year when this element was created
   /**
    * Strategy for handling label collisions with other map elements.
    * - 'None': Show label regardless of overlap (default)

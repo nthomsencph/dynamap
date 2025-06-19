@@ -1,7 +1,7 @@
 "use client";
 import React from 'react';
 import { FaTimes } from 'react-icons/fa';
-import { useTimeline } from '@/hooks/elements/useTimeline';
+import { useTimelineContext } from '@/contexts/TimelineContext';
 import { NotePanel } from '../panels/NotePanel';
 import { formatEpochDates } from '@/app/utils/timeline';
 import type { TimelineEpoch, TimelineNote } from '@/types/timeline';
@@ -14,7 +14,7 @@ interface EpochPanelProps {
 }
 
 export function EpochPanel({ epoch, isOpen, onClose }: EpochPanelProps) {
-  const { entries } = useTimeline();
+  const { entries } = useTimelineContext();
   const [selectedNote, setSelectedNote] = React.useState<{ note: TimelineNote; year: number } | null>(null);
   const [isNotePanelOpen, setIsNotePanelOpen] = React.useState(false);
 
@@ -25,7 +25,7 @@ export function EpochPanel({ epoch, isOpen, onClose }: EpochPanelProps) {
     entries.forEach(entry => {
       if (entry.year >= epoch.startYear && entry.year <= epoch.endYear) {
         if (entry.notes && entry.notes.length > 0) {
-          entry.notes.forEach(note => {
+          entry.notes.forEach((note: TimelineNote) => {
             notes.push({ note, year: entry.year });
           });
         }

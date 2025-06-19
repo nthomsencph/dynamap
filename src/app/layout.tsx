@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '@/css/globals.css';
 import { MapSettingsProvider } from './components/map/MapSettingsContext';
+import { TimelineProvider } from '@/contexts/TimelineContext';
 import { BackgroundImage } from './components/ui/BackgroundImage';
 
 const geistSans = Geist({
@@ -32,8 +33,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <MapSettingsProvider>
-          <BackgroundImage />
-          {children}
+          <TimelineProvider>
+            <BackgroundImage />
+            {children}
+          </TimelineProvider>
         </MapSettingsProvider>
         <ToastContainer
           position="bottom-right"

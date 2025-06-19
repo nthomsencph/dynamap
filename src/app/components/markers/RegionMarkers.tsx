@@ -304,11 +304,9 @@ function RegionMarkersComponent({
     let labelPosition = centroid;
     if (showLabel && region.labelPosition && region.labelPosition.direction !== 'Center') {
       // Use default size for label positioning calculations
-      const defaultLabelSize = { width: 120, height: 32 };
-      
+      const defaultLabelSize = { width: 50, height: 32 };
       // Calculate the offset based on label position settings
       const offset = calculateLabelOffset(region, defaultLabelSize.width, defaultLabelSize.height);
-      
       // Apply the offset to the centroid
       labelPosition = applyLabelOffset(centroid, offset);
     }
@@ -368,43 +366,7 @@ function RegionMarkersComponent({
 
   return (
     <ElementMarkers
-      elements={regions.filter(region => {
-        // Filter out invalid regions before passing to ElementMarkers
-        if (!region || !region.id) {
-          console.warn('RegionMarkers: Filtering out region with no ID:', region);
-          return false;
-        }
-        
-        if (!Array.isArray(region.position) || region.position.length < 3) {
-          console.warn('RegionMarkers: Filtering out region with invalid position:', {
-            id: region.id,
-            name: region.name,
-            position: region.position
-          });
-          return false;
-        }
-        
-        // Validate coordinates
-        const hasValidCoordinates = region.position.every(point => 
-          Array.isArray(point) && 
-          point.length === 2 && 
-          typeof point[0] === 'number' && 
-          typeof point[1] === 'number' &&
-          !isNaN(point[0]) && 
-          !isNaN(point[1])
-        );
-        
-        if (!hasValidCoordinates) {
-          console.warn('RegionMarkers: Filtering out region with invalid coordinates:', {
-            id: region.id,
-            name: region.name,
-            position: region.position
-          });
-          return false;
-        }
-        
-        return true;
-      })}
+      elements={regions}
       currentZoom={zoom}
       fitZoom={fitZoom}
       onContextMenu={handleContextMenu}

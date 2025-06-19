@@ -1,0 +1,59 @@
+/* Map UI Elements */
+
+/* Settings Floating Action Button */
+.settings-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 10000;
+    background: #222;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.settings-fab:hover {
+    background: #333;
+    transform: scale(1.05);
+}
+
+.settings-fab:active {
+    transform: scale(0.95);
+}
+
+/* Timeline Floating Action Button */
+.timeline-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 68px; /* Position next to settings button */
+    z-index: 10000;
+    background: #222;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.timeline-fab:hover {
+    background: #333;
+    transform: scale(1.05);
+}
+
+.timeline-fab:active {
+    transform: scale(0.95);
+} 

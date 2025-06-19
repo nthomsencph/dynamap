@@ -1,11 +1,17 @@
+"use client";
 import React, { useState, useEffect } from 'react';
-import { TimelineEntry, TimelineNote } from '@/types/timeline';
-import { useTimeline } from '@/hooks/elements/useTimeline';
-import DescriptionEditor from '@/app/components/editor/DescriptionEditor';
+import { FaTimes } from 'react-icons/fa';
+import { useTimelineContext } from '@/contexts/TimelineContext';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { BaseDialog } from './BaseDialog';
+import type { TimelineEntry, TimelineNote } from '@/types/timeline';
 import { useLocations } from '@/hooks/elements/useLocations';
 import { useRegions } from '@/hooks/elements/useRegions';
 import { usePanelWidth } from '@/hooks/ui/usePanelWidth';
 import { formatEpochDateRange } from '@/app/utils/timeline';
+import DescriptionEditor from '@/app/components/editor/DescriptionEditor';
+import '@/css/dialogs/base-dialog.css';
 import '@/css/panels/sidepanel.css';
 
 interface NoteDialogProps {
@@ -15,9 +21,9 @@ interface NoteDialogProps {
 }
 
 export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
-  const { currentYear, currentEpoch, getEntryForYear, updateEntry, createEntry, fetchTimeline } = useTimeline();
-  const { locations } = useLocations();
-  const { regions } = useRegions();
+  const { currentYear, currentEpoch, getEntryForYear, updateEntry, createEntry, fetchTimeline } = useTimelineContext();
+  const { locations } = useLocations(currentYear);
+  const { regions } = useRegions(currentYear);
   const { width, handleMouseDown } = usePanelWidth();
   
   const [title, setTitle] = useState<string>('');

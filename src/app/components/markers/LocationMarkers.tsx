@@ -85,27 +85,18 @@ function LocationMarkersComponent({
     isZooming: boolean;
     labelRef: (node: HTMLDivElement | null) => void;
   }) => {
-    if (!Array.isArray(location.position) || location.position.length !== 2) {
-      console.error('LocationMarkers: Invalid position for location:', location);
-      return null;
-    }
 
     const icon = createLocationIcon(location, opts.currentZoom);
-    const labelHtml = location.label || location.name || '';
-    // Always render labels if they have content and showLabel is not false
-    const showLabel = location.showLabel !== false && labelHtml;
-
+    const showLabel = location.showLabel !== false && (location.label || location.name);
 
     // Calculate label position based on alignment
     let labelPosition = location.position;
     if (showLabel && location.labelPosition && location.labelPosition.direction !== 'Center') {
       // Use default size for label positioning calculations
-      const defaultLabelSize = { width: 120, height: 32 };
+      const defaultLabelSize = { width: 50, height: 32 };
       
       // Calculate the offset based on label position settings
       const offset = calculateLabelOffset(location, defaultLabelSize.width, defaultLabelSize.height);
-      
-      // Apply the offset to the location position
       labelPosition = applyLabelOffset(location.position, offset);
     }
 

@@ -23,10 +23,13 @@ import { useLocationDialog } from "@/hooks/dialogs/useLocationDialog";
 import { useRegionDialog } from "@/hooks/dialogs/useRegionDialog";
 import { useLocations } from "@/hooks/elements/useLocations";
 import { useRegions } from "@/hooks/elements/useRegions";
+import { useTimelineContext } from "@/contexts/TimelineContext";
 import { useContextMenu } from "@/hooks/ui/useContextMenu";
 import { usePolygonDraw, type DrawingTool, type DrawingResult } from "@/hooks/elements/usePolygonDraw";
 import { usePanelStack, type PanelEntry } from "@/hooks/ui/usePanelStack";
 import { useMapSettings } from './MapSettingsContext';
+import { convertDrawingToPolygonPoints } from "@/app/utils/draw";
+import { useImageBounds } from '@/hooks/ui/useImageBounds';
 
 // Components
 import { ContextMenu } from "../ui/ContextMenu";
@@ -48,6 +51,7 @@ import { TimelineIcon } from '../timeline/TimelineIcon';
 import '@/css/markers/location-label.css';
 import '@/css/ui/move-mode.css';
 import '@/css/ui/timeline-slider.css';
+import '@/css/map-ui.css';
 
 export default function Map() {
     const mapRef = useRef<L.Map | null>(null);
@@ -55,11 +59,16 @@ export default function Map() {
     const fitZoom = useFitZoom();
     useSmoothWheelZoom(mapRef, 2);
 
+    // Timeline hook for current year
+    const { currentYear } = useTimelineContext();
+
     // Hooks for locations and regions
-    const { locations, addLocation, updateLocation, deleteLocation } = useLocations();
-    const { regions, addRegion, updateRegion, deleteRegion } = useRegions();
-    const locationDialog = useLocationDialog();
-    const regionDialog = useRegionDialog();
+    const { locations, addLocation, updateLocation, deleteLocation, deleteLocationFromTimeline } = useLocations(currentYear);
+    const { regions, addRegion, updateRegion, deleteRegion, deleteRegionFromTimeline } = useRegions(currentYear);
+
+    // hooks for dialogs
+    const locationDialog = useLocationDialog(currentYear);
+    const regionDialog = useRegionDialog(currentYear);
     
     // Map settings
     const { editMode, mapImageRoundness, mapImage, mapImageSettings, showTimelineWhenZoomed, showSettingsWhenZoomed } = useMapSettings();
@@ -88,35 +97,7 @@ export default function Map() {
 
     // Memoize the polygon draw callback to prevent re-renders
     const handlePolygonComplete = useCallback((result: DrawingResult) => {
-        let points: [number, number][] = result.points;
-        if (result.type === 'rectangle' && result.bounds) {
-            // Rectangle: convert bounds to 4 corners (SW, NW, NE, SE, SW)
-            const [[swLat, swLng], [neLat, neLng]] = result.bounds;
-            points = [
-                [swLat, swLng], // SW
-                [neLat, swLng], // NW
-                [neLat, neLng], // NE
-                [swLat, neLng], // SE
-                [swLat, swLng], // Close polygon
-            ];
-        } else if (result.type === 'circle' && result.center && result.radius) {
-            // Circle: approximate as 32-point polygon
-            const numPoints = 32;
-            const [centerLat, centerLng] = result.center;
-            const radius = result.radius;
-            points = Array.from({ length: numPoints }, (_, i) => {
-                const angle = (2 * Math.PI * i) / numPoints;
-                // For custom coordinate system, use a more appropriate scale factor
-                // Since the radius is in meters but coordinates are in custom units,
-                // we need to scale it appropriately for the map
-                const scaleFactor = 0.1; // Increased scale factor for better visibility
-                const dLat = (radius * scaleFactor) * Math.cos(angle);
-                const dLng = (radius * scaleFactor) * Math.sin(angle);
-                return [centerLat + dLat, centerLng + dLng] as [number, number];
-            });
-            // Close polygon
-            points.push(points[0]);
-        }
+        const points = convertDrawingToPolygonPoints(result);
         // When drawing is complete, open the region dialog with the polygon points
         regionDialog.openCreate(points);
     }, [regionDialog.openCreate]);
@@ -132,10 +113,12 @@ export default function Map() {
         open: boolean; 
         type: 'location' | 'region';
         element: Location | Region | null;
+        mode: 'normal' | 'timeline';
     }>({
         open: false,
         type: 'location',
-        element: null
+        element: null,
+        mode: 'normal'
     });
 
     // Panel navigation handlers
@@ -224,11 +207,11 @@ export default function Map() {
     }, [regionDialog.openEdit]);
 
     const handleDeleteLocation = useCallback((location: Location) => {
-        setDeleteConfirm({ open: true, type: 'location', element: location });
+        setDeleteConfirm({ open: true, type: 'location', element: location, mode: 'normal' });
     }, []);
 
     const handleDeleteRegion = useCallback((region: Region) => {
-        setDeleteConfirm({ open: true, type: 'region', element: region });
+        setDeleteConfirm({ open: true, type: 'region', element: region, mode: 'normal' });
     }, []);
 
     // Memoize context menu props to prevent re-renders
@@ -302,8 +285,20 @@ export default function Map() {
         } else {
             await deleteRegion(deleteConfirm.element.id);
         }
-        setDeleteConfirm({ open: false, type: 'location', element: null });
+        setDeleteConfirm({ open: false, type: 'location', element: null, mode: 'normal' });
     }, [deleteConfirm.element, deleteConfirm.type, deleteLocation, deleteRegion]);
+
+    // Handle delete element from timeline - memoized to prevent re-renders
+    const handleDeleteFromTimeline = useCallback(async () => {
+        if (!deleteConfirm.element) return;
+
+        if (deleteConfirm.type === 'location') {
+            await deleteLocationFromTimeline(deleteConfirm.element.id);
+        } else {
+            await deleteRegionFromTimeline(deleteConfirm.element.id);
+        }
+        setDeleteConfirm({ open: false, type: 'location', element: null, mode: 'normal' });
+    }, [deleteConfirm.element, deleteConfirm.type, deleteLocationFromTimeline, deleteRegionFromTimeline]);
 
     // Memoize dialog delete handlers
     const handleLocationDelete = useCallback(() => {
@@ -311,7 +306,8 @@ export default function Map() {
             setDeleteConfirm({ 
                 open: true, 
                 type: 'location', 
-                element: locationDialog.location as Location 
+                element: locationDialog.location as Location,
+                mode: 'normal'
             });
         }
     }, [locationDialog.location]);
@@ -321,13 +317,14 @@ export default function Map() {
             setDeleteConfirm({ 
                 open: true, 
                 type: 'region', 
-                element: regionDialog.region as Region 
+                element: regionDialog.region as Region,
+                mode: 'normal'
             });
         }
     }, [regionDialog.region]);
 
     const handleDeleteCancel = useCallback(() => {
-        setDeleteConfirm({ open: false, type: 'location', element: null });
+        setDeleteConfirm({ open: false, type: 'location', element: null, mode: 'normal' });
     }, []);
 
     // Zoom effect - debounced to prevent excessive re-renders
@@ -409,101 +406,6 @@ export default function Map() {
         return () => { style.remove(); };
     }, [mapImageRoundness]);
 
-    // --- Image bounds calculation (moved from MapImage) ---
-    const [imageBounds, setImageBounds] = useState<[[number, number], [number, number]]>([[0, 0], [2000, 2000]]);
-    const [imageLoaded, setImageLoaded] = useState(false);
-    useEffect(() => {
-        if (!mapImage) return;
-        const img = new window.Image();
-        img.onload = () => {
-            const imgWidth = img.naturalWidth;
-            const imgHeight = img.naturalHeight;
-            let bounds: [[number, number], [number, number]];
-            switch (mapImageSettings.size) {
-                case 'cover':
-                    bounds = [[0, 0], [2000, 2000]];
-                    break;
-                case 'contain': {
-                    const mapAspect = 2000 / 2000;
-                    const imgAspect = imgWidth / imgHeight;
-                    let fitWidth, fitHeight;
-                    if (imgAspect > mapAspect) {
-                        fitWidth = 2000;
-                        fitHeight = 2000 / imgAspect;
-                    } else {
-                        fitHeight = 2000;
-                        fitWidth = 2000 * imgAspect;
-                    }
-                    const offsetX = (2000 - fitWidth) / 2;
-                    const offsetY = (2000 - fitHeight) / 2;
-                    bounds = [[offsetY, offsetX], [offsetY + fitHeight, offsetX + fitWidth]];
-                    break;
-                }
-                case 'auto': {
-                    const offsetXAuto = (2000 - imgWidth) / 2;
-                    const offsetYAuto = (2000 - imgHeight) / 2;
-                    bounds = [[offsetYAuto, offsetXAuto], [offsetYAuto + imgHeight, offsetXAuto + imgWidth]];
-                    break;
-                }
-                case 'custom': {
-                    const customWidth = mapImageSettings.customWidth;
-                    const customHeight = mapImageSettings.customHeight;
-                    let offsetXCustom = 0;
-                    let offsetYCustom = 0;
-                    switch (mapImageSettings.position) {
-                        case 'center':
-                            offsetXCustom = (2000 - customWidth) / 2;
-                            offsetYCustom = (2000 - customHeight) / 2;
-                            break;
-                        case 'top-left':
-                            offsetXCustom = 0;
-                            offsetYCustom = 0;
-                            break;
-                        case 'top-center':
-                            offsetXCustom = (2000 - customWidth) / 2;
-                            offsetYCustom = 0;
-                            break;
-                        case 'top-right':
-                            offsetXCustom = 2000 - customWidth;
-                            offsetYCustom = 0;
-                            break;
-                        case 'center-left':
-                            offsetXCustom = 0;
-                            offsetYCustom = (2000 - customHeight) / 2;
-                            break;
-                        case 'center-right':
-                            offsetXCustom = 2000 - customWidth;
-                            offsetYCustom = (2000 - customHeight) / 2;
-                            break;
-                        case 'bottom-left':
-                            offsetXCustom = 0;
-                            offsetYCustom = 2000 - customHeight;
-                            break;
-                        case 'bottom-center':
-                            offsetXCustom = (2000 - customWidth) / 2;
-                            offsetYCustom = 2000 - customHeight;
-                            break;
-                        case 'bottom-right':
-                            offsetXCustom = 2000 - customWidth;
-                            offsetYCustom = 2000 - customHeight;
-                            break;
-                    }
-                    bounds = [[offsetYCustom, offsetXCustom], [offsetYCustom + customHeight, offsetXCustom + customWidth]];
-                    break;
-                }
-                default:
-                    bounds = [[0, 0], [2000, 2000]];
-            }
-            setImageBounds(bounds);
-            setImageLoaded(true);
-        };
-        img.onerror = () => {
-            setImageBounds([[0, 0], [2000, 2000]]);
-            setImageLoaded(true);
-        };
-        img.src = mapImage;
-    }, [mapImage, mapImageSettings]);
-
     return (
         <div 
             style={{ width: '100vw', height: '100vh', position: 'relative' }} 
@@ -520,23 +422,6 @@ export default function Map() {
             {(currentZoom === fitZoom || showSettingsWhenZoomed) && (
                 <button
                     className="settings-fab"
-                    style={{
-                        position: 'fixed',
-                        bottom: 24,
-                        right: 24,
-                        zIndex: 10000,
-                        background: '#222',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: 32,
-                        height: 32,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                        cursor: 'pointer',
-                    }}
                     onClick={() => setShowSettings(true)}
                     title="General settings"
                 >
@@ -643,6 +528,8 @@ export default function Map() {
                 message={`Are you sure you want to delete "${deleteConfirm.element?.name}"?`}
                 onConfirm={handleDeleteElement}
                 onCancel={handleDeleteCancel}
+                onDeleteFromTimeline={handleDeleteFromTimeline}
+                showDeleteFromTimeline={true}
             />
         </div>
     );

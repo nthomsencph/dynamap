@@ -6,6 +6,15 @@ import type { Region } from '@/types/regions';
  * This allows users to create and manage different "eras" of their world.
  */
 
+// Extended types for timeline modifications that can include metadata
+export interface TimelineLocationModification extends Partial<Location> {
+  _originalState?: boolean; // Flag to indicate this is the original state when element was created
+}
+
+export interface TimelineRegionModification extends Partial<Region> {
+  _originalState?: boolean; // Flag to indicate this is the original state when element was created
+}
+
 // Timeline entry structure
 export interface TimelineEntry {
   year: number;
@@ -45,13 +54,9 @@ export interface TimelineNotes {
 
 // Changes structure for each timeline entry
 export interface TimelineChanges {
-  created: {
-    locations: string[]; // Array of location IDs
-    regions: string[]; // Array of region IDs
-  };
   modified: {
-    locations: Record<string, Partial<Location>>; // ID -> changed fields
-    regions: Record<string, Partial<Region>>; // ID -> changed fields
+    locations: Record<string, TimelineLocationModification>; // ID -> changed fields
+    regions: Record<string, TimelineRegionModification>; // ID -> changed fields
   };
   deleted: {
     locations: string[]; // Array of location IDs
@@ -62,8 +67,6 @@ export interface TimelineChanges {
 // Helper function to check if changes are empty
 export function isEmptyChanges(changes: TimelineChanges): boolean {
   return (
-    changes.created.locations.length === 0 &&
-    changes.created.regions.length === 0 &&
     Object.keys(changes.modified.locations).length === 0 &&
     Object.keys(changes.modified.regions).length === 0 &&
     changes.deleted.locations.length === 0 &&
@@ -74,7 +77,6 @@ export function isEmptyChanges(changes: TimelineChanges): boolean {
 // Helper function to create empty changes object
 export function createEmptyChanges(): TimelineChanges {
   return {
-    created: { locations: [], regions: [] },
     modified: { locations: {}, regions: {} },
     deleted: { locations: [], regions: [] }
   };

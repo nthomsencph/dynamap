@@ -1,6 +1,6 @@
 import React from 'react';
 import { TimelineNote } from '@/types/timeline';
-import { useTimeline } from '@/hooks/elements/useTimeline';
+import { useTimelineContext } from '@/contexts/TimelineContext';
 import { usePanelWidth } from '@/hooks/ui/usePanelWidth';
 import { formatEpochDateRange } from '@/app/utils/timeline';
 import '@/css/panels/sidepanel.css';
@@ -13,7 +13,7 @@ interface NotePanelProps {
 }
 
 export function NotePanel({ note, year, isOpen, onClose }: NotePanelProps) {
-  const { currentEpoch } = useTimeline();
+  const { currentEpoch } = useTimelineContext();
   const { width, handleMouseDown } = usePanelWidth();
 
   // Format year with epoch prefix/suffix

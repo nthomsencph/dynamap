@@ -13,7 +13,7 @@
   },
   "mapNameSettings": {
     "content": "<p><span style=\"font-family: 'UnifrakturMaguntia', cursive\">A world of joy</span></p>",
-    "show": true,
+    "show": false,
     "position": "center"
   },
   "backgroundImage": "/media/parchment.jpeg",

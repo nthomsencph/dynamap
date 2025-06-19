@@ -8,7 +8,7 @@ interface LocationDialogState {
   location: Partial<Location> | null;
 }
 
-export function useLocationDialog() {
+export function useLocationDialog(currentYear: number = 0) {
   const [state, setState] = useState<LocationDialogState>({
     open: false,
     mode: "create",
@@ -22,9 +22,13 @@ export function useLocationDialog() {
       open: true,
       mode: "create",
       position,
-      location: { position, showLabel: true },
+      location: { 
+        position, 
+        showLabel: true,
+        creationYear: currentYear 
+      },
     });
-  }, []);
+  }, [currentYear]);
 
   // Open dialog to edit an existing location
   const openEdit = useCallback((location: Location) => {
@@ -56,7 +60,7 @@ export function useLocationDialog() {
     openEdit,
     close,
     onSave,
-  }), [state.open, state.mode, state.position, state.location]);
+  }), [state.open, state.mode, state.position, state.location, openCreate, openEdit, close, onSave]);
 
   return result;
 } 

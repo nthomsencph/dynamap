@@ -8,7 +8,7 @@ interface RegionDialogState {
   region: Partial<Region> | null;
 }
 
-export function useRegionDialog() {
+export function useRegionDialog(currentYear: number = 0) {
   const [state, setState] = useState<RegionDialogState>({
     open: false,
     mode: "create",
@@ -22,9 +22,12 @@ export function useRegionDialog() {
       open: true,
       mode: "create",
       position,
-      region: { position } as Partial<Region>,
+      region: { 
+        position,
+        creationYear: currentYear 
+      } as Partial<Region>,
     });
-  }, []);
+  }, [currentYear]);
 
   // Open dialog to edit an existing region
   const openEdit = useCallback((region: Region) => {
@@ -56,7 +59,7 @@ export function useRegionDialog() {
     openEdit,
     close,
     onSave,
-  }), [state.open, state.mode, state.position, state.region]);
+  }), [state.open, state.mode, state.position, state.region, openCreate, openEdit, close, onSave]);
 
   return result;
 } 
