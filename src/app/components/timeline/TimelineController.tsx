@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useCallback, useEffect } from 'react';
-import { FaPlay, FaPause, FaStepForward, FaStepBackward, FaEdit, FaSave, FaTimes, FaPlus, FaCalendar } from 'react-icons/fa';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { FaPlay, FaPause, FaStepForward, FaStepBackward, FaPlus} from 'react-icons/fa';
 import { useTimelineContext } from '@/contexts/TimelineContext';
 import { useLocations } from '@/hooks/elements/useLocations';
 import { useRegions } from '@/hooks/elements/useRegions';
@@ -11,17 +11,24 @@ import { NotePanel } from '../panels/NotePanel';
 import { EpochPanel } from '../panels/EpochPanel';
 import { TimelineNotes } from './TimelineNotes';
 import { EpochDialog } from '../dialogs/EpochDialog';
-import { ContextMenu } from '../ui/ContextMenu';
-import { formatEpochDateRange } from '@/app/utils/timeline';
-import type { TimelineEntry, TimelineNote, TimelineEpoch } from '@/types/timeline';
+import { formatEpochDateRange, calculateDisplayYear } from '@/app/utils/timeline';
+import type { TimelineNote, TimelineEpoch } from '@/types/timeline';
 import '@/css/timeline/timeline-slider.css';
 
 export function TimelineSlider({ 
   onClose, 
-  onEpochClick 
+  onEpochClick,
+  onOpenSettings,
+  onContextMenu,
+  onOpenEpochDialog,
+  onOpenNoteDialog
 }: { 
   onClose?: () => void;
   onEpochClick?: () => void;
+  onOpenSettings?: () => void;
+  onContextMenu?: (e: React.MouseEvent, type: 'note' | 'epoch', element?: TimelineNote | TimelineEpoch) => void;
+  onOpenEpochDialog?: (epoch: TimelineEpoch) => void;
+  onOpenNoteDialog?: (note: TimelineNote, year: number) => void;
 }) {
   const {
     entries,
@@ -33,7 +40,10 @@ export function TimelineSlider({
     navigateToYear,
     createEntry,
     createEpoch,
-    updateEpoch
+    updateEpoch,
+    fetchTimeline,
+    updateEntry,
+    deleteEpoch
   } = useTimelineContext();
 
   const { fetchLocations } = useLocations(currentYear);
@@ -48,19 +58,12 @@ export function TimelineSlider({
   const [epochDialogMode, setEpochDialogMode] = useState<'create' | 'edit'>('create');
   const [selectedEpoch, setSelectedEpoch] = useState<TimelineEpoch | undefined>(undefined);
   const [isTimelineNotesOpen, setIsTimelineNotesOpen] = useState(false);
-  const [contextMenu, setContextMenu] = useState<{
-    open: boolean;
-    x: number;
-    y: number;
-    type: 'note' | 'epoch';
-    note?: TimelineNote;
-    epoch?: TimelineEpoch;
-  }>({
-    open: false,
-    x: 0,
-    y: 0,
-    type: 'note'
-  });
+
+  // Calculate the earliest year we can navigate to (earliest epoch start year)
+  const earliestYear = useMemo(() => {
+    if (epochs.length === 0) return -Infinity;
+    return Math.min(...epochs.map(epoch => epoch.startYear));
+  }, [epochs]);
 
   // Navigate to a specific year
   const handleNavigateToYear = useCallback(async (year: number) => {
@@ -98,8 +101,11 @@ export function TimelineSlider({
     const prevIndex = currentIndex === 0 ? entries.length - 1 : currentIndex - 1;
     const prevEntry = entries[prevIndex];
     
-    handleNavigateToYear(prevEntry.year);
-  }, [currentEntry, entries, handleNavigateToYear]);
+    // Only navigate if the previous entry is not before the earliest year
+    if (prevEntry.year >= earliestYear) {
+      handleNavigateToYear(prevEntry.year);
+    }
+  }, [currentEntry, entries, handleNavigateToYear, earliestYear]);
 
   // Navigate to next year
   const handleNextYear = useCallback(() => {
@@ -110,80 +116,57 @@ export function TimelineSlider({
   // Navigate to previous year
   const handlePrevYear = useCallback(() => {
     const prevYear = currentYear - 1;
-    handleNavigateToYear(prevYear);
-  }, [currentYear, handleNavigateToYear]);
+    if (prevYear >= earliestYear) {
+      handleNavigateToYear(prevYear);
+    }
+  }, [currentYear, handleNavigateToYear, earliestYear]);
 
   // Handle slider change
   const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const year = parseInt(e.target.value);
-    handleNavigateToYear(year);
-  }, [handleNavigateToYear]);
-
-  // Context menu handlers
-  const handleNoteContextMenu = useCallback((e: React.MouseEvent, note: TimelineNote) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({
-      open: true,
-      x: e.clientX,
-      y: e.clientY,
-      type: 'note',
-      note
-    });
-  }, []);
-
-  const handleEpochContextMenu = useCallback((e: React.MouseEvent, epoch: TimelineEpoch) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({
-      open: true,
-      x: e.clientX,
-      y: e.clientY,
-      type: 'epoch',
-      epoch
-    });
-  }, []);
-
-  const closeContextMenu = useCallback(() => {
-    setContextMenu(prev => ({ ...prev, open: false }));
-  }, []);
-
-  const getContextMenuItems = useCallback(() => {
-    if (contextMenu.type === 'note' && contextMenu.note) {
-      return [
-        {
-          label: 'Edit note',
-          onClick: () => {
-            // Open note dialog in edit mode
-            setSelectedNote({ note: contextMenu.note!, year: currentYear });
-            setIsNoteDialogOpen(true);
-            closeContextMenu();
-          }
-        }
-      ];
-    } else if (contextMenu.type === 'epoch' && contextMenu.epoch) {
-      return [
-        {
-          label: 'Edit epoch',
-          onClick: () => {
-            setEpochDialogMode('edit');
-            setSelectedEpoch(contextMenu.epoch);
-            setIsEpochDialogOpen(true);
-            closeContextMenu();
-          }
-        }
-      ];
+    if (year >= earliestYear) {
+      handleNavigateToYear(year);
     }
-    return [];
-  }, [contextMenu, currentYear, closeContextMenu]);
+  }, [handleNavigateToYear, earliestYear]);
 
-  const handleAddNote = () => {
-    setIsNoteDialogOpen(true);
+  const handleDeleteNote = async (noteId: string) => {
+    if (!currentEntry) return;
+
+    try {
+      // Remove the note from the current entry
+      const updatedNotes = currentEntry.notes.filter((note: TimelineNote) => note.id !== noteId);
+      
+      const updatedEntry = {
+        ...currentEntry,
+        notes: updatedNotes
+      };
+
+      await updateEntry(currentYear, updatedEntry);
+      await fetchTimeline();
+      
+      // Close any open note panels if the deleted note was being viewed
+      if (selectedNote?.note.id === noteId) {
+        setIsNotePanelOpen(false);
+        setSelectedNote(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+    }
   };
 
-  const handleNoteClick = (note: TimelineNote, year: number) => {
-    setSelectedNote({ note, year });
-    setIsNotePanelOpen(true);
+  const handleDeleteEpoch = async (epochId: string) => {
+    try {
+      await deleteEpoch(epochId);
+      await fetchTimeline();
+      
+      // Close any open epoch dialogs if the deleted epoch was being edited
+      if (selectedEpoch?.id === epochId) {
+        setIsEpochDialogOpen(false);
+        setSelectedEpoch(undefined);
+      }
+    } catch (error) {
+      console.error('Failed to delete epoch:', error);
+    }
   };
 
   const handleTimelineNoteClick = (note: TimelineNote) => {
@@ -205,14 +188,25 @@ export function TimelineSlider({
     setIsEpochDialogOpen(true);
   };
 
-  const displayYear = currentEpoch && currentEpoch.restartAtZero
-    ? (currentYear - currentEpoch.startYear + 1)
-    : currentYear;
-  const yearLabel = `${currentEpoch?.yearPrefix || ''} ${displayYear} ${currentEpoch?.yearSuffix || ''}`;
+  // Context menu handlers - follow the same pattern as markers
+  const handleNoteContextMenu = useCallback((e: React.MouseEvent, note: TimelineNote) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onContextMenu) {
+      onContextMenu(e, 'note', note);
+    }
+  }, [onContextMenu]);
 
-  // Debug logging
-  console.log('TimelineController: Current year:', currentYear, 'Display year:', displayYear, 'Year label:', yearLabel);
-  console.log('TimelineController: Current epoch:', currentEpoch?.name, 'Entries:', entries.length);
+  const handleEpochContextMenu = useCallback((e: React.MouseEvent, epoch: TimelineEpoch) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onContextMenu) {
+      onContextMenu(e, 'epoch', epoch);
+    }
+  }, [onContextMenu]);
+
+  const displayYear = currentEpoch ? calculateDisplayYear(currentYear, currentEpoch) : currentYear;
+  const yearLabel = `${currentEpoch?.yearPrefix || ''} ${displayYear} ${currentEpoch?.yearSuffix || ''}`;
 
   // Auto-show notes when TimelineSlider opens and there are notes
   useEffect(() => {
@@ -221,30 +215,28 @@ export function TimelineSlider({
     }
   }, [currentEntry?.notes]);
 
+  const handleAddNote = () => {
+    setIsNoteDialogOpen(true);
+  };
+
   return (
     <>
       {/* Backdrop for closing on outside click - only covers area around TimelineSlider */}
       <div 
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          width: '100px',
-          height: '100vh',
-          zIndex: 10001,
-          background: 'transparent'
-        }}
+        className="timeline-backdrop"
         onMouseDown={(e) => {
           // Only handle left-click events (button 0)
           if (e.button === 0 && onClose) {
             onClose();
           }
         }}
+        onContextMenu={(e) => e.preventDefault()}
+        style={{ pointerEvents: 'auto' }}
       />
       
       {/* Timeline Slider */}
       <div 
-        className="timeline-slider"
+        className={`timeline-slider ${isNavigating ? 'loading' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Current Epoch Display */}
@@ -256,47 +248,42 @@ export function TimelineSlider({
             onContextMenu={(e) => handleEpochContextMenu(e, currentEpoch)}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div className="timeline-epoch-name">{currentEpoch.name}</div>
-              <div className="timeline-epoch-years">
-                {formatEpochDateRange(currentEpoch)}
+              <div>
+                <div className="timeline-epoch-name">{currentEpoch.name}</div>
+                <div className="timeline-epoch-years">
+                  {formatEpochDateRange(currentEpoch)}
+                </div>
               </div>
+              {currentEntry?.notes && currentEntry.notes.length > 0 && (
+                <div className="notes-counter">
+                  {currentEntry.notes.length}
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Year Navigation - Minimalistic Single Line with Entry Navigation */}
+        {/* Year Navigation - Enhanced Design */}
         <div className="timeline-year-nav">
           <button
             onClick={handlePrevEntry}
-            disabled={isNavigating || entries.length === 0}
+            disabled={isNavigating || entries.length === 0 || currentYear <= earliestYear}
             className="timeline-nav-button"
             title="Previous entry"
           >
-            <FaStepBackward size={12} />
+            <FaStepBackward size={14} />
           </button>
           
           <button
             onClick={handlePrevYear}
-            disabled={isNavigating}
+            disabled={isNavigating || currentYear <= earliestYear}
             className="timeline-nav-button"
             title="Previous year"
           >
-            <FaStepBackward size={10} />
+            <FaStepBackward size={12} />
           </button>
           
-          <div style={{ 
-            flex: 1, 
-            height: 32, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            background: '#222',
-            border: '1px solid #444',
-            borderRadius: '6px',
-            color: '#fff',
-            fontSize: '14px',
-            fontWeight: '600'
-          }}>
+          <div className="timeline-year-display">
             {yearLabel}
           </div>
           
@@ -306,7 +293,7 @@ export function TimelineSlider({
             className="timeline-nav-button"
             title="Next year"
           >
-            <FaStepForward size={10} />
+            <FaStepForward size={12} />
           </button>
           
           <button
@@ -315,17 +302,16 @@ export function TimelineSlider({
             className="timeline-nav-button"
             title="Next entry"
           >
-            <FaStepForward size={12} />
+            <FaStepForward size={14} />
           </button>
         </div>
 
-        {/* Action Buttons Row */}
+        {/* Action Buttons Row - Enhanced Design */}
         {editMode && (
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="timeline-actions">
             <button
               onClick={handleAddNote}
               className="timeline-action-button primary"
-              style={{ flex: 1, marginBottom: 0 }}
             >
               <FaPlus size={12} />
               <span>Note</span>
@@ -334,7 +320,6 @@ export function TimelineSlider({
             <button
               onClick={handleCreateEpoch}
               className="timeline-action-button secondary"
-              style={{ flex: 1, marginBottom: 0 }}
             >
               <FaPlus size={12} />
               <span>Epoch</span>
@@ -375,15 +360,6 @@ export function TimelineSlider({
           setIsEpochDialogOpen(false);
           setSelectedEpoch(undefined);
         }}
-      />
-
-      {/* Context Menu */}
-      <ContextMenu
-        open={contextMenu.open}
-        x={contextMenu.x}
-        y={contextMenu.y}
-        items={getContextMenuItems()}
-        onClose={closeContextMenu}
       />
 
       {/* Timeline Notes Notification Panel */}

@@ -5,6 +5,7 @@ import '@/css/ui/context-menu.css';
 interface ContextMenuItem {
   label: string;
   onClick: () => void;
+  danger?: boolean;
 }
 
 interface ContextMenuProps {
@@ -47,6 +48,7 @@ export function ContextMenu({ open, x, y, items, onClose }: ContextMenuProps) {
       {items.map((item, idx) => (
         <button
           key={idx}
+          className={`context-menu-item ${item.danger ? 'danger' : ''}`}
           onClick={() => {
             item.onClick();
             onClose();

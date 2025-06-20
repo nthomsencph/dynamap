@@ -26,6 +26,9 @@ import { RxFontFamily } from 'react-icons/rx';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
 import { createMentionExtension } from './extensions/mentionExtension';
+import { useTimelineContext } from '@/contexts/TimelineContext';
+import { calculateDisplayYear } from '@/app/utils/timeline';
+import { toast } from 'react-toastify';
 import '@/css/description-editor.css';
 import Dropdown from './Dropdown';
 
@@ -47,6 +50,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
 }) => {
   // Use ref to avoid stale closure issues
   const elementsRef = useRef(elements);
+  const { currentYear, currentEpoch } = useTimelineContext();
   
   // Update ref whenever elements change
   useEffect(() => {
@@ -55,7 +59,9 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
 
   // Create mention extension with ref to avoid stale closure
   const mentionExtension = useMemo(() => {
+    console.log('MENTION_DEBUG: DescriptionEditor: Creating mention extension with elements:', elementsRef.current);
     return createMentionExtension(() => {
+      console.log('MENTION_DEBUG: DescriptionEditor: getElements called, returning:', elementsRef.current);
       return elementsRef.current;
     });
   }, []); // Empty deps - create once, ref will always have fresh elements
@@ -126,6 +132,77 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
       editor.commands.setContent(value || '', true);
     }
   }, [value, editor]);
+
+  // Handle mention clicks and add visual styling for deleted mentions
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleMentionClick = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const target = e.target as HTMLElement;
+      if (!target.classList.contains('mention')) return;
+
+      const mentionId = target.getAttribute('data-id');
+      const mentionName = target.getAttribute('data-name');
+      const mentionType = target.getAttribute('data-element-type');
+      
+      if (!mentionId || !mentionName) return;
+
+      const element = elementsRef.current.find(el => el.id === mentionId);
+
+      if (element) {
+        // Element exists - could trigger navigation or other action
+        console.log('MENTION_DEBUG: Clicked on existing element:', element.name);
+      } else {
+        // Element doesn't exist in current year - show tooltip
+        const displayYear = currentEpoch 
+          ? calculateDisplayYear(currentYear, currentEpoch)
+          : currentYear;
+        const yearLabel = currentEpoch 
+          ? `${currentEpoch.yearPrefix || ''} ${displayYear} ${currentEpoch.yearSuffix || ''}`.trim()
+          : displayYear;
+        
+        toast.info(`${mentionName} doesn't exist in the current year (${yearLabel})`, {
+          position: "bottom-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
+    };
+
+    // Add visual styling for deleted mentions
+    const updateMentionStyling = () => {
+      const mentions = editor.view.dom.querySelectorAll('.mention');
+      mentions.forEach((mention) => {
+        const mentionId = mention.getAttribute('data-id');
+        
+        if (mentionId) {
+          const elementExists = elementsRef.current.some(el => el.id === mentionId);
+          
+          if (!elementExists) {
+            mention.classList.add('mention-deleted');
+          } else {
+            mention.classList.remove('mention-deleted');
+          }
+        }
+      });
+    };
+
+    // Add click handler
+    editor.view.dom.addEventListener('click', handleMentionClick);
+    
+    // Update styling initially and when elements change
+    updateMentionStyling();
+    
+    return () => {
+      editor.view.dom.removeEventListener('click', handleMentionClick);
+    };
+  }, [editor, elements, currentYear, currentEpoch]);
 
   // Cleanup on unmount
   useEffect(() => {

@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "color": "#fafcff",
+    "icon": "MdCastle",
+    "showLabel": true,
+    "labelPosition": {
+      "direction": "Center",
+      "offset": 10
+    },
+    "prominence": {
+      "lower": 0,
+      "upper": 10
+    },
+    "description": "<p style=\"text-align: left\"></p>",
+    "image": "",
+    "fields": {},
+    "elementType": "region",
+    "showBorder": true,
+    "showHighlight": true,
+    "areaFadeDuration": 800,
+    "position": [
+      [
+        574,
+        968
+      ],
+      [
+        716,
+        968
+      ],
+      [
+        716,
+        1128
+      ],
+      [
+        574,
+        1128
+      ],
+      [
+        574,
+        968
+      ]
+    ],
+    "creationYear": 0,
+    "name": "Muur",
+    "type": "Island",
+    "label": "Muur",
+    "id": "ca631ec0-1dcd-4882-8144-b957b4412e2f",
+    "area": 6878707.199999998
+  }
+]

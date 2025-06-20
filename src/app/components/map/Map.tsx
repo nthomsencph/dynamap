@@ -10,6 +10,7 @@ import { FaCog } from 'react-icons/fa';
 // Types
 import type { Location } from "@/types/locations";
 import type { Region } from "@/types/regions";
+import type { TimelineNote, TimelineEpoch } from "@/types/timeline";
 
 // Constants
 import { MAP_CENTER } from '@/constants/map';
@@ -30,6 +31,8 @@ import { usePanelStack, type PanelEntry } from "@/hooks/ui/usePanelStack";
 import { useMapSettings } from './MapSettingsContext';
 import { convertDrawingToPolygonPoints } from "@/app/utils/draw";
 import { useImageBounds } from '@/hooks/ui/useImageBounds';
+import { shouldShowElementInYear } from '@/app/utils/zoom';
+import { getFutureChangesForElement } from '@/app/utils/timeline-changes';
 
 // Components
 import { ContextMenu } from "../ui/ContextMenu";
@@ -44,8 +47,10 @@ import { MapName } from "../ui/MapName";
 import { LocationMarkers } from "../markers/LocationMarkers";
 import { RegionMarkers } from "../markers/RegionMarkers";
 import { UnifiedPanel } from "../panels/UnifiedPanel";
-import { GeneralSettingsPanel } from '../panels/SettingsPanel';
+import { GeneralSettingsDialog } from '../dialogs/SettingsDialog';
 import { TimelineIcon } from '../timeline/TimelineIcon';
+import { EpochDialog } from '../dialogs/EpochDialog';
+import { NoteDialog } from '../dialogs/NoteDialog';
 
 // Styles
 import '@/css/markers/location-label.css';
@@ -60,7 +65,7 @@ export default function Map() {
     useSmoothWheelZoom(mapRef, 2);
 
     // Timeline hook for current year
-    const { currentYear } = useTimelineContext();
+    const { currentYear, entries, epochs } = useTimelineContext();
 
     // Hooks for locations and regions
     const { locations, addLocation, updateLocation, deleteLocation, deleteLocationFromTimeline } = useLocations(currentYear);
@@ -114,6 +119,7 @@ export default function Map() {
         type: 'location' | 'region';
         element: Location | Region | null;
         mode: 'normal' | 'timeline';
+        warning?: string;
     }>({
         open: false,
         type: 'location',
@@ -207,12 +213,48 @@ export default function Map() {
     }, [regionDialog.openEdit]);
 
     const handleDeleteLocation = useCallback((location: Location) => {
-        setDeleteConfirm({ open: true, type: 'location', element: location, mode: 'normal' });
-    }, []);
+        const { hasChanges, years } = getFutureChangesForElement(
+            location.id,
+            'location',
+            currentYear,
+            entries,
+            epochs
+        );
+        
+        const warning = hasChanges 
+            ? `This element has changes later in the timeline: (${years.join(', ')})`
+            : undefined;
+
+        setDeleteConfirm({ 
+            open: true, 
+            type: 'location', 
+            element: location,
+            mode: 'normal',
+            warning
+        });
+    }, [currentYear, entries, epochs]);
 
     const handleDeleteRegion = useCallback((region: Region) => {
-        setDeleteConfirm({ open: true, type: 'region', element: region, mode: 'normal' });
-    }, []);
+        const { hasChanges, years } = getFutureChangesForElement(
+            region.id,
+            'region',
+            currentYear,
+            entries,
+            epochs
+        );
+        
+        const warning = hasChanges 
+            ? `This element has changes later in the timeline: (${years.join(', ')})`
+            : undefined;
+
+        setDeleteConfirm({ 
+            open: true, 
+            type: 'region', 
+            element: region,
+            mode: 'normal',
+            warning
+        });
+    }, [currentYear, entries, epochs]);
 
     // Memoize context menu props to prevent re-renders
     const contextMenuProps = useMemo(() => ({
@@ -227,6 +269,22 @@ export default function Map() {
         startDrawing: startDrawing,
         regions: regions,
         editMode: editMode,
+        onOpenSettings: () => setShowSettings(true),
+        // Timeline-specific handlers
+        onEditNote: (note: TimelineNote, year: number) => {
+            setTimelineNoteDialog({ open: true, note, year });
+        },
+        onDeleteNote: (noteId: string) => {
+            // This would need to be implemented to delete the note
+            console.log('Delete note:', noteId);
+        },
+        onEditEpoch: (epoch: TimelineEpoch) => {
+            setTimelineEpochDialog({ open: true, epoch });
+        },
+        onDeleteEpoch: (epochId: string) => {
+            // This would need to be implemented to delete the epoch
+            console.log('Delete epoch:', epochId);
+        },
     }), [
         handleAddLocation,
         handleEditLocation,
@@ -241,7 +299,7 @@ export default function Map() {
     ]);
 
     // Context menu state and handlers
-    const { menu, handleContextMenu, handleLocationContextMenu, handleRegionContextMenu, closeMenu, getMenuItems } = useContextMenu(contextMenuProps);
+    const { menu, handleContextMenu, handleLocationContextMenu, handleRegionContextMenu, handleNoteContextMenu, handleEpochContextMenu, closeMenu, getMenuItems } = useContextMenu(contextMenuProps);
 
     // Memoized context menu handlers for markers
     const handleLocationMarkersContextMenu = useCallback((e: L.LeafletMouseEvent, type: 'map' | 'marker', location?: Location) => {
@@ -251,6 +309,35 @@ export default function Map() {
     const handleRegionMarkersContextMenu = useCallback((e: L.LeafletMouseEvent, type: 'map' | 'marker', region?: Region) => {
         return type === 'marker' && region ? handleRegionContextMenu(e, region) : handleContextMenu(e);
     }, [handleRegionContextMenu, handleContextMenu]);
+
+    // Timeline context menu handler
+    const handleTimelineContextMenu = useCallback((e: React.MouseEvent, type: 'note' | 'epoch', element?: TimelineNote | TimelineEpoch) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // If edit mode is disabled, show helpful message
+        if (!editMode) {
+            // Create a synthetic event that handleContextMenu can use
+            const syntheticEvent = {
+                clientX: e.clientX,
+                clientY: e.clientY,
+                preventDefault: () => {},
+                stopPropagation: () => {}
+            } as React.MouseEvent;
+            handleContextMenu(syntheticEvent);
+            return;
+        }
+        
+        // Use the appropriate timeline-specific handler
+        if (type === 'note' && element) {
+            handleNoteContextMenu(e, element as TimelineNote);
+        } else if (type === 'epoch' && element) {
+            handleEpochContextMenu(e, element as TimelineEpoch);
+        } else {
+            // Fallback to general context menu
+            handleContextMenu(e);
+        }
+    }, [editMode, handleContextMenu, handleNoteContextMenu, handleEpochContextMenu]);
 
     // Zoom state - use debounced updates to prevent excessive re-renders
     const [currentZoom, setCurrentZoom] = useState(fitZoom);
@@ -302,26 +389,54 @@ export default function Map() {
 
     // Memoize dialog delete handlers
     const handleLocationDelete = useCallback(() => {
-        if (locationDialog.location) {
+        const location = locationDialog.location;
+        if (location?.id) {
+            const { hasChanges, years } = getFutureChangesForElement(
+                location.id,
+                'location',
+                currentYear,
+                entries,
+                epochs
+            );
+            
+            const warning = hasChanges 
+                ? `This element has changes later in the timeline: (${years.join(', ')})`
+                : undefined;
+
             setDeleteConfirm({ 
                 open: true, 
                 type: 'location', 
-                element: locationDialog.location as Location,
-                mode: 'normal'
+                element: location as Location,
+                mode: 'normal',
+                warning
             });
         }
-    }, [locationDialog.location]);
+    }, [locationDialog.location, currentYear, entries, epochs]);
 
     const handleRegionDelete = useCallback(() => {
-        if (regionDialog.region) {
+        const region = regionDialog.region;
+        if (region?.id) {
+            const { hasChanges, years } = getFutureChangesForElement(
+                region.id,
+                'region',
+                currentYear,
+                entries,
+                epochs
+            );
+            
+            const warning = hasChanges 
+                ? `This element has changes later in the timeline: (${years.join(', ')})`
+                : undefined;
+
             setDeleteConfirm({ 
                 open: true, 
                 type: 'region', 
-                element: regionDialog.region as Region,
-                mode: 'normal'
+                element: region as Region,
+                mode: 'normal',
+                warning
             });
         }
-    }, [regionDialog.region]);
+    }, [regionDialog.region, currentYear, entries, epochs]);
 
     const handleDeleteCancel = useCallback(() => {
         setDeleteConfirm({ open: false, type: 'location', element: null, mode: 'normal' });
@@ -395,6 +510,18 @@ export default function Map() {
 
     const [showSettings, setShowSettings] = useState(false);
 
+    // Timeline dialog state
+    const [timelineEpochDialog, setTimelineEpochDialog] = useState<{
+        open: boolean;
+        epoch: TimelineEpoch | undefined;
+    }>({ open: false, epoch: undefined });
+
+    const [timelineNoteDialog, setTimelineNoteDialog] = useState<{
+        open: boolean;
+        note: TimelineNote | undefined;
+        year: number;
+    }>({ open: false, note: undefined, year: 0 });
+
     useEffect(() => {
         const percent = mapImageRoundness / 2;
         const style = document.createElement('style');
@@ -409,7 +536,7 @@ export default function Map() {
     return (
         <div 
             style={{ width: '100vw', height: '100vh', position: 'relative' }} 
-            onContextMenu={editMode ? handleContextMenu : (e) => e.preventDefault()}
+            onContextMenu={handleContextMenu}
         >
             {/* Drawing Mode Banner */}
             <DrawingModeBanner
@@ -431,11 +558,16 @@ export default function Map() {
 
             {/* Timeline Button - Show based on zoom settings */}
             {(currentZoom === fitZoom || showTimelineWhenZoomed) && (
-                <TimelineIcon />
+                <TimelineIcon 
+                    onOpenSettings={() => setShowSettings(true)} 
+                    onContextMenu={handleTimelineContextMenu}
+                    onOpenEpochDialog={(epoch) => setTimelineEpochDialog({ open: true, epoch })}
+                    onOpenNoteDialog={(note, year) => setTimelineNoteDialog({ open: true, note, year })}
+                />
             )}
 
             {showSettings && (
-                <GeneralSettingsPanel onClose={() => setShowSettings(false)} />
+                <GeneralSettingsDialog onClose={() => setShowSettings(false)} />
             )}
 
             <MapContainer
@@ -530,6 +662,21 @@ export default function Map() {
                 onCancel={handleDeleteCancel}
                 onDeleteFromTimeline={handleDeleteFromTimeline}
                 showDeleteFromTimeline={true}
+                warning={deleteConfirm.warning}
+            />
+
+            {/* Timeline Dialogs */}
+            <EpochDialog
+                isOpen={timelineEpochDialog.open}
+                mode="edit"
+                epoch={timelineEpochDialog.epoch}
+                onClose={() => setTimelineEpochDialog({ open: false, epoch: undefined })}
+            />
+
+            <NoteDialog
+                noteId={timelineNoteDialog.note?.id || null}
+                isOpen={timelineNoteDialog.open}
+                onClose={() => setTimelineNoteDialog({ open: false, note: undefined, year: 0 })}
             />
         </div>
     );

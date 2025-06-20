@@ -28,5 +28,6 @@
   "showTimeline": true,
   "timelineEditMode": false,
   "showTimelineWhenZoomed": true,
-  "showSettingsWhenZoomed": true
+  "showSettingsWhenZoomed": true,
+  "timelineVisibility": "always"
 }

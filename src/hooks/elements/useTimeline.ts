@@ -43,9 +43,9 @@ export function useTimeline() {
       if (data.entries && data.entries.length > 0) {
         setCurrentYear(prevYear => {
           if (prevYear === 0) {
-            // Start with the earliest year instead of the latest
-            const earliestYear = Math.min(...data.entries.map(e => e.year));
-            return earliestYear;
+            // Start with year 0 by default, not the earliest timeline entry
+            // This ensures elements created in year 0 are visible
+            return 0;
           }
           return prevYear;
         });

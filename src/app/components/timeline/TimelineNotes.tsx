@@ -35,6 +35,8 @@ export function TimelineNotes({ notes, year, isOpen, onClose, onNoteClick, onNot
   const handleNoteContextMenu = (e: React.MouseEvent, note: TimelineNote) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Always call the context menu handler, let the parent decide what to show
     if (onNoteContextMenu) {
       onNoteContextMenu(e, note);
     }

@@ -4,7 +4,7 @@ import '@/css/panels/settings-panel.css'
 import { useMapSettings } from '../map/MapSettingsContext';
 import LabelEditor from '../editor/LabelEditor';
 
-export function GeneralSettingsPanel({ onClose }: { onClose: () => void }) {
+export function GeneralSettingsDialog({ onClose }: { onClose: () => void }) {
   const { 
     mapImageRoundness, 
     setMapImageRoundness, 

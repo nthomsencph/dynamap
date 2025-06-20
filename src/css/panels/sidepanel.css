@@ -194,6 +194,15 @@
   .mention:hover {
     text-decoration-color: #38bdf8; /* Tailwind sky-400 */
   }
+  .mention.mention-deleted {
+    color: #6b7280; /* Tailwind gray-500 */
+    text-decoration-color: #9ca3af; /* Tailwind gray-400 */
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  .mention.mention-deleted:hover {
+    text-decoration-color: #6b7280; /* Tailwind gray-500 */
+  }
 
   /* Text alignment */
   [style*="text-align: center"] {

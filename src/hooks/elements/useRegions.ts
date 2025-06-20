@@ -36,14 +36,10 @@ export function useRegions(currentYear: number = 0) {
       // Reconstruct regions for current year
       const reconstructedRegions = allRegions
         .map(region => getRegionStateForYear(region, currentYear, changeMap))
-        .filter((region): region is Region => region !== null);
+        .filter((region): region is Region => region !== null)
+        .filter(region => region.creationYear <= currentYear);
       
-      // If reconstruction resulted in no regions, fall back to current state
-      if (reconstructedRegions.length === 0 && allRegions.length > 0) {
-        setRegions(allRegions);
-      } else {
-        setRegions(reconstructedRegions);
-      }
+      setRegions(reconstructedRegions);
       
       setLoading(false);
       setError(null);
@@ -142,34 +138,38 @@ export function useRegions(currentYear: number = 0) {
     // Get the region before deleting it for the timeline event
     const regionToDelete = regions.find(reg => reg.id === id);
     
-    const res = await fetch(`/api/regions/${id}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) throw new Error("Failed to delete region");
-    
-    // Record the deletion in timeline
-    if (regionToDelete) {
-      const timelineChange = createTimelineChange(
-        currentYear,
-        id,
-        'region',
-        'deleted',
-        {}
-      );
-      
-      await fetch("/api/timeline/changes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(timelineChange),
-      });
+    if (!regionToDelete) {
+      console.error('deleteRegion: Region not found:', id);
+      return;
     }
     
-    // After deleting the region, refetch timeline data to update the context
+    // Record the deletion in timeline (DO NOT delete from database)
+    const timelineChange = createTimelineChange(
+      currentYear,
+      id,
+      'region',
+      'deleted',
+      {}
+    );
+    
+    await fetch("/api/timeline/changes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(timelineChange),
+    });
+    
+    // Purge all timeline changes for this region AFTER the deletion year
+    // This removes any changes that happened after the deletion
+    await fetch(`/api/timeline/changes/${id}?afterYear=${currentYear}&elementType=region`, {
+      method: "DELETE",
+    });
+    
+    // After recording the deletion and purging changes, refetch timeline data
     await fetchTimeline();
     
-    // Refetch regions to remove the deleted one
+    // Refetch regions to get the updated state
     await fetchRegions();
-  }, [regions, currentYear, fetchTimeline]);
+  }, [regions, currentYear, fetchTimeline, fetchRegions]);
 
   // Delete a region and purge all timeline data
   const deleteRegionFromTimeline = useCallback(async (id: string) => {
@@ -179,8 +179,8 @@ export function useRegions(currentYear: number = 0) {
     });
     if (!res.ok) throw new Error("Failed to delete region");
     
-    // Purge all timeline data for this region
-    await fetch(`/api/timeline/changes/${id}`, {
+    // Purge all timeline data for this region (from all years)
+    await fetch(`/api/timeline/changes/${id}?elementType=region`, {
       method: "DELETE",
     });
     

@@ -5,10 +5,15 @@ import { TimelineSlider } from './TimelineController';
 import { EpochPanel } from '../panels/EpochPanel';
 import { useTimelineContext } from '@/contexts/TimelineContext';
 import { useMapSettings } from '@/app/components/map/MapSettingsContext';
-import type { TimelineEpoch } from '@/types/timeline';
+import type { TimelineEpoch, TimelineNote } from '@/types/timeline';
 import '@/css/map-ui.css';
 
-export function TimelineIcon() {
+export function TimelineIcon({ onOpenSettings, onContextMenu, onOpenEpochDialog, onOpenNoteDialog }: { 
+  onOpenSettings?: () => void;
+  onContextMenu?: (e: React.MouseEvent, type: 'note' | 'epoch', element?: TimelineNote | TimelineEpoch) => void;
+  onOpenEpochDialog?: (epoch: TimelineEpoch) => void;
+  onOpenNoteDialog?: (note: TimelineNote, year: number) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [isEpochPanelOpen, setIsEpochPanelOpen] = useState(false);
   const [selectedEpoch, setSelectedEpoch] = useState<TimelineEpoch | null>(null);
@@ -48,6 +53,10 @@ export function TimelineIcon() {
         <TimelineSlider 
           onClose={() => setOpen(false)}
           onEpochClick={handleEpochClick}
+          onOpenSettings={onOpenSettings}
+          onContextMenu={onContextMenu}
+          onOpenEpochDialog={onOpenEpochDialog}
+          onOpenNoteDialog={onOpenNoteDialog}
         />
       )}
 

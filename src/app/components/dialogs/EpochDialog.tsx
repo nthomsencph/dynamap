@@ -34,6 +34,7 @@ export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) 
   const [yearSuffix, setYearSuffix] = useState<string>('');
   const [restartAtZero, setRestartAtZero] = useState<boolean>(false);
   const [showEndDate, setShowEndDate] = useState<boolean>(true);
+  const [reverseYears, setReverseYears] = useState<boolean>(false);
   const [saving, setSaving] = useState(false);
 
   // Initialize form when dialog opens
@@ -48,6 +49,7 @@ export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) 
         setYearSuffix(epoch.yearSuffix || '');
         setRestartAtZero(epoch.restartAtZero || false);
         setShowEndDate(epoch.showEndDate !== false); // Default to true if not explicitly set
+        setReverseYears(epoch.reverseYears || false);
       } else {
         setName('');
         setDescription('');
@@ -57,6 +59,7 @@ export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) 
         setYearSuffix('');
         setRestartAtZero(false);
         setShowEndDate(true);
+        setReverseYears(false);
       }
     }
   }, [isOpen, mode, epoch, currentYear]);
@@ -80,7 +83,8 @@ export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) 
         yearPrefix,
         yearSuffix,
         restartAtZero,
-        showEndDate
+        showEndDate,
+        reverseYears
       };
 
       if (mode === 'create') {
@@ -224,6 +228,18 @@ export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) 
                 onChange={e => setRestartAtZero(e.target.checked)}
               />
               <span>Restart year counter at start of this epoch</span>
+            </label>
+          </div>
+
+          <div>
+            <label className="flex items-center space-x-2 text-sm text-gray-300">
+              <input
+                type="checkbox"
+                className="rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-blue-600"
+                checked={reverseYears}
+                onChange={e => setReverseYears(e.target.checked)}
+              />
+              <span>Reverse year counting (like BC/AD system)</span>
             </label>
           </div>
 

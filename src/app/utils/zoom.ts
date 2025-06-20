@@ -76,3 +76,22 @@ export function getOptimalZoomForElement(upperProminence: number, fitZoom: numbe
   const zoomOffset = 3 - (targetProminence * 0.3);
   return fitZoom + zoomOffset;
 }
+
+/**
+ * Check if a map element should be visible at the current zoom level and year
+ * @param element The map element to check
+ * @param currentZoom The current zoom level
+ * @param fitZoom The zoom level that fits the map in viewport
+ * @param currentYear The current year in the timeline
+ * @returns boolean indicating if the map element should be visible
+ */
+export function shouldShowElementInYear(element: { prominence: { lower: number; upper: number } | number; creationYear: number }, currentZoom: number, fitZoom: number, currentYear: number): boolean {
+  // First check if the element should be shown based on prominence and zoom
+  const shouldShowByProminence = shouldShowElement(element.prominence, currentZoom, fitZoom);
+  
+  // Then check if the element should be shown based on creation year
+  const shouldShowByYear = element.creationYear <= currentYear;
+  
+  // Element is only shown if both conditions are met
+  return shouldShowByProminence && shouldShowByYear;
+}

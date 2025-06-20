@@ -8,6 +8,9 @@ import { useLocations } from '@/hooks/elements/useLocations';
 import { useRegions } from '@/hooks/elements/useRegions';
 import { usePanelWidth } from '@/hooks/ui/usePanelWidth';
 import { pointInPolygon } from '@/app/utils/area';
+import { useTimelineContext } from '@/contexts/TimelineContext';
+import { calculateDisplayYear } from '@/app/utils/timeline';
+import { toast } from 'react-toastify';
 
 // Helper function to find locations within a region
 export const findLocationsInRegion = (locations: MapElement[], region: MapElement) =>
@@ -53,6 +56,7 @@ export function BasePanel({
 }: BasePanelProps) {
   const { locations } = useLocations();
   const { regions } = useRegions();
+  const { currentYear, currentEpoch } = useTimelineContext();
   const locationsRef = useRef(locations);
   const regionsRef = useRef(regions);
   
@@ -72,8 +76,9 @@ export function BasePanel({
 
     const target = e.target as HTMLElement;
     const mentionId = target.getAttribute('data-id');
+    const mentionName = target.getAttribute('data-name');
     const mentionType = target.getAttribute('data-element-type');
-    if (!mentionId) return;
+    if (!mentionId || !mentionName) return;
 
     const element = mentionType === 'region' 
       ? regionsRef.current.find(r => r.id === mentionId)
@@ -81,6 +86,23 @@ export function BasePanel({
 
     if (element) {
       mentionType === 'region' ? onRegionClick?.(element) : onLocationClick?.(element);
+    } else {
+      // Element doesn't exist in current year - show tooltip
+      const displayYear = currentEpoch 
+        ? calculateDisplayYear(currentYear, currentEpoch)
+        : currentYear;
+      const yearLabel = currentEpoch 
+        ? `${currentEpoch.yearPrefix || ''} ${displayYear} ${currentEpoch.yearSuffix || ''}`.trim()
+        : displayYear;
+      
+      toast.info(`${mentionName} doesn't exist in the current year (${yearLabel})`, {
+        position: "bottom-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
@@ -97,7 +119,31 @@ export function BasePanel({
 
     container.addEventListener('click', handleClick);
     return () => container.removeEventListener('click', handleClick);
-  }, [element?.description, onRegionClick, onLocationClick]);
+  }, [element?.description, onRegionClick, onLocationClick, currentYear, currentEpoch]);
+
+  // Add visual styling for deleted mentions
+  useEffect(() => {
+    const container = document.querySelector('.panel-description');
+    if (!container || !element?.description) return;
+
+    const mentions = container.querySelectorAll('.mention');
+    mentions.forEach((mention) => {
+      const mentionId = mention.getAttribute('data-id');
+      const mentionType = mention.getAttribute('data-element-type');
+      
+      if (mentionId) {
+        const elementExists = mentionType === 'region' 
+          ? regionsRef.current.some(r => r.id === mentionId)
+          : locationsRef.current.some(l => l.id === mentionId);
+        
+        if (!elementExists) {
+          mention.classList.add('mention-deleted');
+        } else {
+          mention.classList.remove('mention-deleted');
+        }
+      }
+    });
+  }, [element?.description, locations, regions]);
 
   // Handle wheel events on backdrop
   const handleBackdropWheel = (e: React.WheelEvent) => {

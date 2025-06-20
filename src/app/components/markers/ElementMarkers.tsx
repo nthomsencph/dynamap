@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useMap } from 'react-leaflet';
 import { flyToLocationWithPanel, getMapCenter } from '@/app/utils/fly';
 import { MapElement } from '@/types/elements';
 import { calculatePolygonCenter } from '@/app/utils/area';
 import { shouldShowElement } from '@/app/utils/zoom';
+import { shouldShowElementInYear } from '@/app/utils/zoom';
+import { useTimelineContext } from '@/contexts/TimelineContext';
 import type { PanelEntry } from '@/hooks/ui/usePanelStack';
 
 // Navigation type for panels
@@ -32,7 +34,6 @@ export interface BaseMarkerProps<T extends MapElement> {
 interface ElementMarkersProps<T extends MapElement, U extends MapElement = T> extends BaseMarkerProps<T> {
   // External panel state
   currentPanel?: PanelEntry | null;
-  // Optional props that can be overridden
   getId?: (element: T) => string;
   shouldShow?: (element: T, currentZoom: number, fitZoom: number) => boolean;
   getPosition?: (element: T) => [number, number];
@@ -93,7 +94,7 @@ export function ElementMarkers<T extends MapElement, U extends MapElement = T>(p
     panelWidth = 450,
     currentPanel,
     getId = (element: T) => element.id,
-    shouldShow = (element: T, currentZoom: number, fitZoom: number) => shouldShowElement(element.prominence, currentZoom, fitZoom),
+    shouldShow = (element: T, currentZoom: number, fitZoom: number) => shouldShowElementInYear(element, currentZoom, fitZoom, currentYear),
     getPosition = (element: T) => {
       const pos = element.position;
       return Array.isArray(pos[0]) ? calculatePolygonCenter(pos as [number, number][]) : pos as [number, number];
@@ -102,6 +103,8 @@ export function ElementMarkers<T extends MapElement, U extends MapElement = T>(p
     renderMarker,
     onOtherElementClick,
   } = props;
+
+  const { currentYear } = useTimelineContext();
 
   const [previousMapCenter, setPreviousMapCenter] = useState<[number, number] | null>(null);
   const [isZooming, setIsZooming] = useState(false);
@@ -184,13 +187,6 @@ export function ElementMarkers<T extends MapElement, U extends MapElement = T>(p
       onElementClick(element);
     }
   }, [onElementClick]);
-
-  // Handle clicks on other element types
-  const handleOtherElementClick = useCallback((entry: NavEntry<U>) => {
-    if (onOtherElementClick) {
-      onOtherElementClick(entry);
-    }
-  }, [onOtherElementClick]);
 
   // Memoized context menu handler
   const handleContextMenu = useCallback((e: L.LeafletMouseEvent, element: T) => {

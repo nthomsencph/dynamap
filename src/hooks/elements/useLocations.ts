@@ -36,14 +36,10 @@ export function useLocations(currentYear: number = 0) {
       // Reconstruct locations for current year
       const reconstructedLocations = allLocations
         .map(location => getLocationStateForYear(location, currentYear, changeMap))
-        .filter((location): location is Location => location !== null);
+        .filter((location): location is Location => location !== null)
+        .filter(location => location.creationYear <= currentYear);
       
-      // If reconstruction resulted in no locations, fall back to current state
-      if (reconstructedLocations.length === 0 && allLocations.length > 0) {
-        setLocations(allLocations);
-      } else {
-        setLocations(reconstructedLocations);
-      }
+      setLocations(reconstructedLocations);
       
       setLoading(false);
       setError(null);
@@ -142,34 +138,38 @@ export function useLocations(currentYear: number = 0) {
     // Get the location before deleting it for the timeline event
     const locationToDelete = locations.find(loc => loc.id === id);
     
-    const res = await fetch(`/api/locations/${id}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) throw new Error("Failed to delete location");
-    
-    // Record the deletion in timeline
-    if (locationToDelete) {
-      const timelineChange = createTimelineChange(
-        currentYear,
-        id,
-        'location',
-        'deleted',
-        {}
-      );
-      
-      await fetch("/api/timeline/changes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(timelineChange),
-      });
+    if (!locationToDelete) {
+      console.error('deleteLocation: Location not found:', id);
+      return;
     }
     
-    // After deleting the location, refetch timeline data to update the context
+    // Record the deletion in timeline (DO NOT delete from database)
+    const timelineChange = createTimelineChange(
+      currentYear,
+      id,
+      'location',
+      'deleted',
+      {}
+    );
+    
+    await fetch("/api/timeline/changes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(timelineChange),
+    });
+    
+    // Purge all timeline changes for this location AFTER the deletion year
+    // This removes any changes that happened after the deletion
+    await fetch(`/api/timeline/changes/${id}?afterYear=${currentYear}&elementType=location`, {
+      method: "DELETE",
+    });
+    
+    // After recording the deletion and purging changes, refetch timeline data
     await fetchTimeline();
     
-    // Refetch locations to remove the deleted one
+    // Refetch locations to get the updated state
     await fetchLocations();
-  }, [locations, currentYear, fetchTimeline]);
+  }, [locations, currentYear, fetchTimeline, fetchLocations]);
 
   // Delete a location and purge all timeline data
   const deleteLocationFromTimeline = useCallback(async (id: string) => {
@@ -179,8 +179,8 @@ export function useLocations(currentYear: number = 0) {
     });
     if (!res.ok) throw new Error("Failed to delete location");
     
-    // Purge all timeline data for this location
-    await fetch(`/api/timeline/changes/${id}`, {
+    // Purge all timeline data for this location (from all years)
+    await fetch(`/api/timeline/changes/${id}?elementType=location`, {
       method: "DELETE",
     });
     
@@ -193,7 +193,6 @@ export function useLocations(currentYear: number = 0) {
 
   // Auto-refresh when year changes or timeline entries change
   useEffect(() => {
-    console.log('useLocations: useEffect triggered - currentYear:', currentYear, 'entries length:', entries.length);
     fetchLocations();
   }, [currentYear, entries, timelineLoading]);
 

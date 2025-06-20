@@ -53,12 +53,11 @@ interface RegionMarkersProps {
 
 function RegionMarkersComponent({ 
   regions, 
-  currentZoom, 
   fitZoom, 
   onContextMenu,
   onElementClick,
   currentPanel,
-  panelWidth = 450
+  panelWidth = 450,
 }: RegionMarkersProps) {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
@@ -172,8 +171,6 @@ function RegionMarkersComponent({
 
   // Handle fade-in for newly created regions
   useEffect(() => {
-    // Get current region IDs
-    const currentRegionIds = new Set(regions.map(r => r.id));
     
     // Find regions that are not in fadeInRegions (newly added)
     const newRegionIds = regions.filter(region => !fadeInRegions.has(region.id)).map(r => r.id);
@@ -198,7 +195,7 @@ function RegionMarkersComponent({
         const region = regions.find(r => r.id === regionId);
         if (!region) return;
 
-        const fadeDuration = region.areaFadeDuration ?? 800;
+        const fadeDuration = region.areaFadeDuration as number;
         const steps = 10;
         const stepDuration = fadeDuration / steps;
         const opacityStep = 0.8 / steps;
@@ -221,24 +218,7 @@ function RegionMarkersComponent({
     }
   }, [regions, fadeInRegions]);
 
-  const handleRegionClick = useCallback((region: Region) => {
-    // Find all regions containing this region's centroid
-    const centroid = calculatePolygonCenter(region.position);
-    const allContainingRegions = findContainingRegions(centroid, regions);
-    
-    console.log('🔍 Region click debug:', {
-      regionId: region.id,
-      regionName: region.name,
-      regionCentroid: centroid,
-      allContainingRegionsCount: allContainingRegions.length,
-      allContainingRegions: allContainingRegions.map(r => ({
-        id: r.id,
-        name: r.name,
-        area: r.area,
-        type: r.type
-      }))
-    });
-    
+  const handleRegionClick = useCallback((region: Region) => {    
     if (onElementClick) {
       onElementClick(region);
     }
@@ -258,42 +238,7 @@ function RegionMarkersComponent({
     isZooming: boolean;
     labelRef: (node: HTMLDivElement | null) => void;
   }) => {
-    // Enhanced validation for region position
-    if (!region || !region.id) {
-      console.warn('RegionMarkers: Region is missing or has no ID:', region);
-      return null;
-    }
     
-    if (!Array.isArray(region.position) || region.position.length < 3) {
-      console.warn('RegionMarkers: Invalid position for region:', {
-        id: region.id,
-        name: region.name,
-        position: region.position,
-        positionType: typeof region.position,
-        positionLength: Array.isArray(region.position) ? region.position.length : 'not array'
-      });
-      return null;
-    }
-
-    // Validate that all position points are valid coordinates
-    const hasValidCoordinates = region.position.every(point => 
-      Array.isArray(point) && 
-      point.length === 2 && 
-      typeof point[0] === 'number' && 
-      typeof point[1] === 'number' &&
-      !isNaN(point[0]) && 
-      !isNaN(point[1])
-    );
-    
-    if (!hasValidCoordinates) {
-      console.warn('RegionMarkers: Invalid coordinates in region position:', {
-        id: region.id,
-        name: region.name,
-        position: region.position
-      });
-      return null;
-    }
-
     // Always render labels if they have content and showLabel is not false
     const showLabel = region.showLabel !== false && region.label;
     const centroid = calculatePolygonCenter(region.position);

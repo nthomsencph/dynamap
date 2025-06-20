@@ -1,15 +1,11 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { FaTimes } from 'react-icons/fa';
 import { useTimelineContext } from '@/contexts/TimelineContext';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import { BaseDialog } from './BaseDialog';
 import type { TimelineEntry, TimelineNote } from '@/types/timeline';
 import { useLocations } from '@/hooks/elements/useLocations';
 import { useRegions } from '@/hooks/elements/useRegions';
 import { usePanelWidth } from '@/hooks/ui/usePanelWidth';
-import { formatEpochDateRange } from '@/app/utils/timeline';
+import { formatEpochDateRange, calculateDisplayYear } from '@/app/utils/timeline';
 import DescriptionEditor from '@/app/components/editor/DescriptionEditor';
 import '@/css/dialogs/base-dialog.css';
 import '@/css/panels/sidepanel.css';
@@ -35,41 +31,77 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
 
   useEffect(() => {
     if (isOpen) {
-      // Always start fresh when opening the dialog
-      setTitle('');
-      setDescription('');
+      if (noteId && currentEntry?.notes) {
+        // Edit mode: load existing note data
+        const existingNote = currentEntry.notes.find((note: TimelineNote) => note.id === noteId);
+        if (existingNote) {
+          setTitle(existingNote.title || '');
+          setDescription(existingNote.description || '');
+        } else {
+          // Note not found, start fresh
+          setTitle('');
+          setDescription('');
+        }
+      } else {
+        // Create mode: start fresh
+        setTitle('');
+        setDescription('');
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, noteId, currentEntry?.notes]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const newNote: TimelineNote = {
-        id: crypto.randomUUID(),
-        title: title.trim() || 'Untitled',
-        description: description.trim(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      if (noteId && currentEntry?.notes) {
+        // Edit existing note
+        const existingNoteIndex = currentEntry.notes.findIndex((note: TimelineNote) => note.id === noteId);
+        if (existingNoteIndex !== -1) {
+          const updatedNotes = [...currentEntry.notes];
+          updatedNotes[existingNoteIndex] = {
+            ...updatedNotes[existingNoteIndex],
+            title: title.trim() || 'Untitled',
+            description: description.trim(),
+            updatedAt: new Date().toISOString()
+          };
 
-      console.log('Creating new note:', newNote);
-
-      if (currentEntry) {
-        // Add note to existing entry
-        const existingNotes = Array.isArray(currentEntry.notes) ? currentEntry.notes : [];
-        const updatedEntry: TimelineEntry = {
-          ...currentEntry,
-          notes: [...existingNotes, newNote]
-        };
-        console.log('Updating entry with new note:', updatedEntry);
-        await updateEntry(currentYear, updatedEntry);
+          const updatedEntry: TimelineEntry = {
+            ...currentEntry,
+            notes: updatedNotes
+          };
+          
+          console.log('Updating existing note:', updatedNotes[existingNoteIndex]);
+          await updateEntry(currentYear, updatedEntry);
+        }
       } else {
-        // Create new entry with the note
-        console.log('Creating new entry with note');
-        await createEntry({
-          year: currentYear,
-          notes: [newNote]
-        });
+        // Create new note
+        const newNote: TimelineNote = {
+          id: crypto.randomUUID(),
+          title: title.trim() || 'Untitled',
+          description: description.trim(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        console.log('Creating new note:', newNote);
+
+        if (currentEntry) {
+          // Add note to existing entry
+          const existingNotes = Array.isArray(currentEntry.notes) ? currentEntry.notes : [];
+          const updatedEntry: TimelineEntry = {
+            ...currentEntry,
+            notes: [...existingNotes, newNote]
+          };
+          console.log('Updating entry with new note:', updatedEntry);
+          await updateEntry(currentYear, updatedEntry);
+        } else {
+          // Create new entry with the note
+          console.log('Creating new entry with note');
+          await createEntry({
+            year: currentYear,
+            notes: [newNote]
+          });
+        }
       }
       
       await fetchTimeline();
@@ -83,12 +115,15 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
 
   // Format year with epoch prefix/suffix
   const formatYear = (year: number) => {
-    if (currentEpoch && currentEpoch.restartAtZero) {
-      const displayYear = year - currentEpoch.startYear + 1;
+    if (currentEpoch) {
+      const displayYear = calculateDisplayYear(year, currentEpoch);
       return `${currentEpoch.yearPrefix || ''} ${displayYear} ${currentEpoch.yearSuffix || ''}`;
     }
-    return `${currentEpoch?.yearPrefix || ''} ${year} ${currentEpoch?.yearSuffix || ''}`;
+    return `${year}`;
   };
+
+  const isEditMode = !!noteId;
+  const dialogTitle = isEditMode ? `Edit note in ${formatYear(currentYear)}` : `Create note in ${formatYear(currentYear)}`;
 
   if (!isOpen) return null;
 
@@ -121,7 +156,7 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
         <div className="sidepanel-header">
           <div className="flex-1">
             <h2 className="sidepanel-title text-lg font-semibold text-gray-100">
-              Create note in {formatYear(currentYear)}
+              {dialogTitle}
             </h2>
             {currentEpoch && (
               <p className="text-sm text-gray-400 mt-1">
@@ -158,7 +193,7 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
             className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1 rounded"
             disabled={saving}
           >
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? 'Saving...' : (isEditMode ? 'Update' : 'Save')}
           </button>
         </div>
       </div>

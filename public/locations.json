@@ -11,19 +11,19 @@
       "lower": 0,
       "upper": 10
     },
-    "description": "<p style=\"text-align: left\">Muur AR1</p>",
+    "description": "<p style=\"text-align: left\"></p>",
     "image": "",
     "fields": {},
     "elementType": "location",
     "position": [
-      651.7370083261557,
-      1053.6893482629916
+      890,
+      1260
     ],
     "creationYear": 0,
-    "name": "Muur AR1",
-    "type": "Town",
-    "iconSize": 12,
-    "label": "Muur AR1",
-    "id": "07e24bb6-0d16-4443-8776-a048134fc8e6"
+    "name": "Loc",
+    "type": "Ruin",
+    "iconSize": 24,
+    "label": "Loc",
+    "id": "3d5294c1-41e2-4b6c-9e5d-55df72628e34"
   }
 ]

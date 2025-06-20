@@ -4,7 +4,6 @@ import L from 'leaflet';
 import type { Location } from "@/types/locations";
 import type { Region } from "@/types/regions";
 import { createLocationIcon, createLocationLabelDivIcon } from '@/app/utils/mapIcons';
-import { findContainingRegions } from '@/app/utils/containment';
 import { ElementMarkers, MarkerErrorBoundary } from './ElementMarkers';
 import type { PanelEntry } from '@/hooks/ui/usePanelStack';
 import { calculateLabelOffset, applyLabelOffset } from '@/app/utils/labelAlignment';
@@ -26,16 +25,10 @@ function LocationMarkersComponent({
   onContextMenu,
   onElementClick,
   currentPanel,
-  panelWidth = 450
+  panelWidth = 450,
 }: LocationMarkersProps) {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
-  
-  // Debug logging (uncomment if needed)
-  // console.log('[LABEL-MARKERS] LocationMarkers rendering with:', {
-  //   totalLocations: locations.length,
-  //   hiddenLabelIds: Array.from(hiddenLabelIds)
-  // });
   
   useEffect(() => {
     const onZoom = () => {
@@ -51,21 +44,6 @@ function LocationMarkersComponent({
 
   const handleLocationClick = useCallback((location: Location) => {
     // Find all regions containing this location
-    const allContainingRegions = findContainingRegions(location.position, regions);
-    
-    console.log('🔍 Location click debug:', {
-      locationId: location.id,
-      locationName: location.name,
-      locationPosition: location.position,
-      allContainingRegionsCount: allContainingRegions.length,
-      allContainingRegions: allContainingRegions.map(r => ({
-        id: r.id,
-        name: r.name,
-        area: r.area,
-        type: r.type
-      }))
-    });
-    
     if (onElementClick) {
       onElementClick(location);
     }
@@ -94,7 +72,6 @@ function LocationMarkersComponent({
     if (showLabel && location.labelPosition && location.labelPosition.direction !== 'Center') {
       // Use default size for label positioning calculations
       const defaultLabelSize = { width: 50, height: 32 };
-      
       // Calculate the offset based on label position settings
       const offset = calculateLabelOffset(location, defaultLabelSize.width, defaultLabelSize.height);
       labelPosition = applyLabelOffset(location.position, offset);

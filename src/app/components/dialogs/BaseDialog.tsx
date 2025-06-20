@@ -13,6 +13,7 @@ import '@/css/dialogs/base-dialog.css';
 import { useTypes } from '@/hooks/elements/useTypes';
 import { useLocations } from '@/hooks/elements/useLocations';
 import { useRegions } from '@/hooks/elements/useRegions';
+import { useTimelineContext } from '@/contexts/TimelineContext';
 
 interface BaseDialogProps<T extends MapElement> {
   open: boolean;
@@ -60,8 +61,9 @@ export function BaseDialog<T extends MapElement>({
 }: BaseDialogProps<T>) {
   // Always call ALL hooks first - never conditionally call hooks
   const { types, addType } = useTypes();
-  const { locations } = useLocations();
-  const { regions } = useRegions();
+  const { currentYear } = useTimelineContext();
+  const { locations } = useLocations(currentYear);
+  const { regions } = useRegions(currentYear);
 
   const DEFAULT_ICON = Object.keys(ELEMENT_ICONS)[0] as ElementIcon;
 

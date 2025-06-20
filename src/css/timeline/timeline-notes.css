@@ -5,12 +5,12 @@
   right: 16px;
   z-index: 10003; /* Between TimelineSlider (10002) and sidepanels (10004) */
   pointer-events: none;
-  margin-top: 180px; /* Reduced space - closer to compact TimelineSlider */
+  margin-top: 150px; /* Reduced space - closer to compact TimelineSlider */
 }
 
 /* Individual Note Widget */
 .timeline-note-widget {
-  width: 380px;
+  width: 250px;
   background: rgba(0, 0, 0, 0.95);
   color: #fff;
   border-radius: 8px;
@@ -98,7 +98,7 @@
 }
 
 /* Responsive */
-@media (max-width: 480px) {
+@media (max-width: 200px) {
   .timeline-notes-container {
     top: 8px;
     right: 8px;

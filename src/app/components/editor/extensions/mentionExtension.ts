@@ -45,15 +45,27 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
     },
     suggestion: {
       items: ({ query }: { query: string }) => {
+        console.log('MENTION_DEBUG: items called with query:', query);
+        
         // Get fresh elements each time
         const elements = getElements();
+        console.log('MENTION_DEBUG: elements from getElements:', elements);
+        console.log('MENTION_DEBUG: elements details:', elements.map(el => ({
+          id: el.id,
+          name: el.name,
+          type: el.type,
+          elementType: el.elementType,
+          creationYear: el.creationYear
+        })));
         
         // Safety check for elements
         if (!elements || !Array.isArray(elements)) {
+          console.log('MENTION_DEBUG: elements is not valid array');
           return [];
         }
 
         if (elements.length === 0) {
+          console.log('MENTION_DEBUG: elements array is empty');
           return [];
         }
 
@@ -67,12 +79,17 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
                                        typeof element.name === 'string';
               
               if (!hasValidStructure) {
+                console.log('MENTION_DEBUG: element has invalid structure:', element);
                 return false;
               }
               
               // At this point, TypeScript knows element.name is defined
               const elementName = element.name as string;
               const matches = elementName.toLowerCase().includes(query.toLowerCase());
+              
+              if (matches) {
+                console.log('MENTION_DEBUG: element matches query:', elementName, 'creationYear:', element.creationYear);
+              }
               
               return matches;
             })
@@ -84,12 +101,15 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
               elementType: getElementType(element),
             }));
 
+          console.log('MENTION_DEBUG: filtered elements:', filteredElements);
           return filteredElements;
         } catch (error) {
+          console.error('MENTION_DEBUG: error in items function:', error);
           return [];
         }
       },
       render: () => {
+        console.log('MENTION_DEBUG: render function called');
         let component: HTMLDivElement;
         let selectedIndex = 0;
         let currentItems: MentionItem[] = [];
@@ -101,6 +121,7 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
           command: (item: MentionItem) => void, 
           selected: number
         ) => {
+          console.log('MENTION_DEBUG: updateItems called with items:', items);
           element.innerHTML = '';
           currentItems = items; // Store current items for keyboard navigation
           currentCommand = command; // Store current command for keyboard navigation
@@ -151,6 +172,7 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
 
         return {
           onStart: (props: any) => {
+            console.log('MENTION_DEBUG: onStart called with props:', props);
             selectedIndex = 0;
             
             // Create the dropdown element
@@ -159,7 +181,7 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
             
             // Only set position styles, let CSS handle the appearance
             component.style.position = 'absolute';
-            component.style.zIndex = '9999';
+            component.style.zIndex = '10010';
 
             // Position the dropdown
             const rect = props.clientRect();
@@ -172,6 +194,7 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
             updateItems(component, props.items || [], props.command, selectedIndex);
             
             document.body.appendChild(component);
+            console.log('MENTION_DEBUG: dropdown added to DOM');
           },
 
           onUpdate: (props: any) => {
@@ -237,6 +260,7 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
           },
 
           onExit: () => {
+            console.log('MENTION_DEBUG: onExit called');
             if (component && component.parentNode) {
               component.parentNode.removeChild(component);
             }

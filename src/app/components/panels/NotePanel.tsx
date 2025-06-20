@@ -2,7 +2,7 @@ import React from 'react';
 import { TimelineNote } from '@/types/timeline';
 import { useTimelineContext } from '@/contexts/TimelineContext';
 import { usePanelWidth } from '@/hooks/ui/usePanelWidth';
-import { formatEpochDateRange } from '@/app/utils/timeline';
+import { formatEpochDateRange, calculateDisplayYear } from '@/app/utils/timeline';
 import '@/css/panels/sidepanel.css';
 
 interface NotePanelProps {
@@ -18,11 +18,11 @@ export function NotePanel({ note, year, isOpen, onClose }: NotePanelProps) {
 
   // Format year with epoch prefix/suffix
   const formatYear = (year: number) => {
-    if (currentEpoch && currentEpoch.restartAtZero) {
-      const displayYear = year - currentEpoch.startYear + 1;
+    if (currentEpoch) {
+      const displayYear = calculateDisplayYear(year, currentEpoch);
       return `${currentEpoch.yearPrefix || ''} ${displayYear} ${currentEpoch.yearSuffix || ''}`;
     }
-    return `${currentEpoch?.yearPrefix || ''} ${year} ${currentEpoch?.yearSuffix || ''}`;
+    return `${year}`;
   };
 
   if (!isOpen) return null;

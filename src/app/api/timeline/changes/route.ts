@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
-import type { TimelineData, TimelineEntry } from '@/types/timeline';
+import type { TimelineData, TimelineEntry, TimelineChange } from '@/types/timeline';
 import { createEmptyChanges, isEmptyChanges } from '@/types/timeline';
-import type { TimelineChange } from '@/app/utils/timeline-changes';
 
 const TIMELINE_FILE = path.join(process.cwd(), 'public', 'timeline.json');
 

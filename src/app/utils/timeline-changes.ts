@@ -1,24 +1,7 @@
-import type { TimelineEntry, TimelineChanges } from '@/types/timeline';
+import type { TimelineEntry, TimelineChanges, TimelineChange, ElementChange, ChangeMap, TimelineEpoch } from '@/types/timeline';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
-
-export interface TimelineChange {
-  year: number;
-  elementId: string;
-  elementType: 'location' | 'region';
-  changeType: 'updated' | 'deleted';
-  changes: Partial<Location | Region>;
-}
-
-export interface ElementChange {
-  _deleted?: boolean;
-  [key: string]: any;
-}
-
-export interface ChangeMap {
-  locations: Map<string, Map<number, ElementChange>>;
-  regions: Map<string, Map<number, ElementChange>>;
-}
+import { calculateDisplayYear } from '@/app/utils/timeline';
 
 /**
  * Build a map of changes for efficient lookup during reconstruction
@@ -67,32 +50,33 @@ export function buildChangeMap(entries: TimelineEntry[]): ChangeMap {
 }
 
 /**
- * Get the state of a location for a specific year
+ * Get the state of an element (location or region) for a specific year
  */
-export function getLocationStateForYear(
-  location: Location,
+export function getElementStateForYear<T extends { id: string; creationYear: number }>(
+  element: T,
   targetYear: number,
-  changeMap: ChangeMap
-): Location | null {
-  // If the location was created after the target year, it doesn't exist yet
-  if (location.creationYear > targetYear) {
+  changeMap: ChangeMap,
+  elementType: 'location' | 'region'
+): T | null {
+  // If the element was created after the target year, it doesn't exist yet
+  if (element.creationYear > targetYear) {
     return null;
   }
 
-  const locationChanges = changeMap.locations.get(location.id);
-  if (!locationChanges) {
-    // No changes recorded, return the base location
-    return location;
+  const elementChanges = changeMap[elementType === 'location' ? 'locations' : 'regions'].get(element.id);
+  if (!elementChanges) {
+    // No changes recorded, return the base element
+    return element;
   }
 
   // Find all changes from creation year to target year (inclusive)
   // Now that we store changes for creation year, include them
-  const applicableChanges = Array.from(locationChanges.entries())
-    .filter(([year]) => year >= location.creationYear && year <= targetYear)
+  const applicableChanges = Array.from(elementChanges.entries())
+    .filter(([year]) => year >= element.creationYear && year <= targetYear)
     .sort(([a], [b]) => a - b); // Sort by year ascending for proper application order
 
   if (applicableChanges.length === 0) {
-    return location;
+    return element;
   }
 
   // Check if element was deleted before or at target year
@@ -101,19 +85,30 @@ export function getLocationStateForYear(
     return null; // Element was deleted
   }
 
-  // Start with the base location and apply modifications chronologically
-  let reconstructedLocation = { ...location };
+  // Start with the base element and apply modifications chronologically
+  let reconstructedElement = { ...element };
   
   applicableChanges.forEach(([year, changes]) => {
     if (!changes._deleted) {
-      reconstructedLocation = {
-        ...reconstructedLocation,
+      reconstructedElement = {
+        ...reconstructedElement,
         ...changes
       };
     }
   });
 
-  return reconstructedLocation;
+  return reconstructedElement;
+}
+
+/**
+ * Get the state of a location for a specific year
+ */
+export function getLocationStateForYear(
+  location: Location,
+  targetYear: number,
+  changeMap: ChangeMap
+): Location | null {
+  return getElementStateForYear(location, targetYear, changeMap, 'location') as Location | null;
 }
 
 /**
@@ -124,46 +119,7 @@ export function getRegionStateForYear(
   targetYear: number,
   changeMap: ChangeMap
 ): Region | null {
-  // If the region was created after the target year, it doesn't exist yet
-  if (region.creationYear > targetYear) {
-    return null;
-  }
-
-  const regionChanges = changeMap.regions.get(region.id);
-  if (!regionChanges) {
-    // No changes recorded, return the base region
-    return region;
-  }
-
-  // Find all changes from creation year to target year (inclusive)
-  // Now that we store changes for creation year, include them
-  const applicableChanges = Array.from(regionChanges.entries())
-    .filter(([year]) => year >= region.creationYear && year <= targetYear)
-    .sort(([a], [b]) => a - b); // Sort by year ascending for proper application order
-
-  if (applicableChanges.length === 0) {
-    return region;
-  }
-
-  // Check if element was deleted before or at target year
-  const latestChange = applicableChanges[applicableChanges.length - 1];
-  if (latestChange[1]._deleted) {
-    return null; // Element was deleted
-  }
-
-  // Start with the base region and apply modifications chronologically
-  let reconstructedRegion = { ...region };
-  
-  applicableChanges.forEach(([year, changes]) => {
-    if (!changes._deleted) {
-      reconstructedRegion = {
-        ...reconstructedRegion,
-        ...changes
-      };
-    }
-  });
-
-  return reconstructedRegion;
+  return getElementStateForYear(region, targetYear, changeMap, 'region') as Region | null;
 }
 
 /**
@@ -220,4 +176,59 @@ export function createTimelineChange(
     changeType,
     changes
   };
+}
+
+/**
+ * Check if an element has changes in future years and return those years in display format
+ */
+export function getFutureChangesForElement(
+  elementId: string,
+  elementType: 'location' | 'region',
+  currentYear: number,
+  entries: TimelineEntry[],
+  epochs: TimelineEpoch[]
+): { hasChanges: boolean; years: string[] } {
+  const futureEntries = entries.filter(entry => entry.year > currentYear);
+  const yearsWithChanges: number[] = [];
+
+  for (const entry of futureEntries) {
+    if (!entry.changes) continue;
+
+    let foundChangeInYear = false;
+
+    // Check modified changes
+    if (entry.changes.modified) {
+      const elementChanges = entry.changes.modified[`${elementType}s` as keyof typeof entry.changes.modified];
+      if (elementChanges && typeof elementChanges === 'object' && elementId in elementChanges) {
+        yearsWithChanges.push(entry.year);
+        foundChangeInYear = true;
+      }
+    }
+
+    // Check deleted changes
+    if (!foundChangeInYear && entry.changes.deleted) {
+      const deletedElements = entry.changes.deleted[`${elementType}s` as keyof typeof entry.changes.deleted];
+      if (Array.isArray(deletedElements) && deletedElements.includes(elementId)) {
+        yearsWithChanges.push(entry.year);
+      }
+    }
+  }
+
+  if (yearsWithChanges.length === 0) {
+    return { hasChanges: false, years: [] };
+  }
+
+  // Convert years to display format using epoch information
+  const displayYears = yearsWithChanges.map(year => {
+    const epoch = epochs.find(e => year >= e.startYear && year <= e.endYear);
+    if (epoch) {
+      const displayYear = calculateDisplayYear(year, epoch);
+      const prefix = epoch.yearPrefix ? `${epoch.yearPrefix} ` : '';
+      const suffix = epoch.yearSuffix ? ` ${epoch.yearSuffix}` : '';
+      return `${prefix}${displayYear}${suffix}`;
+    }
+    return `${year}`;
+  });
+
+  return { hasChanges: true, years: displayYears };
 } 

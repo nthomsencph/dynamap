@@ -9,6 +9,7 @@ interface ConfirmDialogProps {
   onCancel: () => void;
   onDeleteFromTimeline?: () => void;
   showDeleteFromTimeline?: boolean;
+  warning?: string;
 }
 
 export function ConfirmDialog({ 
@@ -18,7 +19,8 @@ export function ConfirmDialog({
   onConfirm, 
   onCancel, 
   onDeleteFromTimeline,
-  showDeleteFromTimeline = false 
+  showDeleteFromTimeline = false,
+  warning
 }: ConfirmDialogProps) {
   if (!open) return null;
 
@@ -32,6 +34,9 @@ export function ConfirmDialog({
       >
         <h2>{title}</h2>
         <p>{message}</p>
+        {warning && (
+          <p className="confirm-dialog-warning">{warning}</p>
+        )}
         <div className="dialog-actions">
           <button type="button" className="dialog-cancel" onClick={onCancel}>Cancel</button>
           {showDeleteFromTimeline && onDeleteFromTimeline && (

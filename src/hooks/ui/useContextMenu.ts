@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
+import type { TimelineNote, TimelineEpoch } from '@/types/timeline';
 import L from 'leaflet';
 import { findContainingRegions } from '@/app/utils/containment';
 
@@ -8,9 +9,11 @@ interface ContextMenuState {
   open: boolean;
   x: number;
   y: number;
-  type: 'map' | 'marker';
+  type: 'map' | 'marker' | 'timeline';
   location?: Location;
   region?: Region;
+  note?: TimelineNote;
+  epoch?: TimelineEpoch;
 }
 
 interface UseContextMenuProps {
@@ -25,6 +28,12 @@ interface UseContextMenuProps {
   startDrawing: () => void; // Required: polygon drawing is the only way to add regions
   regions: Region[]; // Add regions data for overlapping region detection
   editMode: boolean; // Whether edit mode is enabled
+  onOpenSettings?: () => void; // Callback to open settings dialog
+  // Timeline-specific handlers
+  onEditNote?: (note: TimelineNote, year: number) => void;
+  onDeleteNote?: (noteId: string) => void;
+  onEditEpoch?: (epoch: TimelineEpoch) => void;
+  onDeleteEpoch?: (epochId: string) => void;
 }
 
 export function useContextMenu({
@@ -39,6 +48,11 @@ export function useContextMenu({
   startDrawing,
   regions,
   editMode,
+  onOpenSettings,
+  onEditNote,
+  onDeleteNote,
+  onEditEpoch,
+  onDeleteEpoch,
 }: UseContextMenuProps) {
   const [menu, setMenu] = useState<ContextMenuState>({ 
     open: false, 
@@ -68,16 +82,6 @@ export function useContextMenu({
 
   // Type-safe handlers for different element types
   const handleContextMenu = useCallback((e: React.MouseEvent | L.LeafletMouseEvent) => {
-    // Check if edit mode is disabled - if so, prevent context menu
-    if (!editMode) {
-      if ('preventDefault' in e) {
-        e.preventDefault();
-      } else if ('originalEvent' in e && 'preventDefault' in e.originalEvent) {
-        e.originalEvent.preventDefault();
-      }
-      return;
-    }
-
     // Check if any panels are open - if so, prevent context menu
     if (hasOpenPanels()) {
       if ('preventDefault' in e) {
@@ -103,7 +107,7 @@ export function useContextMenu({
       y: clientY, 
       type: 'map'
     });
-  }, [hasOpenPanels, editMode]);
+  }, [hasOpenPanels]);
 
   const handleLocationContextMenu = useCallback((e: L.LeafletMouseEvent, location: Location) => {
     // Check if edit mode is disabled - if so, prevent context menu
@@ -183,12 +187,54 @@ export function useContextMenu({
     });
   }, [hasOpenPanels, regions, editMode]);
 
+  const handleNoteContextMenu = useCallback((e: React.MouseEvent, note: TimelineNote) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setMenu({ 
+      open: true, 
+      x: e.clientX, 
+      y: e.clientY, 
+      type: 'timeline',
+      note
+    });
+  }, []);
+
+  const handleEpochContextMenu = useCallback((e: React.MouseEvent, epoch: TimelineEpoch) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setMenu({ 
+      open: true, 
+      x: e.clientX, 
+      y: e.clientY, 
+      type: 'timeline',
+      epoch
+    });
+  }, []);
+
   const closeMenu = useCallback(() => {
     setMenu(m => ({ ...m, open: false }));
   }, []);
 
   const getMenuItems = useCallback(() => {
     const currentMenu = menuRef.current;
+    
+    // If edit mode is disabled, show a helpful message
+    if (!editMode) {
+      return [
+        {
+          label: "Edit Mode disabled",
+          onClick: () => {
+            if (onOpenSettings) {
+              onOpenSettings();
+            }
+            closeMenu();
+          }
+        }
+      ];
+    }
+    
     if (currentMenu.type === 'marker') {
       if (currentMenu.location) {
         return [
@@ -253,7 +299,46 @@ export function useContextMenu({
           },
         ];
       }
+    } else if (currentMenu.type === 'timeline') {
+      if (currentMenu.note && onEditNote && onDeleteNote) {
+        return [
+          {
+            label: 'Edit note',
+            onClick: () => {
+              onEditNote(currentMenu.note!, 0); // year will be passed by the caller
+              closeMenu();
+            }
+          },
+          {
+            label: 'Delete note',
+            onClick: () => {
+              onDeleteNote(currentMenu.note!.id);
+              closeMenu();
+            },
+            danger: true
+          }
+        ];
+      } else if (currentMenu.epoch && onEditEpoch && onDeleteEpoch) {
+        return [
+          {
+            label: 'Edit epoch',
+            onClick: () => {
+              onEditEpoch(currentMenu.epoch!);
+              closeMenu();
+            }
+          },
+          {
+            label: 'Delete epoch',
+            onClick: () => {
+              onDeleteEpoch(currentMenu.epoch!.id);
+              closeMenu();
+            },
+            danger: true
+          }
+        ];
+      }
     }
+    
     return [
       { 
         label: "Add location", 
@@ -284,13 +369,15 @@ export function useContextMenu({
         } 
       },
     ];
-  }, [onEditLocation, onMoveLocation, onDeleteLocation, onEditRegion, onAddLocation, onDeleteRegion, mapRef, startDrawing, closeMenu]);
+  }, [onEditLocation, onMoveLocation, onDeleteLocation, onEditRegion, onAddLocation, onDeleteRegion, mapRef, startDrawing, closeMenu, editMode, onOpenSettings, onEditNote, onDeleteNote, onEditEpoch, onDeleteEpoch]);
 
   return {
     menu,
     handleContextMenu,
     handleLocationContextMenu,
     handleRegionContextMenu,
+    handleNoteContextMenu,
+    handleEpochContextMenu,
     closeMenu,
     getMenuItems,
   };
