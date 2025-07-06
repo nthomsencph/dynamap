@@ -188,6 +188,50 @@ dynamap/
 - `npm run setup-db` - Set up PostgreSQL database schema
 - `npm run migrate` - Run database migrations
 
+### PostgreSQL Service Management
+
+PostgreSQL runs as a background service. You can manage it based on your workflow:
+
+**Option 1: Keep PostgreSQL Running (Recommended for frequent development)**
+- PostgreSQL will start automatically with your system
+- No need to start/stop when working on the project
+- Uses minimal resources when idle (~50-100MB)
+
+**Option 2: Start/Stop PostgreSQL as Needed (Recommended for memory-conscious users)**
+
+When starting work:
+```bash
+# Start PostgreSQL
+brew services start postgresql@14
+
+# Start your development server
+npm run dev
+```
+
+When stopping work:
+```bash
+# Stop your development server (Ctrl+C)
+# Stop PostgreSQL
+brew services stop postgresql@14
+```
+
+**Useful PostgreSQL Commands:**
+```bash
+# Start PostgreSQL
+brew services start postgresql@14
+
+# Stop PostgreSQL  
+brew services stop postgresql@14
+
+# Check status
+brew services list | grep postgresql
+
+# Restart PostgreSQL
+brew services restart postgresql@14
+```
+
+**Note:** Your data is safely persisted to disk, so stopping PostgreSQL won't affect your Dynamap data.
+
 ## 🗄 Database Schema
 
 The application uses PostgreSQL with the following main tables:
