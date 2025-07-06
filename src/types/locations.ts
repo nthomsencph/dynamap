@@ -3,7 +3,7 @@ import { MapElement } from '@/types/elements';
 /**
  * Default types for locations.
  * These are the predefined types that come with the application.
- * Custom types can be added through the UI and are stored in public/types.json.
+ * Users can also type custom types directly in the dialog.
  */
 export const DEFAULT_LOCATION_TYPES = [
   'City',

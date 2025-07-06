@@ -3,7 +3,7 @@ import { MapElement } from '@/types/elements';
 /**
  * Default types for regions.
  * These are the predefined types that come with the application.
- * Custom types can be added through the UI and are stored in public/types.json.
+ * Users can also type custom types directly in the dialog.
  */
 export const DEFAULT_REGION_TYPES = [
   'Region',
@@ -19,9 +19,9 @@ export const DEFAULT_REGION_TYPES = [
 
 // Region interface
 export interface Region extends MapElement {
-  position: [number, number][];  // Regions must have multiple points
-  showBorder: boolean;
-  showHighlight: boolean;  // Whether to show the area fill
-  area?: number;  // Calculated area of the region in square pixels
-  areaFadeDuration?: number;  // Duration in milliseconds for the fade-in animation (default: 800)
+  position: [number, number][];  // Regions must have multiple points forming a polygon
+  showBorder?: boolean;  // Whether to show the border of the region
+  showHighlight?: boolean;  // Whether to show the highlight when hovering
+  area?: number;  // Calculated area of the region
+  areaFadeDuration?: number;  // Duration of the area highlight animation
 } 

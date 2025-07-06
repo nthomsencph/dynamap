@@ -26,7 +26,7 @@ import { RxFontFamily } from 'react-icons/rx';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
 import { createMentionExtension } from './extensions/mentionExtension';
-import { useTimelineContext } from '@/contexts/TimelineContext';
+import { useTimelineContext } from '@/app/contexts/TimelineContext';
 import { calculateDisplayYear } from '@/app/utils/timeline';
 import { toast } from 'react-toastify';
 import '@/css/description-editor.css';
@@ -59,9 +59,8 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
 
   // Create mention extension with ref to avoid stale closure
   const mentionExtension = useMemo(() => {
-    console.log('MENTION_DEBUG: DescriptionEditor: Creating mention extension with elements:', elementsRef.current);
     return createMentionExtension(() => {
-      console.log('MENTION_DEBUG: DescriptionEditor: getElements called, returning:', elementsRef.current);
+
       return elementsRef.current;
     });
   }, []); // Empty deps - create once, ref will always have fresh elements
@@ -154,7 +153,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
 
       if (element) {
         // Element exists - could trigger navigation or other action
-        console.log('MENTION_DEBUG: Clicked on existing element:', element.name);
+  
       } else {
         // Element doesn't exist in current year - show tooltip
         const displayYear = currentEpoch 

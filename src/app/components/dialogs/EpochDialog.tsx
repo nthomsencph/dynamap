@@ -1,13 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { FaTimes } from 'react-icons/fa';
-import { useTimelineContext } from '@/contexts/TimelineContext';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import { BaseDialog } from './BaseDialog';
+import { useTimelineContext } from '@/app/contexts/TimelineContext';
 import type { TimelineEpoch } from '@/types/timeline';
-import { useLocations } from '@/hooks/elements/useLocations';
-import { useRegions } from '@/hooks/elements/useRegions';
+import { useMapElementsByYear } from '@/hooks/queries/useMapElements';
 import { usePanelWidth } from '@/hooks/ui/usePanelWidth';
 import DescriptionEditor from '@/app/components/editor/DescriptionEditor';
 import '@/css/dialogs/base-dialog.css';
@@ -22,8 +17,7 @@ interface EpochDialogProps {
 
 export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) {
   const { createEpoch, updateEpoch, currentYear, fetchTimeline } = useTimelineContext();
-  const { locations } = useLocations(currentYear);
-  const { regions } = useRegions(currentYear);
+  const { locations, regions } = useMapElementsByYear(currentYear);
   const { width, handleMouseDown } = usePanelWidth();
   
   const [name, setName] = useState<string>('');

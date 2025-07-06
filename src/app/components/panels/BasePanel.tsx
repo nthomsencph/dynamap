@@ -1,16 +1,17 @@
-import React, { useEffect, ReactNode, useRef, useLayoutEffect } from 'react';
+import React, { useEffect, ReactNode, useRef, useLayoutEffect, useCallback } from 'react';
 import { IoArrowBack } from 'react-icons/io5';
 import '@/css/panels/sidepanel.css';
 import type { MapElement } from '@/types/elements';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
-import { useLocations } from '@/hooks/elements/useLocations';
-import { useRegions } from '@/hooks/elements/useRegions';
+import { useMapElementsByYear } from '@/hooks/queries/useMapElements';
 import { usePanelWidth } from '@/hooks/ui/usePanelWidth';
-import { pointInPolygon } from '@/app/utils/area';
-import { useTimelineContext } from '@/contexts/TimelineContext';
+import { pointInPolygon } from '@/app/utils/geometry';
+import { useTimelineContext } from '@/app/contexts/TimelineContext';
+import { usePanelStack } from '@/app/contexts/PanelStackContext';
 import { calculateDisplayYear } from '@/app/utils/timeline';
 import { toast } from 'react-toastify';
+import { useContainingRegions } from '@/hooks/queries/useContainingRegions';
 
 // Helper function to find locations within a region
 export const findLocationsInRegion = (locations: MapElement[], region: MapElement) =>
@@ -18,47 +19,52 @@ export const findLocationsInRegion = (locations: MapElement[], region: MapElemen
     ? locations.filter(loc => pointInPolygon(loc.position as [number, number], region.position as [number, number][]))
     : [];
 
-// Helper function to create type-safe click handlers
-export const createClickHandlers = (
-  onLocationClick?: (location: Location) => void,
-  onRegionClick?: (region: Region) => void
-) => {
-  const handlers = {
-    handleLocationClick: onLocationClick ? (e: MapElement) => onLocationClick(e as Location) : undefined,
-    handleRegionClick: onRegionClick ? (e: MapElement) => onRegionClick(e as Region) : undefined
-  };
 
-  return handlers;
-};
 
 export interface BasePanelProps {
   element: MapElement;
   onClose: () => void;
   onBack?: () => void;
-  onLocationClick?: (location: MapElement) => void;
-  onRegionClick?: (region: MapElement) => void;
   className?: string;
   contentClassName?: string;
   children?: ReactNode;
-  containingRegions?: Region[]; // All regions that contain this element
 }
 
 export function BasePanel({ 
   element, 
   onClose, 
   onBack, 
-  onLocationClick, 
-  onRegionClick,
   className = '',
   contentClassName = '',
-  children,
-  containingRegions
+  children
 }: BasePanelProps) {
-  const { locations } = useLocations();
-  const { regions } = useRegions();
   const { currentYear, currentEpoch } = useTimelineContext();
+  const { pushPanel } = usePanelStack();
+  const { locations, regions } = useMapElementsByYear(currentYear);
   const locationsRef = useRef(locations);
   const regionsRef = useRef(regions);
+  
+  // Get containing regions using the hook
+  const { data: containingRegions = [] } = useContainingRegions(element as Location | Region);
+  
+  // Create navigation handlers using panel stack context
+  const handleLocationClick = useCallback((location: MapElement) => {
+    pushPanel({
+      id: location.id,
+      elementType: 'location',
+      element: location as Location,
+      metadata: {}
+    });
+  }, [pushPanel]);
+  
+  const handleRegionClick = useCallback((region: MapElement) => {
+    pushPanel({
+      id: region.id,
+      elementType: 'region',
+      element: region as Region,
+      metadata: {}
+    });
+  }, [pushPanel]);
   
   // Panel width management
   const { width, isDragging, handleMouseDown } = usePanelWidth();
@@ -85,7 +91,7 @@ export function BasePanel({
       : locationsRef.current.find(l => l.id === mentionId);
 
     if (element) {
-      mentionType === 'region' ? onRegionClick?.(element) : onLocationClick?.(element);
+      mentionType === 'region' ? handleRegionClick(element) : handleLocationClick(element);
     } else {
       // Element doesn't exist in current year - show tooltip
       const displayYear = currentEpoch 
@@ -119,7 +125,7 @@ export function BasePanel({
 
     container.addEventListener('click', handleClick);
     return () => container.removeEventListener('click', handleClick);
-  }, [element?.description, onRegionClick, onLocationClick, currentYear, currentEpoch]);
+  }, [element?.description, handleRegionClick, handleLocationClick, currentYear, currentEpoch]);
 
   // Add visual styling for deleted mentions
   useEffect(() => {
@@ -232,7 +238,7 @@ export function BasePanel({
             <React.Fragment key={pill.region.id}>
               <button 
                 className="path-pill path-pill--parent"
-                onClick={() => onRegionClick?.(pill.region)}
+                onClick={() => handleRegionClick(pill.region)}
                 title={pill.region.name || 'Unknown'}
               >
                 <span className="path-pill-name">
@@ -266,7 +272,7 @@ export function BasePanel({
         </div>
       </div>
     );
-  }, [pathPills, element, onRegionClick]);
+  }, [pathPills, element, handleRegionClick]);
 
   // Scroll pill path to the right end to show current element
   React.useEffect(() => {

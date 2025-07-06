@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useMap } from 'react-leaflet';
 import { flyToLocationWithPanel, getMapCenter } from '@/app/utils/fly';
 import { MapElement } from '@/types/elements';
-import { calculatePolygonCenter } from '@/app/utils/area';
+import { calculatePolygonCenter } from '@/app/utils/geometry';
 import { shouldShowElement } from '@/app/utils/zoom';
 import { shouldShowElementInYear } from '@/app/utils/zoom';
-import { useTimelineContext } from '@/contexts/TimelineContext';
-import type { PanelEntry } from '@/hooks/ui/usePanelStack';
+import { useTimelineContext } from '@/app/contexts/TimelineContext';
+import type { PanelEntry } from '@/app/contexts/PanelStackContext';
 
 // Navigation type for panels
 export type ElementType = 'location' | 'region';

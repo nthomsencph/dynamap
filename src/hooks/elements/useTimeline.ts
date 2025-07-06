@@ -2,13 +2,29 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { TimelineData, TimelineEntry, TimelineChanges, TimelineEpoch, TimelineNote } from '@/types/timeline';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
+import { trpc } from '@/trpc';
 
 export function useTimeline() {
-  const [entries, setEntries] = useState<TimelineEntry[]>([]);
-  const [epochs, setEpochs] = useState<TimelineEpoch[]>([]);
   const [currentYear, setCurrentYear] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Use tRPC queries
+  const { data: timelineData, isLoading: timelineLoading, error: timelineError } = trpc.timeline.getAll.useQuery();
+  const { data: epochsData, isLoading: epochsLoading, error: epochsError } = trpc.timeline.getEpochs.useQuery();
+  const { data: entriesData, isLoading: entriesLoading, error: entriesError } = trpc.timeline.getEntries.useQuery();
+
+  // Use tRPC mutations
+  const createEntryMutation = trpc.timeline.upsertEntry.useMutation();
+  const updateEntryMutation = trpc.timeline.upsertEntry.useMutation();
+  const deleteEntryMutation = trpc.timeline.deleteEntry.useMutation();
+  const createEpochMutation = trpc.timeline.createEpoch.useMutation();
+  const updateEpochMutation = trpc.timeline.updateEpoch.useMutation();
+  const deleteEpochMutation = trpc.timeline.deleteEpoch.useMutation();
+
+  // Extract data
+  const entries = entriesData || [];
+  const epochs = epochsData || [];
 
   // Calculate year range from entries
   const yearRange = useMemo(() => {
@@ -27,95 +43,45 @@ export function useTimeline() {
     return entries.find(e => e.year === currentYear) || null;
   }, [entries, currentYear]);
 
-  // Fetch timeline data
-  const fetchTimeline = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch('/api/timeline');
-      if (!response.ok) throw new Error('Failed to fetch timeline');
-      const data: TimelineData = await response.json();
-      
-      setEntries(data.entries || []);
-      setEpochs(data.epochs || []);
-      
-      // Only set current year if it hasn't been set yet (avoid overriding user navigation)
-      if (data.entries && data.entries.length > 0) {
-        setCurrentYear(prevYear => {
-          if (prevYear === 0) {
-            // Start with year 0 by default, not the earliest timeline entry
-            // This ensures elements created in year 0 are visible
-            return 0;
-          }
-          return prevYear;
-        });
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch timeline');
-    } finally {
-      setLoading(false);
-    }
-  }, []); // Remove currentYear dependency
+  // Get current epoch for the current year
+  const currentEpoch = useMemo(() => {
+    return epochs.find(e => currentYear >= e.startYear && currentYear <= e.endYear) || null;
+  }, [epochs, currentYear]);
 
   // Create a new timeline entry
   const createEntry = useCallback(async (entry: TimelineEntry) => {
     try {
-      const response = await fetch('/api/timeline/entries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create timeline entry');
-      }
-
-      const newEntry = await response.json();
-      setEntries(prev => [...prev, newEntry].sort((a, b) => a.year - b.year));
+      const newEntry = await createEntryMutation.mutateAsync(entry);
       return newEntry;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create timeline entry');
       throw err;
     }
-  }, []);
+  }, [createEntryMutation]);
 
   // Update an existing timeline entry
   const updateEntry = useCallback(async (year: number, updates: Partial<TimelineEntry>) => {
     try {
-      const response = await fetch(`/api/timeline/entries/${year}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update timeline entry');
+      const currentEntry = entries.find(e => e.year === year);
+      if (!currentEntry) {
+        throw new Error('Timeline entry not found');
       }
-
-      const updatedEntry = await response.json();
-      setEntries(prev => prev.map(e => e.year === year ? updatedEntry : e));
+      
+      const updatedEntry = await updateEntryMutation.mutateAsync({
+        ...currentEntry,
+        ...updates,
+      });
       return updatedEntry;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update timeline entry');
       throw err;
     }
-  }, []);
+  }, [updateEntryMutation, entries]);
 
   // Delete a timeline entry
   const deleteEntry = useCallback(async (year: number) => {
     try {
-      const response = await fetch(`/api/timeline/entries/${year}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete timeline entry');
-      }
-
-      setEntries(prev => prev.filter(e => e.year !== year));
+      await deleteEntryMutation.mutateAsync({ year });
       
       // If we deleted the current year, move to the closest available year
       if (currentYear === year) {
@@ -131,7 +97,7 @@ export function useTimeline() {
       setError(err instanceof Error ? err.message : 'Failed to delete timeline entry');
       throw err;
     }
-  }, [currentYear, entries]);
+  }, [deleteEntryMutation, currentYear, entries]);
 
   // Navigate to a specific year
   const navigateToYear = useCallback(async (year: number) => {
@@ -183,76 +149,59 @@ export function useTimeline() {
   // Create a new epoch
   const createEpoch = useCallback(async (epoch: Omit<TimelineEpoch, 'id'>) => {
     try {
-      const response = await fetch('/api/timeline/epochs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(epoch)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create epoch');
-      }
-
-      const newEpoch = await response.json();
-      setEpochs(prev => [...prev, newEpoch].sort((a, b) => a.startYear - b.startYear));
+      const newEpoch = await createEpochMutation.mutateAsync(epoch);
       return newEpoch;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create epoch');
       throw err;
     }
-  }, []);
+  }, [createEpochMutation]);
 
   // Update an existing epoch
   const updateEpoch = useCallback(async (id: string, updates: Partial<TimelineEpoch>) => {
     try {
-      const response = await fetch(`/api/timeline/epochs/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update epoch');
-      }
-
-      const updatedEpoch = await response.json();
-      setEpochs(prev => prev.map(e => e.id === id ? updatedEpoch : e).sort((a, b) => a.startYear - b.startYear));
+      const updatedEpoch = await updateEpochMutation.mutateAsync({ id, updates });
       return updatedEpoch;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update epoch');
       throw err;
     }
-  }, []);
+  }, [updateEpochMutation]);
 
   // Delete an epoch
   const deleteEpoch = useCallback(async (id: string) => {
     try {
-      const response = await fetch(`/api/timeline/epochs/${id}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete epoch');
-      }
-
-      setEpochs(prev => prev.filter(e => e.id !== id));
+      await deleteEpochMutation.mutateAsync({ id });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete epoch');
       throw err;
     }
+  }, [deleteEpochMutation]);
+
+  // Fetch timeline data (legacy compatibility)
+  const fetchTimeline = useCallback(async () => {
+    // This is now handled by tRPC queries automatically
+    // The data will be refetched when the queries are invalidated
   }, []);
 
-  // Get current epoch for the current year
-  const currentEpoch = useMemo(() => {
-    return epochs.find(e => currentYear >= e.startYear && currentYear <= e.endYear) || null;
-  }, [epochs, currentYear]);
+  // Set loading and error states based on tRPC queries
+  useEffect(() => {
+    setLoading(timelineLoading || epochsLoading || entriesLoading);
+  }, [timelineLoading, epochsLoading, entriesLoading]);
 
   useEffect(() => {
-    fetchTimeline();
-  }, []); // Remove currentYear from dependencies to prevent infinite loops
+    const errorMessage = timelineError?.message || epochsError?.message || entriesError?.message;
+    setError(errorMessage || null);
+  }, [timelineError, epochsError, entriesError]);
+
+  // Set initial current year when data loads
+  useEffect(() => {
+    if (entries.length > 0 && currentYear === 0) {
+      // Start with year 0 by default, not the earliest timeline entry
+      // This ensures elements created in year 0 are visible
+      setCurrentYear(0);
+    }
+  }, [entries, currentYear]);
 
   // Debug: Log when currentYear changes
   useEffect(() => {

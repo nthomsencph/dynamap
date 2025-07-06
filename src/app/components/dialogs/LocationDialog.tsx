@@ -6,7 +6,21 @@ import { DEFAULT_DIALOG_COLORS } from '@/types/dialogs';
 import { BaseDialog } from './BaseDialog';
 import '@/css/dialogs/base-dialog.css';
 
-export function LocationDialog({ open, mode, location, onSave, onDelete, onClose }: LocationDialogProps) {
+interface ExtendedLocationDialogProps extends LocationDialogProps {
+  mapRef?: React.RefObject<L.Map | null>;
+  onPreviewChange?: (previewElement: Partial<Location>) => void;
+}
+
+export function LocationDialog({ 
+  open, 
+  mode, 
+  location, 
+  onSave, 
+  onDelete, 
+  onClose,
+  mapRef,
+  onPreviewChange
+}: ExtendedLocationDialogProps) {
   const validateForm = (form: Partial<Location>): string | null => {
     // Check required text fields
     if (!form.name?.toString().trim()) {
@@ -45,6 +59,8 @@ export function LocationDialog({ open, mode, location, onSave, onDelete, onClose
           onChange: (element, value) => ({ ...element, iconSize: value as number })
         }]
       }}
+      mapRef={mapRef}
+      onPreviewChange={onPreviewChange}
     />
   );
 }

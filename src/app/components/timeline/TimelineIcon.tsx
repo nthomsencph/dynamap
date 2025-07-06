@@ -2,9 +2,9 @@
 import React, { useState } from 'react';
 import { FaTimeline } from 'react-icons/fa6';
 import { TimelineSlider } from './TimelineController';
-import { EpochPanel } from '../panels/EpochPanel';
-import { useTimelineContext } from '@/contexts/TimelineContext';
-import { useMapSettings } from '@/app/components/map/MapSettingsContext';
+import { EpochPanel } from '../panels/timeline/EpochPanel';
+import { useTimelineContext } from '@/app/contexts/TimelineContext';
+import { useSettings } from '@/hooks/useSettings';
 import type { TimelineEpoch, TimelineNote } from '@/types/timeline';
 import '@/css/map-ui.css';
 
@@ -18,7 +18,8 @@ export function TimelineIcon({ onOpenSettings, onContextMenu, onOpenEpochDialog,
   const [isEpochPanelOpen, setIsEpochPanelOpen] = useState(false);
   const [selectedEpoch, setSelectedEpoch] = useState<TimelineEpoch | null>(null);
   const { currentEpoch } = useTimelineContext();
-  const { showTimeline } = useMapSettings();
+  const { settings } = useSettings();
+  const { showTimeline = true } = settings || {};
 
   const handleEpochClick = () => {
     if (currentEpoch) {

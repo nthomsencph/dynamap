@@ -1,4 +1,4 @@
-import { MapImageSettings } from '@/app/components/map/MapSettingsContext';
+import type { MapImageSettings } from '@/app/api/trpc/settings';
 
 export interface ImageBounds {
     bounds: [[number, number], [number, number]];

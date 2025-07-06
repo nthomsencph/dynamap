@@ -2,7 +2,7 @@
 import { MapContainer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback, useMemo, useEffect } from "react";
 import '@luomus/leaflet-smooth-wheel-zoom';
 import React from "react";
 import { FaCog } from 'react-icons/fa';
@@ -18,21 +18,25 @@ import { MAP_CENTER } from '@/constants/map';
 // Hooks
 import { useFitZoom } from "@/hooks/view/useFitZoom";
 import { useSmoothWheelZoom } from "@/hooks/view/useSmoothWheelZoom";
-import { useSearchPanelZoom } from "@/hooks/view/useSearchPanelZoom";
+
 import { useMoveLocation } from "@/hooks/elements/useMoveLocation";
 import { useLocationDialog } from "@/hooks/dialogs/useLocationDialog";
 import { useRegionDialog } from "@/hooks/dialogs/useRegionDialog";
-import { useLocations } from "@/hooks/elements/useLocations";
-import { useRegions } from "@/hooks/elements/useRegions";
-import { useTimelineContext } from "@/contexts/TimelineContext";
+import { useTimelineContext } from "@/app/contexts/TimelineContext";
 import { useContextMenu } from "@/hooks/ui/useContextMenu";
-import { usePolygonDraw, type DrawingTool, type DrawingResult } from "@/hooks/elements/usePolygonDraw";
-import { usePanelStack, type PanelEntry } from "@/hooks/ui/usePanelStack";
-import { useMapSettings } from './MapSettingsContext';
+import { usePolygonDraw, type DrawingResult } from "@/hooks/elements/usePolygonDraw";
+import { usePanelStack, type PanelEntry } from "@/app/contexts/PanelStackContext";
+import { useSettings } from '@/hooks/useSettings';
 import { convertDrawingToPolygonPoints } from "@/app/utils/draw";
-import { useImageBounds } from '@/hooks/ui/useImageBounds';
-import { shouldShowElementInYear } from '@/app/utils/zoom';
 import { getFutureChangesForElement } from '@/app/utils/timeline-changes';
+import { calculateProminenceLevel, getOptimalZoomForElement } from '@/app/utils/zoom';
+import { flyToLocation } from '@/app/utils/fly';
+import { getElementCenter } from '@/app/utils/area';
+import { useMapElementsByYear, useCreateLocation, useUpdateLocation, useDeleteLocation, useCreateRegion, useUpdateRegion, useDeleteRegion } from "@/hooks/queries/useMapElements";
+import { useKeyboardShortcuts } from "@/hooks/ui/useKeyboardShortcuts";
+import { useMapEvents } from "@/hooks/ui/useMapEvents";
+import { useDynamicStyles } from "@/hooks/ui/useDynamicStyles";
+import { useUIStore } from "@/stores/uiStore";
 
 // Components
 import { ContextMenu } from "../ui/ContextMenu";
@@ -46,7 +50,7 @@ import { MapImage } from "./MapImage";
 import { MapName } from "../ui/MapName";
 import { LocationMarkers } from "../markers/LocationMarkers";
 import { RegionMarkers } from "../markers/RegionMarkers";
-import { UnifiedPanel } from "../panels/UnifiedPanel";
+import { PanelRouter } from "../panels/PanelRouter";
 import { GeneralSettingsDialog } from '../dialogs/SettingsDialog';
 import { TimelineIcon } from '../timeline/TimelineIcon';
 import { EpochDialog } from '../dialogs/EpochDialog';
@@ -54,6 +58,7 @@ import { NoteDialog } from '../dialogs/NoteDialog';
 
 // Styles
 import '@/css/markers/location-label.css';
+import '@/css/markers/preview-label.css';
 import '@/css/ui/move-mode.css';
 import '@/css/ui/timeline-slider.css';
 import '@/css/map-ui.css';
@@ -62,37 +67,38 @@ export default function Map() {
     const mapRef = useRef<L.Map | null>(null);
     const [leafletMap, setLeafletMap] = useState<L.Map | null>(null);
     const fitZoom = useFitZoom();
-    useSmoothWheelZoom(mapRef, 2);
+    useSmoothWheelZoom(mapRef, 50);
 
     // Timeline hook for current year
-    const { currentYear, entries, epochs } = useTimelineContext();
+    const { currentYear, entries, epochs, deleteNote, deleteEpoch } = useTimelineContext();
 
-    // Hooks for locations and regions
-    const { locations, addLocation, updateLocation, deleteLocation, deleteLocationFromTimeline } = useLocations(currentYear);
-    const { regions, addRegion, updateRegion, deleteRegion, deleteRegionFromTimeline } = useRegions(currentYear);
+    // Map elements using React Query
+    const { locations, regions } = useMapElementsByYear(currentYear);
+    const createLocationMutation = useCreateLocation();
+    const updateLocationMutation = useUpdateLocation();
+    const deleteLocationMutation = useDeleteLocation();
+    const createRegionMutation = useCreateRegion();
+    const updateRegionMutation = useUpdateRegion();
+    const deleteRegionMutation = useDeleteRegion();
 
     // hooks for dialogs
     const locationDialog = useLocationDialog(currentYear);
     const regionDialog = useRegionDialog(currentYear);
     
-    // Map settings
-    const { editMode, mapImageRoundness, mapImage, mapImageSettings, showTimelineWhenZoomed, showSettingsWhenZoomed } = useMapSettings();
+    // Map settings using modern tRPC approach
+    const { settings } = useSettings();
+    const { editMode, mapImageRoundness, mapImage, mapImageSettings, showTimelineWhenZoomed, showSettingsWhenZoomed } = settings || {};
     
     // Unified panel stack
     const { currentPanel, pushPanel, popPanel, clearStack, canGoBack } = usePanelStack();
     
-    // Search panel zoom functionality
-    const { handleSearchElementClick } = useSearchPanelZoom({ 
-        mapRef, 
-        fitZoom, 
-        pushPanel 
-    });
+
     
     // Memoize the move location handlers to prevent re-renders
     const moveLocationHandlers = useMemo(() => ({
-        updateLocation,
-        addLocation
-    }), [updateLocation, addLocation]);
+        updateLocation: (location: Location) => updateLocationMutation.mutateAsync(location as any),
+        addLocation: (location: Location) => createLocationMutation.mutateAsync(location as any)
+    }), [updateLocationMutation.mutateAsync, createLocationMutation.mutateAsync]);
     
     const { moveMode, handleMoveLocation, resetMoveMode } = useMoveLocation(
         mapRef as React.RefObject<L.Map>,
@@ -133,15 +139,27 @@ export default function Map() {
             id: element.id,
             elementType: element.elementType,
             element,
-            metadata: element.elementType === 'region' ? {
-                containingRegions: (element as any).containingRegions,
-                regionToDisplay: (element as any).regionToDisplay
-            } : {
-                containingRegions: (element as any).containingRegions
-            }
+            metadata: {}
         };
         pushPanel(entry);
-    }, [pushPanel]);
+
+        // Always navigate to the element
+        if (mapRef.current) {
+            // Check if the element's upper prominence is lower than current prominence level
+            const currentProminence = calculateProminenceLevel(mapRef.current.getZoom(), fitZoom);
+            
+            if (element.prominence.upper < currentProminence) {
+                // Get the center position using the utility function
+                const targetPosition = getElementCenter(element);
+
+                // Calculate optimal zoom level based on prominence
+                const targetZoom = getOptimalZoomForElement(element.prominence.upper, fitZoom);
+
+                // Use the flyToLocation utility function to navigate to the target
+                flyToLocation(mapRef.current, targetPosition, targetZoom);
+            }
+        }
+    }, [pushPanel, fitZoom, mapRef]);
 
     // Handle opening search panel
     const handleOpenSearch = useCallback(() => {
@@ -156,23 +174,13 @@ export default function Map() {
     }, [pushPanel]);
 
     // Handle keyboard shortcuts for search panel
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Check for CMD+F (Mac) or CTRL+F (Windows/Linux)
-            if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-                e.preventDefault(); // Prevent browser's find functionality
-                e.stopPropagation();
-                handleOpenSearch();
-            }
-        };
-
-        // Add event listener with capture to ensure we catch it before the browser
-        document.addEventListener('keydown', handleKeyDown, true);
-        
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown, true);
-        };
-    }, [handleOpenSearch]);
+    useKeyboardShortcuts([
+        {
+            key: 'f',
+            metaKey: true,
+            action: handleOpenSearch
+        }
+    ]);
 
     const handlePanelClose = useCallback(() => {
         clearStack();
@@ -269,21 +277,22 @@ export default function Map() {
         startDrawing: startDrawing,
         regions: regions,
         editMode: editMode,
-        onOpenSettings: () => setShowSettings(true),
+        onOpenSettings: () => {
+            setShowSettings(true);
+            openDialog('settings');
+        },
         // Timeline-specific handlers
         onEditNote: (note: TimelineNote, year: number) => {
             setTimelineNoteDialog({ open: true, note, year });
         },
         onDeleteNote: (noteId: string) => {
-            // This would need to be implemented to delete the note
-            console.log('Delete note:', noteId);
+            deleteNote(noteId);
         },
         onEditEpoch: (epoch: TimelineEpoch) => {
             setTimelineEpochDialog({ open: true, epoch });
         },
         onDeleteEpoch: (epochId: string) => {
-            // This would need to be implemented to delete the epoch
-            console.log('Delete epoch:', epochId);
+            deleteEpoch(epochId);
         },
     }), [
         handleAddLocation,
@@ -339,53 +348,54 @@ export default function Map() {
         }
     }, [editMode, handleContextMenu, handleNoteContextMenu, handleEpochContextMenu]);
 
-    // Zoom state - use debounced updates to prevent excessive re-renders
-    const [currentZoom, setCurrentZoom] = useState(fitZoom);
-    const [isZooming, setIsZooming] = useState(false);
+    // Zoom state management using Zustand store
+    const { currentZoom, setCurrentZoom, isZooming, setIsZooming } = useUIStore();
     const zoomTimeoutRef = useRef<number | undefined>(undefined);
 
     // Save handlers for dialogs - memoized to prevent re-renders
     const handleSaveLocation = useCallback(async (location: Location) => {
         if (locationDialog.mode === 'edit') {
-            await updateLocation(location);
+            await updateLocationMutation.mutateAsync(location as any);
         } else {
-            await addLocation(location);
+            await createLocationMutation.mutateAsync(location as any);
         }
         locationDialog.close();
-    }, [locationDialog.mode, locationDialog.close, updateLocation, addLocation]);
+    }, [locationDialog.mode, locationDialog.close, updateLocationMutation.mutateAsync, createLocationMutation.mutateAsync]);
 
     const handleSaveRegion = useCallback(async (region: Region) => {
         if (regionDialog.mode === 'edit') {
-            await updateRegion(region);
+            await updateRegionMutation.mutateAsync(region as any);
         } else {
-            await addRegion(region);
+            await createRegionMutation.mutateAsync(region as any);
         }
         regionDialog.close();
-    }, [regionDialog.mode, regionDialog.close, updateRegion, addRegion]);
+    }, [regionDialog.mode, regionDialog.close, updateRegionMutation.mutateAsync, createRegionMutation.mutateAsync]);
 
     // Handle delete element - memoized to prevent re-renders
     const handleDeleteElement = useCallback(async () => {
         if (!deleteConfirm.element) return;
 
         if (deleteConfirm.type === 'location') {
-            await deleteLocation(deleteConfirm.element.id);
+            await deleteLocationMutation.mutateAsync({ id: deleteConfirm.element.id });
         } else {
-            await deleteRegion(deleteConfirm.element.id);
+            await deleteRegionMutation.mutateAsync({ id: deleteConfirm.element.id });
         }
         setDeleteConfirm({ open: false, type: 'location', element: null, mode: 'normal' });
-    }, [deleteConfirm.element, deleteConfirm.type, deleteLocation, deleteRegion]);
+    }, [deleteConfirm.element, deleteConfirm.type, deleteLocationMutation.mutateAsync, deleteRegionMutation.mutateAsync]);
 
     // Handle delete element from timeline - memoized to prevent re-renders
     const handleDeleteFromTimeline = useCallback(async () => {
         if (!deleteConfirm.element) return;
 
         if (deleteConfirm.type === 'location') {
-            await deleteLocationFromTimeline(deleteConfirm.element.id);
+            // For now, we'll use the same delete function
+            await deleteLocationMutation.mutateAsync({ id: deleteConfirm.element.id });
         } else {
-            await deleteRegionFromTimeline(deleteConfirm.element.id);
+            // For now, we'll use the same delete function
+            await deleteRegionMutation.mutateAsync({ id: deleteConfirm.element.id });
         }
         setDeleteConfirm({ open: false, type: 'location', element: null, mode: 'normal' });
-    }, [deleteConfirm.element, deleteConfirm.type, deleteLocationFromTimeline, deleteRegionFromTimeline]);
+    }, [deleteConfirm.element, deleteConfirm.type, deleteLocationMutation.mutateAsync, deleteRegionMutation.mutateAsync]);
 
     // Memoize dialog delete handlers
     const handleLocationDelete = useCallback(() => {
@@ -442,17 +452,10 @@ export default function Map() {
         setDeleteConfirm({ open: false, type: 'location', element: null, mode: 'normal' });
     }, []);
 
-    // Zoom effect - debounced to prevent excessive re-renders
-    useEffect(() => {
-        const map = leafletMap;
-        if (!map) return;
-
-        const onZoomStart = () => {
-            setIsZooming(true);
-        };
-
-        const onZoom = () => {
-            const newZoom = map.getZoom();
+    // Map events using custom hook with debounced zoom updates
+    useMapEvents(leafletMap, {
+        onZoomStart: () => setIsZooming(true),
+        onZoom: (newZoom) => {
             // Clear existing timeout
             if (zoomTimeoutRef.current) {
                 clearTimeout(zoomTimeoutRef.current);
@@ -461,53 +464,28 @@ export default function Map() {
             zoomTimeoutRef.current = setTimeout(() => {
                 setCurrentZoom(newZoom);
             }, 100) as unknown as number; // 100ms debounce
-        };
-
-        const onZoomEnd = () => {
+        },
+        onZoomEnd: (zoom) => {
             setIsZooming(false);
             // If at minimum zoom (within threshold), smoothly recenter to MAP_CENTER if not already there
             const zoomThreshold = 0.05;
-            if (Math.abs(map.getZoom() - fitZoom) < zoomThreshold) {
+            if (Math.abs(zoom - fitZoom) < zoomThreshold && leafletMap) {
                 const threshold = 1e-6;
+                const center = leafletMap.getCenter();
                 if (
-                    Math.abs(map.getCenter().lat - MAP_CENTER[0]) > threshold ||
-                    Math.abs(map.getCenter().lng - MAP_CENTER[1]) > threshold
+                    Math.abs(center.lat - MAP_CENTER[0]) > threshold ||
+                    Math.abs(center.lng - MAP_CENTER[1]) > threshold
                 ) {
-                    map.flyTo(MAP_CENTER, fitZoom, { animate: true, duration: 1 });
+                    leafletMap.flyTo(MAP_CENTER, fitZoom, { animate: true, duration: 1 });
                 }
             }
-        };
+        },
+        onMove: (center) => {
+            // Handle move events if needed
+        }
+    });
 
-        const onMove = () => {
-            const center = map.getCenter();
-        };
-
-        const onMoveStart = () => {};
-        const onMoveEnd = () => {};
-
-        map.on('zoomstart', onZoomStart);
-        map.on('zoom', onZoom);
-        map.on('zoomend', onZoomEnd);
-        map.on('move', onMove);
-        map.on('movestart', onMoveStart);
-        map.on('moveend', onMoveEnd);
-        // Set initial zoom
-        setCurrentZoom(map.getZoom());
-
-        return () => {
-            map.off('zoomstart', onZoomStart);
-            map.off('zoom', onZoom);
-            map.off('zoomend', onZoomEnd);
-            map.off('move', onMove);
-            map.off('movestart', onMoveStart);
-            map.off('moveend', onMoveEnd);
-            // Clear timeout on cleanup
-            if (zoomTimeoutRef.current) {
-                clearTimeout(zoomTimeoutRef.current);
-            }
-        };
-    }, [fitZoom, leafletMap]);
-
+    const { openDialog, closeDialog } = useUIStore();
     const [showSettings, setShowSettings] = useState(false);
 
     // Timeline dialog state
@@ -522,16 +500,26 @@ export default function Map() {
         year: number;
     }>({ open: false, note: undefined, year: 0 });
 
+    // Preview state for immediate visual feedback
+    const [previewLocation, setPreviewLocation] = useState<Partial<Location> | null>(null);
+    const [previewRegion, setPreviewRegion] = useState<Partial<Region> | null>(null);
+
+    // Dynamic styles for map roundness
+    useDynamicStyles([
+        {
+            id: 'dynamic-map-roundness',
+            css: `.leaflet-image-layer { border-radius: ${mapImageRoundness / 2}% !important; }`
+        }
+    ]);
+
+    // Cleanup zoom timeout on unmount
     useEffect(() => {
-        const percent = mapImageRoundness / 2;
-        const style = document.createElement('style');
-        style.id = 'dynamic-map-roundness';
-        style.innerHTML = `.leaflet-image-layer { border-radius: ${percent}% !important; }`;
-        const prev = document.getElementById('dynamic-map-roundness');
-        if (prev) prev.remove();
-        document.head.appendChild(style);
-        return () => { style.remove(); };
-    }, [mapImageRoundness]);
+        return () => {
+            if (zoomTimeoutRef.current) {
+                clearTimeout(zoomTimeoutRef.current);
+            }
+        };
+    }, []);
 
     return (
         <div 
@@ -567,7 +555,10 @@ export default function Map() {
             )}
 
             {showSettings && (
-                <GeneralSettingsDialog onClose={() => setShowSettings(false)} />
+                <GeneralSettingsDialog onClose={() => {
+                    setShowSettings(false);
+                    closeDialog('settings');
+                }} />
             )}
 
             <MapContainer
@@ -596,6 +587,7 @@ export default function Map() {
                     onElementClick={handleElementClick}
                     currentPanel={currentPanel}
                     panelWidth={450}
+                    previewRegionId={previewRegion?.id || null}
                 />
                 <LocationMarkers
                     locations={locations}
@@ -605,19 +597,17 @@ export default function Map() {
                     onElementClick={handleElementClick}
                     currentPanel={currentPanel}
                     panelWidth={450}
+                    previewLocationId={previewLocation?.id || null}
                 />
             </MapContainer>
 
-            {/* Unified Panel */}
+            {/* Panel Router */}
             {currentPanel && (
-                <UnifiedPanel
+                <PanelRouter
                     entry={currentPanel}
                     onClose={handlePanelClose}
                     onBack={canGoBack ? handlePanelBack : undefined}
                     onElementClick={handleElementClick}
-                    onSearchElementClick={handleSearchElementClick}
-                    locations={locations}
-                    regions={regions}
                 />
             )}
 
@@ -639,8 +629,13 @@ export default function Map() {
                 mode={locationDialog.mode}
                 location={locationDialog.location}
                 onSave={handleSaveLocation}
-                onClose={locationDialog.close}
+                onClose={() => {
+                    locationDialog.close();
+                    setPreviewLocation(null);
+                }}
                 onDelete={handleLocationDelete}
+                mapRef={mapRef}
+                onPreviewChange={setPreviewLocation}
             />
 
             <RegionDialog
@@ -650,8 +645,12 @@ export default function Map() {
                 position={regionDialog.position || undefined}
                 map={mapRef.current!}
                 onSave={handleSaveRegion}
-                onClose={regionDialog.close}
+                onClose={() => {
+                    regionDialog.close();
+                    setPreviewRegion(null);
+                }}
                 onDelete={handleRegionDelete}
+                onPreviewChange={setPreviewRegion}
             />
 
             <ConfirmDialog

@@ -1,4 +1,4 @@
-import * as polygonClipping from 'polygon-clipping';
+const polygonClipping = require('polygon-clipping');
 import type { Region } from '@/types/regions';
 
 type Point = [number, number];
@@ -75,10 +75,10 @@ export function isPercentContained(
   }
 
   // Do the actual intersection
-  const intersection = polygonClipping.intersection([inner], [outer]);
-  if (intersection.length === 0) return false;
+  const intersectionResult = polygonClipping.intersection([inner], [outer]);
+  if (intersectionResult.length === 0) return false;
   
-  const intersectionArea = getArea(intersection[0][0]);
+  const intersectionArea = getArea(intersectionResult[0][0]);
   return (intersectionArea / innerArea) * 100 >= minPercent;
 }
 

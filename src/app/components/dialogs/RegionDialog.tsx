@@ -4,11 +4,25 @@ import type { RegionDialogProps } from '@/types/dialogs';
 import { DEFAULT_DIALOG_COLORS } from '@/types/dialogs';
 import { BaseDialog } from './BaseDialog';
 import { calculatePolygonAreaKm } from '@/app/utils/area';
-import { useMapSettings } from '../map/MapSettingsContext';
+import { useSettings } from '@/hooks/useSettings';
 import '@/css/dialogs/base-dialog.css';
 
-export function RegionDialog({ open, mode, region, map, onSave, onDelete, onClose }: RegionDialogProps) {
-  const { mapScale } = useMapSettings();
+interface ExtendedRegionDialogProps extends RegionDialogProps {
+  onPreviewChange?: (previewElement: Partial<Region>) => void;
+}
+
+export function RegionDialog({ 
+  open, 
+  mode, 
+  region, 
+  map, 
+  onSave, 
+  onDelete, 
+  onClose,
+  onPreviewChange
+}: ExtendedRegionDialogProps) {
+  const { settings } = useSettings();
+  const { mapScale = 17.4 } = settings || {};
   const validateForm = (form: Partial<Region>): string | null => {
     // Basic required fields
     if (!form.name?.trim()) return 'Please enter a name for the region.';
@@ -73,6 +87,8 @@ export function RegionDialog({ open, mode, region, map, onSave, onDelete, onClos
         ]
       }}
       richTextEditorProps={{ isRegion: true, regionArea }}
+      mapRef={{ current: map }}
+      onPreviewChange={onPreviewChange}
     />
   );
 }

@@ -1,9 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useTimelineContext } from '@/contexts/TimelineContext';
+import { useTimelineContext } from '@/app/contexts/TimelineContext';
 import type { TimelineEntry, TimelineNote } from '@/types/timeline';
-import { useLocations } from '@/hooks/elements/useLocations';
-import { useRegions } from '@/hooks/elements/useRegions';
+import { useMapElementsByYear } from '@/hooks/queries/useMapElements';
 import { usePanelWidth } from '@/hooks/ui/usePanelWidth';
 import { formatEpochDateRange, calculateDisplayYear } from '@/app/utils/timeline';
 import DescriptionEditor from '@/app/components/editor/DescriptionEditor';
@@ -18,8 +17,7 @@ interface NoteDialogProps {
 
 export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
   const { currentYear, currentEpoch, getEntryForYear, updateEntry, createEntry, fetchTimeline } = useTimelineContext();
-  const { locations } = useLocations(currentYear);
-  const { regions } = useRegions(currentYear);
+  const { locations, regions } = useMapElementsByYear(currentYear);
   const { width, handleMouseDown } = usePanelWidth();
   
   const [title, setTitle] = useState<string>('');

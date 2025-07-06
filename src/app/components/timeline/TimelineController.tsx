@@ -1,14 +1,13 @@
 "use client";
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { FaPlay, FaPause, FaStepForward, FaStepBackward, FaPlus} from 'react-icons/fa';
-import { useTimelineContext } from '@/contexts/TimelineContext';
-import { useLocations } from '@/hooks/elements/useLocations';
-import { useRegions } from '@/hooks/elements/useRegions';
-import { useMapSettings } from '@/app/components/map/MapSettingsContext';
+import { useTimelineContext } from '@/app/contexts/TimelineContext';
+import { useMapElementsByYear } from '@/hooks/queries/useMapElements';
+import { useSettings } from '@/hooks/useSettings';
 import { toast } from 'react-toastify';
 import { NoteDialog } from '../dialogs/NoteDialog';
-import { NotePanel } from '../panels/NotePanel';
-import { EpochPanel } from '../panels/EpochPanel';
+import { NotePanel } from '../panels/timeline/NotePanel';
+import { EpochPanel } from '../panels/timeline/EpochPanel';
 import { TimelineNotes } from './TimelineNotes';
 import { EpochDialog } from '../dialogs/EpochDialog';
 import { formatEpochDateRange, calculateDisplayYear } from '@/app/utils/timeline';
@@ -36,19 +35,11 @@ export function TimelineSlider({
     currentEntry,
     currentEpoch,
     currentYear,
-    yearRange,
     navigateToYear,
-    createEntry,
-    createEpoch,
-    updateEpoch,
-    fetchTimeline,
-    updateEntry,
-    deleteEpoch
   } = useTimelineContext();
 
-  const { fetchLocations } = useLocations(currentYear);
-  const { fetchRegions } = useRegions(currentYear);
-  const { editMode } = useMapSettings();
+  const { settings } = useSettings();
+  const { editMode = true } = settings || {};
 
   const [isNavigating, setIsNavigating] = useState(false);
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
@@ -121,62 +112,20 @@ export function TimelineSlider({
     }
   }, [currentYear, handleNavigateToYear, earliestYear]);
 
-  // Handle slider change
-  const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const year = parseInt(e.target.value);
-    if (year >= earliestYear) {
-      handleNavigateToYear(year);
-    }
-  }, [handleNavigateToYear, earliestYear]);
-
-  const handleDeleteNote = async (noteId: string) => {
-    if (!currentEntry) return;
-
-    try {
-      // Remove the note from the current entry
-      const updatedNotes = currentEntry.notes.filter((note: TimelineNote) => note.id !== noteId);
-      
-      const updatedEntry = {
-        ...currentEntry,
-        notes: updatedNotes
-      };
-
-      await updateEntry(currentYear, updatedEntry);
-      await fetchTimeline();
-      
-      // Close any open note panels if the deleted note was being viewed
-      if (selectedNote?.note.id === noteId) {
-        setIsNotePanelOpen(false);
-        setSelectedNote(null);
-      }
-    } catch (error) {
-      console.error('Failed to delete note:', error);
-    }
-  };
-
-  const handleDeleteEpoch = async (epochId: string) => {
-    try {
-      await deleteEpoch(epochId);
-      await fetchTimeline();
-      
-      // Close any open epoch dialogs if the deleted epoch was being edited
-      if (selectedEpoch?.id === epochId) {
-        setIsEpochDialogOpen(false);
-        setSelectedEpoch(undefined);
-      }
-    } catch (error) {
-      console.error('Failed to delete epoch:', error);
-    }
-  };
-
   const handleTimelineNoteClick = (note: TimelineNote) => {
-    setSelectedNote({ note, year: currentYear });
-    setIsNotePanelOpen(true);
+    if (onOpenNoteDialog) {
+      onOpenNoteDialog(note, currentYear);
+    } else {
+      setSelectedNote({ note, year: currentYear });
+      setIsNotePanelOpen(true);
+    }
   };
 
   const handleEpochClick = () => {
     if (currentEpoch) {
-      if (onEpochClick) {
+      if (onOpenEpochDialog) {
+        onOpenEpochDialog(currentEpoch);
+      } else if (onEpochClick) {
         onEpochClick();
       }
     }
@@ -307,25 +256,37 @@ export function TimelineSlider({
         </div>
 
         {/* Action Buttons Row - Enhanced Design */}
-        {editMode && (
-          <div className="timeline-actions">
-            <button
-              onClick={handleAddNote}
-              className="timeline-action-button primary"
-            >
-              <FaPlus size={12} />
-              <span>Note</span>
-            </button>
+        <div className="timeline-actions">
+          {editMode && (
+            <>
+              <button
+                onClick={handleAddNote}
+                className="timeline-action-button primary"
+              >
+                <FaPlus size={12} />
+                <span>Note</span>
+              </button>
 
+              <button
+                onClick={handleCreateEpoch}
+                className="timeline-action-button secondary"
+              >
+                <FaPlus size={12} />
+                <span>Epoch</span>
+              </button>
+            </>
+          )}
+          
+          {onOpenSettings && (
             <button
-              onClick={handleCreateEpoch}
+              onClick={onOpenSettings}
               className="timeline-action-button secondary"
+              title="Timeline Settings"
             >
-              <FaPlus size={12} />
-              <span>Epoch</span>
+              <span>⚙️</span>
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Note Dialog for creating/editing notes */}

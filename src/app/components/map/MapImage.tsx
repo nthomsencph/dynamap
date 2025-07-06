@@ -1,22 +1,23 @@
 import { ImageOverlay } from "react-leaflet";
-import { useMapSettings } from './MapSettingsContext';
+import { useSettings } from '@/hooks/useSettings';
 import { useEffect, useState } from 'react';
 
 export function MapImage() {
-  const { mapImage, mapImageSettings, mapImageRoundness } = useMapSettings();
+  const { settings } = useSettings();
+  const { mapImage, mapImageSettings, mapImageRoundness } = settings || {};
   const [imageBounds, setImageBounds] = useState<[[number, number], [number, number]]>([[0, 0], [2000, 2000]]);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   // Update CSS custom property for border color
   useEffect(() => {
-    if (mapImageSettings.showBorder) {
-      document.documentElement.style.setProperty('--map-border-color', mapImageSettings.borderColor);
+    if (mapImageSettings?.showBorder) {
+      document.documentElement.style.setProperty('--map-border-color', mapImageSettings?.borderColor);
     }
-  }, [mapImageSettings.showBorder, mapImageSettings.borderColor]);
+  }, [mapImageSettings?.showBorder, mapImageSettings?.borderColor]);
 
   // Calculate bounds based on settings
   useEffect(() => {
-    if (!mapImage) return;
+    if (!mapImage || !mapImageSettings) return;
 
     const img = new Image();
     img.onload = () => {
@@ -124,12 +125,12 @@ export function MapImage() {
     img.src = mapImage;
   }, [mapImage, mapImageSettings]);
 
-  if (!imageLoaded) {
+  if (!imageLoaded || !mapImageSettings) {
     return null; // Don't render until image is loaded and bounds are calculated
   }
   
   // Create dynamic CSS class name based on border settings
-  const borderClass = mapImageSettings.showBorder ? 'map-image-with-border' : 'map-image-no-border';
+  const borderClass = mapImageSettings?.showBorder ? 'map-image-with-border' : 'map-image-no-border';
   
   return (
     <ImageOverlay

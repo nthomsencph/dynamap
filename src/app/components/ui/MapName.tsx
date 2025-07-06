@@ -2,24 +2,23 @@
 
 import React from 'react';
 import { useMap } from 'react-leaflet';
-import { useMapSettings } from '../map/MapSettingsContext';
+import { useSettings } from '@/hooks/useSettings';
+import { useUIStore } from '@/stores/uiStore';
 import { useFitZoom } from '@/hooks/view/useFitZoom';
+import { useMapEvents } from '@/hooks/ui/useMapEvents';
 import '@/css/ui/map-name.css';
 
 export function MapName() {
   const map = useMap();
-  const { mapNameSettings } = useMapSettings();
+  const { settings } = useSettings();
+  const { mapNameSettings } = settings || {};
+  const { currentZoom, setCurrentZoom } = useUIStore();
   const fitZoom = useFitZoom();
-  const [zoom, setZoom] = React.useState(map.getZoom());
 
-  React.useEffect(() => {
-    const onZoom = () => setZoom(map.getZoom());
-    map.on('zoom', onZoom);
-    setZoom(map.getZoom());
-    return () => {
-      map.off('zoom', onZoom);
-    };
-  }, [map]);
+  // Use the new map events hook instead of useEffect
+  useMapEvents(map, {
+    onZoom: setCurrentZoom,
+  });
 
   if (!mapNameSettings.show || !mapNameSettings.content.trim()) {
     return null;
@@ -33,11 +32,11 @@ export function MapName() {
     const fadeStartZoom = fitZoom + 0.1; // Start fading very soon after fitZoom
     const fadeEndZoom = fitZoom + 0.3;   // End fading quickly (0.2 zoom levels later)
     
-    if (zoom <= fadeStartZoom) return 1;
-    if (zoom >= fadeEndZoom) return 0;
+    if (currentZoom <= fadeStartZoom) return 1;
+    if (currentZoom >= fadeEndZoom) return 0;
     
     const fadeRange = fadeEndZoom - fadeStartZoom;
-    const currentFade = zoom - fadeStartZoom;
+    const currentFade = currentZoom - fadeStartZoom;
     return 1 - (currentFade / fadeRange);
   };
 

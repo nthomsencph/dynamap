@@ -1,0 +1,21 @@
+/* Preview styling for labels when editing */
+.custom-pin-label.preview,
+.region-label.preview {
+  opacity: 0.8;
+  filter: brightness(1.1);
+  border: 1px dashed rgba(255, 255, 255, 0.3) !important;
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+/* Preview styling for markers/polygons when editing */
+.custom-pin.preview {
+  opacity: 0.8;
+  filter: brightness(1.1);
+}
+
+.leaflet-interactive.preview {
+  opacity: 0.8;
+  filter: brightness(1.1);
+} 

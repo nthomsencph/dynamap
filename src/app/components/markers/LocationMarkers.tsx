@@ -5,7 +5,7 @@ import type { Location } from "@/types/locations";
 import type { Region } from "@/types/regions";
 import { createLocationIcon, createLocationLabelDivIcon } from '@/app/utils/mapIcons';
 import { ElementMarkers, MarkerErrorBoundary } from './ElementMarkers';
-import type { PanelEntry } from '@/hooks/ui/usePanelStack';
+import type { PanelEntry } from '@/app/contexts/PanelStackContext';
 import { calculateLabelOffset, applyLabelOffset } from '@/app/utils/labelAlignment';
 
 interface LocationMarkersProps {
@@ -16,6 +16,7 @@ interface LocationMarkersProps {
   onElementClick?: (element: Location | Region) => void;
   currentPanel?: PanelEntry | null;
   panelWidth?: number;
+  previewLocationId?: string | null;
 }
 
 function LocationMarkersComponent({ 
@@ -26,6 +27,7 @@ function LocationMarkersComponent({
   onElementClick,
   currentPanel,
   panelWidth = 450,
+  previewLocationId,
 }: LocationMarkersProps) {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
@@ -64,7 +66,14 @@ function LocationMarkersComponent({
     labelRef: (node: HTMLDivElement | null) => void;
   }) => {
 
+    const isPreview = previewLocationId === location.id;
+    
+    // Create icon with preview styling if needed
     const icon = createLocationIcon(location, opts.currentZoom);
+    if (isPreview) {
+      icon.options.className = (icon.options.className || '') + ' preview';
+    }
+    
     const showLabel = location.showLabel !== false && (location.label || location.name);
 
     // Calculate label position based on alignment
@@ -75,6 +84,12 @@ function LocationMarkersComponent({
       // Calculate the offset based on label position settings
       const offset = calculateLabelOffset(location, defaultLabelSize.width, defaultLabelSize.height);
       labelPosition = applyLabelOffset(location.position, offset);
+    }
+
+    // Create label icon with preview styling if needed
+    const labelIcon = showLabel ? createLocationLabelDivIcon(location, opts.currentZoom) : null;
+    if (isPreview && labelIcon) {
+      labelIcon.options.className = (labelIcon.options.className || '') + ' preview';
     }
 
     return (
@@ -90,11 +105,11 @@ function LocationMarkersComponent({
             click: opts.onClick,
           }}
         />
-        {showLabel && (
+        {showLabel && labelIcon && (
           <Marker
             key={location.id + '-label'}
             position={labelPosition}
-            icon={createLocationLabelDivIcon(location, opts.currentZoom)}
+            icon={labelIcon}
             interactive={false}
             zIndexOffset={2000}
           />

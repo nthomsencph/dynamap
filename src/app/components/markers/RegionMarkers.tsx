@@ -6,8 +6,8 @@ import type { Location } from "@/types/locations";
 import { shouldShowElement } from '@/app/utils/zoom';
 import { findContainingRegions } from '@/app/utils/containment';
 import { ElementMarkers, MarkerErrorBoundary } from './ElementMarkers';
-import type { PanelEntry } from '@/hooks/ui/usePanelStack';
-import { calculatePolygonCenter } from '@/app/utils/area';
+import type { PanelEntry } from '@/app/contexts/PanelStackContext';
+import { calculatePolygonCenter } from '@/app/utils/geometry';
 import { calculateLabelOffset, applyLabelOffset } from '@/app/utils/labelAlignment';
 
 // Import region label styles
@@ -49,6 +49,7 @@ interface RegionMarkersProps {
   onElementClick?: (element: Location | Region) => void;
   currentPanel?: PanelEntry | null;
   panelWidth?: number;
+  previewRegionId?: string | null;
 }
 
 function RegionMarkersComponent({ 
@@ -58,6 +59,7 @@ function RegionMarkersComponent({
   onElementClick,
   currentPanel,
   panelWidth = 450,
+  previewRegionId,
 }: RegionMarkersProps) {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
@@ -239,6 +241,8 @@ function RegionMarkersComponent({
     labelRef: (node: HTMLDivElement | null) => void;
   }) => {
     
+    const isPreview = previewRegionId === region.id;
+    
     // Always render labels if they have content and showLabel is not false
     const showLabel = region.showLabel !== false && region.label;
     const centroid = calculatePolygonCenter(region.position);
@@ -254,6 +258,12 @@ function RegionMarkersComponent({
       const offset = calculateLabelOffset(region, defaultLabelSize.width, defaultLabelSize.height);
       // Apply the offset to the centroid
       labelPosition = applyLabelOffset(centroid, offset);
+    }
+
+    // Create label icon with preview styling if needed
+    const labelIcon = showLabel ? createRegionLabelDivIcon(region) : null;
+    if (isPreview && labelIcon) {
+      labelIcon.options.className = (labelIcon.options.className || '') + ' preview';
     }
 
     return (
@@ -294,20 +304,21 @@ function RegionMarkersComponent({
               }
             },
           }}
+          className={isPreview ? 'preview' : undefined}
         />
         )}
-        {showLabel && (
+        {showLabel && labelIcon && (
           <Marker
             key={region.id + '-label'}
             position={labelPosition}
-            icon={createRegionLabelDivIcon(region)}
+            icon={labelIcon}
             interactive={false}
             zIndexOffset={2000}
           />
         )}
       </>
     );
-  }, [regions, handleRegionClick, fadeInRegions, regionOpacities]);
+  }, [regions, handleRegionClick, fadeInRegions, regionOpacities, previewRegionId]);
 
   return (
     <ElementMarkers

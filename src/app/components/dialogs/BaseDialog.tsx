@@ -1,19 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+
+// types
 import type { DialogTab } from '@/types/dialogs';
-import { ELEMENT_ICONS, type ElementIcon, type MapElement } from '@/types/elements';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
+import { ELEMENT_ICONS, type ElementIcon, type MapElement } from '@/types/elements';
+import { DEFAULT_LOCATION_TYPES } from '@/types/locations';
+import { DEFAULT_REGION_TYPES } from '@/types/regions';
+
+// components
+import Toggle from 'react-toggle';
+import { Tooltip } from '@/app/components/ui/Tooltip';
 import DescriptionEditor from '@/app/components/editor/DescriptionEditor';
 import LabelEditor from '@/app/components/editor/LabelEditor';
-import Toggle from 'react-toggle';
-import "react-toggle/style.css";
+
+// icons
 import { IoAdd, IoCheckmark } from 'react-icons/io5';
-import { Tooltip } from '@/app/components/ui/Tooltip';
+
+// hooks
+import { useMapElementsByYear } from '@/hooks/queries/useMapElements';
+import { useTimelineContext } from '@/app/contexts/TimelineContext';
+import { useBaseDialog } from '@/hooks/dialogs/useBaseDialog';
+
+// css
+import "react-toggle/style.css";
 import '@/css/dialogs/base-dialog.css';
-import { useTypes } from '@/hooks/elements/useTypes';
-import { useLocations } from '@/hooks/elements/useLocations';
-import { useRegions } from '@/hooks/elements/useRegions';
-import { useTimelineContext } from '@/contexts/TimelineContext';
 
 interface BaseDialogProps<T extends MapElement> {
   open: boolean;
@@ -43,6 +54,8 @@ interface BaseDialogProps<T extends MapElement> {
     isRegion?: boolean;
     regionArea?: number;
   };
+  mapRef?: React.RefObject<L.Map | null>;
+  onPreviewChange?: (previewElement: Partial<T>) => void;
 }
 
 export function BaseDialog<T extends MapElement>({
@@ -57,137 +70,51 @@ export function BaseDialog<T extends MapElement>({
   typeCategory,
   validateForm,
   stylingFields,
-  richTextEditorProps = {}
+  richTextEditorProps = {},
+  mapRef,
+  onPreviewChange
 }: BaseDialogProps<T>) {
   // Always call ALL hooks first - never conditionally call hooks
-  const { types, addType } = useTypes();
   const { currentYear } = useTimelineContext();
-  const { locations } = useLocations(currentYear);
-  const { regions } = useRegions(currentYear);
+  const { locations, regions } = useMapElementsByYear(currentYear);
 
-  const DEFAULT_ICON = Object.keys(ELEMENT_ICONS)[0] as ElementIcon;
+  // Get the default types for this category
+  const defaultTypes = typeCategory === 'locations' ? DEFAULT_LOCATION_TYPES : DEFAULT_REGION_TYPES;
 
-  const [form, setForm] = useState<Partial<T>>({
-    color: defaultColor,
-    icon: DEFAULT_ICON,
-    showLabel: true,
-    labelPosition: { direction: 'Center', offset: 10.0 },
-    prominence: { lower: 0, upper: 5 },
-    description: '',
-    image: '',
-    fields: {},
-    elementType: typeCategory === 'regions' ? 'region' : 'location',
-    // Region-specific defaults
-    ...(typeCategory === 'regions' && {
-      showBorder: true,
-      showHighlight: true,
-      areaFadeDuration: 800,
-    }),
-  } as unknown as Partial<T>);
+  // Use the base dialog hook
+  const hook = useBaseDialog({
+    open,
+    mode,
+    element,
+    defaultColor,
+    typeCategory,
+    onClose,
+    mapRef,
+    onPreviewChange
+  });
 
-  const [activeTab, setActiveTab] = useState<DialogTab>('Content');
-  const [newType, setNewType] = useState('');
-  const [newFieldKey, setNewFieldKey] = useState('');
-  const [newFieldValue, setNewFieldValue] = useState('');
-  const [isAddingType, setIsAddingType] = useState(false);
-  const [iconGalleryBg, setIconGalleryBg] = useState<'light' | 'dark'>('dark');
-  const [error, setError] = useState<string | null>(null);
-  const [labelAutoInitialized, setLabelAutoInitialized] = useState(false);
-  const [showIconGallery, setShowIconGallery] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      if (element) {
-        console.log('🔍 BaseDialog: Setting form with element:', {
-          id: element.id,
-          name: element.name,
-          description: element.description,
-          descriptionLength: element.description?.length
-        });
-        
-        // Create base defaults
-        const defaults = {
-          color: defaultColor,
-          icon: DEFAULT_ICON,
-          showLabel: true,
-          labelPosition: { direction: 'Center', offset: 10.0 },
-          prominence: { lower: 0, upper: 5 },
-          description: '',
-          image: '',
-          fields: {},
-          elementType: typeCategory === 'regions' ? 'region' : 'location',
-          // Region-specific defaults
-          ...(typeCategory === 'regions' && {
-            showBorder: true,
-            showHighlight: true,
-            areaFadeDuration: 800,
-          }),
-        };
-        
-        // Merge defaults with element, ensuring required properties are always set
-        setForm({
-          ...defaults,
-          ...element,
-          fields: element.fields || defaults.fields,
-          labelPosition: element.labelPosition || defaults.labelPosition,
-          prominence: element.prominence || defaults.prominence,
-          description: element.description || defaults.description,
-        });
-        
-        console.log('🔍 BaseDialog: Final form state:', {
-          description: element.description,
-          descriptionLength: element.description?.length,
-          finalDescription: element.description || defaults.description
-        });
-      } else {
-        // For create mode, use defaults
-        setForm({
-          color: defaultColor,
-          icon: DEFAULT_ICON,
-          showLabel: true,
-          labelPosition: { direction: 'Center', offset: 10.0 },
-          prominence: { lower: 0, upper: 5 },
-          description: '',
-          image: '',
-          fields: {},
-          elementType: typeCategory === 'regions' ? 'region' : 'location',
-          // Region-specific defaults
-          ...(typeCategory === 'regions' && {
-            showBorder: true,
-            showHighlight: true,
-            areaFadeDuration: 800,
-          }),
-        } as unknown as Partial<T>);
-      }
-      // Set labelAutoInitialized based on mode, not element presence
-      setLabelAutoInitialized(mode === 'edit');
-      // Always reset to Content tab when dialog opens
-      setActiveTab('Content');
-    } else {
-      setForm({} as Partial<T>);
-      setLabelAutoInitialized(false);
-    }
-    setError(null);
-  }, [open, element, mode, defaultColor, typeCategory]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setForm({} as Partial<T>);
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [open, onClose]);
-
-  useEffect(() => {
-    if (form.color) {
-      const brightness = getColorBrightness(form.color);
-      setIconGalleryBg(brightness > 0.5 ? 'dark' : 'light');
-    }
-  }, [form.color]);
+  // Use hook values
+  const {
+    form,
+    activeTab,
+    newFieldKey,
+    newFieldValue,
+    iconGalleryBg,
+    error,
+    showIconGallery,
+    setForm,
+    setNewFieldKey,
+    setNewFieldValue,
+    setShowIconGallery,
+    handleChange,
+    handleColorChange,
+    handleProminenceChange,
+    handleIconSelect,
+    handleAddField,
+    handleRemoveField,
+    handleSubmit,
+    handleTabSwitch,
+  } = hook;
 
   // Only render when dialog is open to prevent infinite API calls
   if (!open) return null;
@@ -202,147 +129,6 @@ export function BaseDialog<T extends MapElement>({
     }
     return null;
   };
-
-  // Handle tab switching with validation
-  const handleTabSwitch = (tab: DialogTab) => {
-    // Always allow switching to Content tab
-    if (tab === 'Content') {
-      setActiveTab(tab);
-      setError(null);
-      return;
-    }
-
-    // For Styling and Fields tabs, check required fields
-    const validationError = validateRequiredFields();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    // Clear any existing error and switch tab
-    setError(null);
-    setActiveTab(tab);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    
-    // Clear error when user starts filling required fields
-    if ((name === 'name' || name === 'type') && value.trim() && error) {
-      setError(null);
-    }
-  };
-
-  const handleColorChange = (color: string) => setForm(prev => ({ ...prev, color }));
-  const handleProminenceChange = (type: 'lower' | 'upper', value: number) => {
-    setForm(prev => {
-      const currentProminence = prev.prominence || { lower: 0, upper: 5 };
-      const newProminence = { ...currentProminence, [type]: value };
-      
-      // Ensure lower <= upper
-      if (type === 'lower' && value > newProminence.upper) {
-        newProminence.upper = value;
-      }
-      if (type === 'upper' && value < newProminence.lower) {
-        newProminence.lower = value;
-      }
-      
-      return { ...prev, prominence: newProminence };
-    });
-  };
-  const handleIconSelect = (icon: ElementIcon) => setForm(prev => ({ ...prev, icon }));
-
-  const handleAddField = () => {
-    if (!newFieldKey.trim()) return;
-    setForm(prev => ({
-      ...prev,
-      fields: {
-        ...(prev.fields || {}),
-        [newFieldKey.trim()]: newFieldValue.trim(),
-      },
-    }));
-    setNewFieldKey('');
-    setNewFieldValue('');
-  };
-
-  const handleRemoveField = (key: string) => {
-    setForm(prev => {
-      const { [key]: _, ...rest } = (prev.fields || {}) as Record<string, string>;
-      return { ...prev, fields: rest };
-    });
-  };
-
-  const handleAddType = async () => {
-    if (!newType.trim()) return;
-    setIsAddingType(true);
-    try {
-      await addType(typeCategory, newType.trim());
-      setForm(prev => ({ ...prev, type: newType.trim() }));
-      setNewType('');
-      // Clear error when type is added
-      if (error) {
-        setError(null);
-      }
-    } catch (err) {
-      console.error('Failed to add type:', err);
-    } finally {
-      setIsAddingType(false);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Ensure form has required values before validation
-    const formToValidate = {
-      ...form,
-    } as T;
-    
-    // Add default values for styling fields if they're not explicitly set
-    if (stylingFields?.fields) {
-      stylingFields.fields.forEach(field => {
-        if ((formToValidate as any)[field.id] === undefined) {
-          (formToValidate as any)[field.id] = field.defaultValue;
-        }
-      });
-    }
-    
-    // If showLabel is true but no custom label is provided, use the name as the label
-    if (!formToValidate.label?.trim() && formToValidate.name) {
-      formToValidate.label = formToValidate.name;
-    }
-    
-    // Debug logging for form data
-    console.log('🔍 BaseDialog: Form data being saved:', {
-      form: form,
-      formToValidate: formToValidate,
-      labelPosition: formToValidate.labelPosition,
-      showLabel: formToValidate.showLabel,
-      label: formToValidate.label,
-      typeCategory: typeCategory,
-      // Region-specific debug info
-      ...(typeCategory === 'regions' && {
-        showBorder: (formToValidate as any).showBorder,
-        showHighlight: (formToValidate as any).showHighlight,
-        areaFadeDuration: (formToValidate as any).areaFadeDuration,
-      })
-    });
-    
-    const validationError = validateForm(formToValidate);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    const id = mode === 'create' ? crypto.randomUUID() : form.id!;
-    const elementType = typeCategory === 'regions' ? 'region' : 'location';
-    onSave({ ...formToValidate, id, elementType } as T);
-    setForm({} as Partial<T>);
-  };
-
-  // Get all elements for mentions
-  const allElements = [...(locations || []), ...(regions || [])];
 
   return (
     <>
@@ -376,7 +162,21 @@ export function BaseDialog<T extends MapElement>({
             );
           })}
         </div>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          // Add default values for styling fields if they're not explicitly set
+          const formToValidate = { ...form } as T;
+          if (stylingFields?.fields) {
+            stylingFields.fields.forEach(field => {
+              if ((formToValidate as any)[field.id] === undefined) {
+                (formToValidate as any)[field.id] = field.defaultValue;
+              }
+            });
+          }
+          
+          // Call the hook's handleSubmit with the enhanced form
+          handleSubmit(e, validateForm, onSave);
+        }}>
           {activeTab === 'Content' && (
             <div className="dialog-tab-content">
               <div className="dialog-field">
@@ -390,58 +190,28 @@ export function BaseDialog<T extends MapElement>({
               </div>
 
               <div className="dialog-field">
-                <Tooltip text="Categorize this element by type (e.g., 'Castle', 'Village'). You can create new types if needed." position="right" />
+                <Tooltip text="Categorize this element by type (e.g., 'Castle', 'Village'). You can select from common types or type your own." position="right" />
                 <div className="type-field">
-                  <select
+                  <input
+                    type="text"
                     name="type"
                     value={form.type || ''}
                     onChange={handleChange}
-                  >
-                    <option value="">Select type</option>
-                    {types[typeCategory].map(type => (
-                      <option 
-                        key={type} 
-                        value={type}
-                      >
-                        {type}
-                      </option>
+                    placeholder="Select or type a type..."
+                    list={`${typeCategory}-types`}
+                  />
+                  <datalist id={`${typeCategory}-types`}>
+                    {defaultTypes.map(type => (
+                      <option key={type} value={type} />
                     ))}
-                  </select>
-                  {isAddingType ? (
-                    <div className="type-add">
-                      <input
-                        type="text"
-                        className="type-input"
-                        value={newType}
-                        onChange={e => setNewType(e.target.value)}
-                        placeholder="New type name"
-                      />
-                      <button
-                        type="button"
-                        className="type-add-button"
-                        onClick={handleAddType}
-                        disabled={!newType.trim()}
-                      >
-                        <IoCheckmark size={18} />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="type-add-button"
-                      onClick={() => setIsAddingType(true)}
-                      title="Add new type"
-                    >
-                      <IoAdd size={18} />
-                    </button>
-                  )}
+                  </datalist>
                 </div>
               </div>
 
               <div className="dialog-field">
                 <DescriptionEditor
                   value={form.description || ''}
-                  onChange={value => setForm(f => ({ ...f, description: value }))}
+                  onChange={value => setForm(prev => ({ ...prev, description: value }))}
                   elements={[...locations, ...regions] as Array<Location | Region>}
                   {...richTextEditorProps}
                 />
@@ -466,7 +236,7 @@ export function BaseDialog<T extends MapElement>({
                 <div className="dialog-field">
                 <LabelEditor
                   value={form.label ?? ''}
-                  onChange={html => setForm(f => ({ ...f, label: html }))}
+                  onChange={html => setForm(prev => ({ ...prev, label: html }))}
                   text={!form.label?.trim() ? form.name : undefined}
                   isRegion={richTextEditorProps.isRegion}
                   regionArea={richTextEditorProps.regionArea}
@@ -481,7 +251,7 @@ export function BaseDialog<T extends MapElement>({
                 <Toggle
                   id="showLabel"
                   checked={form.showLabel === true}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, showLabel: e.target.checked }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(prev => ({ ...prev, showLabel: e.target.checked }))}
                   aria-label="Show label"
                 />
               </div>
@@ -496,11 +266,11 @@ export function BaseDialog<T extends MapElement>({
                       <button
                         type="button"
                         className={`direction-btn ${form.labelPosition?.direction === 'Left top' ? 'selected' : ''}`}
-                        onClick={() => setForm(f => ({ 
-                          ...f, 
+                        onClick={() => setForm(prev => ({ 
+                          ...prev, 
                           labelPosition: { 
                             direction: 'Left top', 
-                            offset: (f.labelPosition as any)?.offset || 10.0 
+                            offset: (prev.labelPosition as any)?.offset || 10.0 
                           }
                         }))}
                         title="Left top"
@@ -510,11 +280,11 @@ export function BaseDialog<T extends MapElement>({
                       <button
                         type="button"
                         className={`direction-btn ${form.labelPosition?.direction === 'Mid top' ? 'selected' : ''}`}
-                        onClick={() => setForm(f => ({ 
-                          ...f, 
+                        onClick={() => setForm(prev => ({ 
+                          ...prev, 
                           labelPosition: { 
                             direction: 'Mid top', 
-                            offset: (f.labelPosition as any)?.offset || 10.0 
+                            offset: (prev.labelPosition as any)?.offset || 10.0 
                           }
                         }))}
                         title="Mid top"
@@ -524,11 +294,11 @@ export function BaseDialog<T extends MapElement>({
                       <button
                         type="button"
                         className={`direction-btn ${form.labelPosition?.direction === 'Right top' ? 'selected' : ''}`}
-                        onClick={() => setForm(f => ({ 
-                          ...f, 
+                        onClick={() => setForm(prev => ({ 
+                          ...prev, 
                           labelPosition: { 
                             direction: 'Right top', 
-                            offset: (f.labelPosition as any)?.offset || 10.0 
+                            offset: (prev.labelPosition as any)?.offset || 10.0 
                           }
                         }))}
                         title="Right top"
@@ -538,11 +308,11 @@ export function BaseDialog<T extends MapElement>({
                       <button
                         type="button"
                         className={`direction-btn ${form.labelPosition?.direction === 'Left mid' ? 'selected' : ''}`}
-                        onClick={() => setForm(f => ({ 
-                          ...f, 
+                        onClick={() => setForm(prev => ({ 
+                          ...prev, 
                           labelPosition: { 
                             direction: 'Left mid', 
-                            offset: (f.labelPosition as any)?.offset || 10.0 
+                            offset: (prev.labelPosition as any)?.offset || 10.0 
                           }
                         }))}
                         title="Left mid"
@@ -552,11 +322,11 @@ export function BaseDialog<T extends MapElement>({
                       <button
                         type="button"
                         className={`direction-btn ${form.labelPosition?.direction === 'Center' ? 'selected' : ''}`}
-                        onClick={() => setForm(f => ({ 
-                          ...f, 
+                        onClick={() => setForm(prev => ({ 
+                          ...prev, 
                           labelPosition: { 
                             direction: 'Center', 
-                            offset: (f.labelPosition as any)?.offset || 10.0 
+                            offset: (prev.labelPosition as any)?.offset || 10.0 
                           }
                         }))}
                         title="Center"
@@ -566,11 +336,11 @@ export function BaseDialog<T extends MapElement>({
                       <button
                         type="button"
                         className={`direction-btn ${form.labelPosition?.direction === 'Right mid' ? 'selected' : ''}`}
-                        onClick={() => setForm(f => ({ 
-                          ...f, 
+                        onClick={() => setForm(prev => ({ 
+                          ...prev, 
                           labelPosition: { 
                             direction: 'Right mid', 
-                            offset: (f.labelPosition as any)?.offset || 10.0 
+                            offset: (prev.labelPosition as any)?.offset || 10.0 
                           }
                         }))}
                         title="Right mid"
@@ -580,11 +350,11 @@ export function BaseDialog<T extends MapElement>({
                       <button
                         type="button"
                         className={`direction-btn ${form.labelPosition?.direction === 'Left bottom' ? 'selected' : ''}`}
-                        onClick={() => setForm(f => ({ 
-                          ...f, 
+                        onClick={() => setForm(prev => ({ 
+                          ...prev, 
                           labelPosition: { 
                             direction: 'Left bottom', 
-                            offset: (f.labelPosition as any)?.offset || 10.0 
+                            offset: (prev.labelPosition as any)?.offset || 10.0 
                           }
                         }))}
                         title="Left bottom"
@@ -594,11 +364,11 @@ export function BaseDialog<T extends MapElement>({
                       <button
                         type="button"
                         className={`direction-btn ${form.labelPosition?.direction === 'Mid bottom' ? 'selected' : ''}`}
-                        onClick={() => setForm(f => ({ 
-                          ...f, 
+                        onClick={() => setForm(prev => ({ 
+                          ...prev, 
                           labelPosition: { 
                             direction: 'Mid bottom', 
-                            offset: (f.labelPosition as any)?.offset || 10.0 
+                            offset: (prev.labelPosition as any)?.offset || 10.0 
                           }
                         }))}
                         title="Mid bottom"
@@ -608,11 +378,11 @@ export function BaseDialog<T extends MapElement>({
                       <button
                         type="button"
                         className={`direction-btn ${form.labelPosition?.direction === 'Right bottom' ? 'selected' : ''}`}
-                        onClick={() => setForm(f => ({ 
-                          ...f, 
+                        onClick={() => setForm(prev => ({ 
+                          ...prev, 
                           labelPosition: { 
                             direction: 'Right bottom', 
-                            offset: (f.labelPosition as any)?.offset || 10.0 
+                            offset: (prev.labelPosition as any)?.offset || 10.0 
                           }
                         }))}
                         title="Right bottom"
@@ -635,10 +405,10 @@ export function BaseDialog<T extends MapElement>({
                       min={1}
                       max={50}
                       value={form.labelPosition?.offset || 10.0}
-                      onChange={e => setForm(f => ({ 
-                        ...f, 
+                      onChange={e => setForm(prev => ({ 
+                        ...prev, 
                         labelPosition: { 
-                          direction: (f.labelPosition as any)?.direction || 'Center', 
+                          direction: (prev.labelPosition as any)?.direction || 'Center', 
                           offset: Number(e.target.value) 
                         }
                       }))}
@@ -728,8 +498,8 @@ export function BaseDialog<T extends MapElement>({
                     <div className={`icon-picker-grid ${iconGalleryBg}`}>
                       {Object.entries(ELEMENT_ICONS).map(([key, { icon: Icon, label }]) => (
                         <button
-                          type="button"
                           key={key}
+                          type="button"
                           className={`icon-picker-btn${form.icon === key ? ' selected' : ''}`}
                           onClick={() => {
                             handleIconSelect(key as ElementIcon);
