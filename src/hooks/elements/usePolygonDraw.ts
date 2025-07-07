@@ -2,7 +2,6 @@ import { useState, useCallback, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet-draw';
 import 'leaflet-draw/dist/leaflet.draw.css';
-import type { Region } from '@/types/regions';
 
 // Extend the Leaflet Control type to include our draw control
 type DrawControl = L.Control & {

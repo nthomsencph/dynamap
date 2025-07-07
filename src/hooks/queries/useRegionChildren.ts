@@ -1,7 +1,4 @@
 import { trpc } from '@/trpc';
-import type { Location } from '@/types/locations';
-import type { Region } from '@/types/regions';
-
 
 
 interface UseRegionChildrenOptions {

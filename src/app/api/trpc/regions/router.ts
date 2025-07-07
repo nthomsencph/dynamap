@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
 import { getDatabase } from '@/database';
-import { RegionSchema, RegionDbSchema } from './types';
-import type { Region } from '@/types/regions';
+import { RegionDbSchema } from './types';
 import {
   getAllRegions,
   getRegionById,

@@ -14,9 +14,6 @@ import { Tooltip } from '@/app/components/ui/Tooltip';
 import DescriptionEditor from '@/app/components/editor/DescriptionEditor';
 import LabelEditor from '@/app/components/editor/LabelEditor';
 
-// icons
-import { IoAdd, IoCheckmark } from 'react-icons/io5';
-
 // hooks
 import { useMapElementsByYear } from '@/hooks/queries/useMapElements';
 import { useTimelineContext } from '@/app/contexts/TimelineContext';

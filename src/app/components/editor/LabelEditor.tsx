@@ -15,7 +15,6 @@ import { RiLineHeight } from 'react-icons/ri';
 import { getFontSizeForArea } from '@/app/utils/area';
 import '@/css/label-editor.css';
 import Dropdown from './Dropdown';
-import { FaFont } from 'react-icons/fa';
 import { BackColor } from './extensions/backgroundColorExtension';
 import { LineHeight } from './extensions/lineHeightExtension';
 import Placeholder from '@tiptap/extension-placeholder';

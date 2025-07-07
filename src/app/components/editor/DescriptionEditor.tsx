@@ -19,7 +19,6 @@ import {
   AlignRight,
   Image as ImageIcon,
   Link as LinkIcon,
-  Type,
 } from 'lucide-react';
 import { AiOutlineFontSize } from 'react-icons/ai';
 import { RxFontFamily } from 'react-icons/rx';

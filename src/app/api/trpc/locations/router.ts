@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
 import { getDatabase } from '@/database';
-import { LocationSchema, LocationDbSchema } from './types';
-import type { Location } from '@/types/locations';
+import { LocationDbSchema } from './types';
 import {
   getAllLocations,
   getLocationById,

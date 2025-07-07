@@ -18,7 +18,7 @@ import {
   deleteChange,
   purgeTimeline,
 } from '@/database/timeline';
-import type { TimelineEpoch, TimelineEntry, TimelineNote, TimelineChange } from '@/types/timeline';
+import type { TimelineEntry, TimelineChange } from '@/types/timeline';
 
 // Timeline router
 export const timelineRouter = router({

@@ -155,10 +155,6 @@ export default function Map() {
         }
     };
 
-
-
-
-
     // Context menu setup
     const contextMenuProps = useMemo(() => ({
         mapRef: mapRef as React.RefObject<L.Map>,
@@ -209,8 +205,6 @@ export default function Map() {
     ]);
 
     const { menu, handleContextMenu, handleLocationContextMenu, handleRegionContextMenu, closeMenu, getMenuItems } = useContextMenu(contextMenuProps);
-
-
 
     const handleTimelineContextMenu = useCallback((e: React.MouseEvent, type: 'note' | 'epoch', element?: TimelineNote | TimelineEpoch) => {
         e.preventDefault();

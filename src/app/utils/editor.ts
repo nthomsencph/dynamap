@@ -1,5 +1,3 @@
-// utils/extractBackgroundColorFromHTML.ts
-
 /**
  * Extracts the first background color value found in a span element within given HTML.
  * Assumes inline styles using `background-color`.

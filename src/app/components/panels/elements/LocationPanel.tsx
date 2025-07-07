@@ -1,8 +1,6 @@
 import React from 'react';
 import { BasePanel } from '../BasePanel';
 import type { Location } from '@/types/locations';
-import type { Region } from '@/types/regions';
-import type { MapElement } from '@/types/elements';
 
 interface LocationPanelProps {
   location: Location;

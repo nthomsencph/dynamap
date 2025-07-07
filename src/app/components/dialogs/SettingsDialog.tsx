@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { FaImage, FaLink, FaRegImages, FaRulerCombined, FaLock, FaUnlock } from 'react-icons/fa';
+import React from 'react';
+import { FaLink, FaRegImages } from 'react-icons/fa';
 import '@/css/panels/settings-panel.css'
 import { useSettings, useUpdateSetting } from '@/hooks/useSettings';
 import LabelEditor from '../editor/LabelEditor';
