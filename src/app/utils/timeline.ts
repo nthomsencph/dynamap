@@ -3,11 +3,14 @@ import type { TimelineEpoch } from '@/types/timeline';
 /**
  * Calculate the display year for a given year within an epoch
  */
-export function calculateDisplayYear(year: number, epoch: TimelineEpoch): number {
+export function calculateDisplayYear(
+  year: number,
+  epoch: TimelineEpoch
+): number {
   if (epoch.reverseYears) {
     // For reverse years (like BC/AD), count backwards from the epoch end
     // Example: If epoch ends at year -1, then year -1 would be "1 BR", year -10 would be "10 BR"
-    return (epoch.endYear - year) + 1;
+    return epoch.endYear - year + 1;
   } else if (epoch.restartAtZero) {
     // Normal restart at zero behavior
     return year - epoch.startYear + 1;
@@ -53,4 +56,4 @@ export function formatEpochDateRange(epoch: TimelineEpoch): string {
     const suffix = epoch.yearSuffix ? ` ${epoch.yearSuffix}` : '';
     return `${prefix}${startYear} - ${endYear}${suffix}`;
   }
-} 
+}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { HiMiniQuestionMarkCircle } from "react-icons/hi2";
+import { HiMiniQuestionMarkCircle } from 'react-icons/hi2';
 import '@/css/components/tooltip.css';
 
 interface TooltipProps {
@@ -9,15 +9,17 @@ interface TooltipProps {
   className?: string;
 }
 
-export function Tooltip({ 
-  text, 
-  position = 'top', 
+export function Tooltip({
+  text,
+  position = 'top',
   delay = 500,
-  className = ''
+  className = '',
 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
 
   const showTooltip = () => {
     timeoutRef.current = setTimeout(() => {
@@ -41,7 +43,7 @@ export function Tooltip({
   }, []);
 
   return (
-    <div 
+    <div
       ref={triggerRef}
       className={`tooltip-trigger ${className}`}
       onMouseEnter={showTooltip}
@@ -51,14 +53,11 @@ export function Tooltip({
     >
       <HiMiniQuestionMarkCircle size={16} className="tooltip-icon" />
       {isVisible && (
-        <div
-          className={`tooltip tooltip-${position}`}
-          role="tooltip"
-        >
+        <div className={`tooltip tooltip-${position}`} role="tooltip">
           {text}
           <div className="tooltip-arrow" />
         </div>
       )}
     </div>
   );
-} 
+}

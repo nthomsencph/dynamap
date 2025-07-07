@@ -1,4 +1,4 @@
-import { Extension } from "@tiptap/core";
+import { Extension } from '@tiptap/core';
 
 export interface LineHeightOptions {
   types: string[];
@@ -6,7 +6,7 @@ export interface LineHeightOptions {
   defaultHeight: string;
 }
 
-declare module "@tiptap/core" {
+declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     lineHeight: {
       /**
@@ -22,13 +22,13 @@ declare module "@tiptap/core" {
 }
 
 export const LineHeight = Extension.create<LineHeightOptions>({
-  name: "lineHeight",
+  name: 'lineHeight',
 
   addOptions() {
     return {
-      types: ["heading", "paragraph"],
-      heights: ["50%", "75%", "80%", "100%", "125%", "150%", "175%", "200%"],
-      defaultHeight: "100%",
+      types: ['heading', 'paragraph'],
+      heights: ['50%', '75%', '80%', '100%', '125%', '150%', '175%', '200%'],
+      defaultHeight: '100%',
     };
   },
 
@@ -39,9 +39,9 @@ export const LineHeight = Extension.create<LineHeightOptions>({
         attributes: {
           lineHeight: {
             default: this.options.defaultHeight,
-            parseHTML: (element) =>
+            parseHTML: element =>
               element.style.lineHeight || this.options.defaultHeight,
-            renderHTML: (attributes) => {
+            renderHTML: attributes => {
               if (attributes.lineHeight === this.options.defaultHeight) {
                 return {};
               }
@@ -63,7 +63,7 @@ export const LineHeight = Extension.create<LineHeightOptions>({
             return false;
           }
 
-          return this.options.types.every((type) =>
+          return this.options.types.every(type =>
             commands.updateAttributes(type, { lineHeight: height })
           );
         },
@@ -71,10 +71,10 @@ export const LineHeight = Extension.create<LineHeightOptions>({
       unsetLineHeight:
         () =>
         ({ commands }) => {
-          return this.options.types.every((type) =>
-            commands.resetAttributes(type, "lineHeight")
+          return this.options.types.every(type =>
+            commands.resetAttributes(type, 'lineHeight')
           );
         },
     };
   },
-}); 
+});

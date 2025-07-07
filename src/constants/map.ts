@@ -1,4 +1,4 @@
-import { LatLngBoundsExpression } from "leaflet";
+import { LatLngBoundsExpression } from 'leaflet';
 
 // Map image dimensions
 export const MAP_IMAGE_WIDTH = 2000; // px
@@ -12,5 +12,5 @@ export const MAP_BOUNDS: LatLngBoundsExpression = [
 
 export const MAP_CENTER: [number, number] = [
   MAP_IMAGE_HEIGHT / 2,
-  MAP_IMAGE_WIDTH / 2
-]; 
+  MAP_IMAGE_WIDTH / 2,
+];

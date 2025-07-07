@@ -1,7 +1,10 @@
-import { useEffect } from "react";
-import L from "leaflet";
+import { useEffect } from 'react';
+import L from 'leaflet';
 
-export function useSmoothWheelZoom(mapRef: React.RefObject<L.Map | null>, sensitivity = 2) {
+export function useSmoothWheelZoom(
+  mapRef: React.RefObject<L.Map | null>,
+  sensitivity = 2
+) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -31,4 +34,4 @@ export function useSmoothWheelZoom(mapRef: React.RefObject<L.Map | null>, sensit
       console.warn('Error initializing SmoothWheelZoom:', error);
     }
   }, [mapRef, sensitivity]);
-} 
+}

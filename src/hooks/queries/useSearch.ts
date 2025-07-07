@@ -1,7 +1,5 @@
 import { trpc } from '@/trpc';
 
-
-
 interface UseSearchOptions {
   query: string;
   year?: number;
@@ -9,7 +7,12 @@ interface UseSearchOptions {
   enabled?: boolean;
 }
 
-export function useSearch({ query, year, limit = 50, enabled = true }: UseSearchOptions) {
+export function useSearch({
+  query,
+  year,
+  limit = 50,
+  enabled = true,
+}: UseSearchOptions) {
   return trpc.search.search.useQuery(
     {
       query,
@@ -22,4 +25,4 @@ export function useSearch({ query, year, limit = 50, enabled = true }: UseSearch
       gcTime: 10 * 60 * 1000, // 10 minutes
     }
   );
-} 
+}

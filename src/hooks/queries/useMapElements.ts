@@ -3,7 +3,11 @@ import { useMemo } from 'react';
 import { trpc } from '@/trpc';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
-import { buildChangeMap, getLocationStateForYear, getRegionStateForYear } from '@/app/utils/timeline-changes';
+import {
+  buildChangeMap,
+  getLocationStateForYear,
+  getRegionStateForYear,
+} from '@/app/utils/timeline-changes';
 
 // Query keys
 export const mapElementKeys = {
@@ -21,7 +25,7 @@ export const useTimeline = () => {
 
 export const useMapElementsByYear = (currentYear: number) => {
   const { data: timelineData } = useTimeline();
-  
+
   // Use tRPC for locations and regions
   const { data: allLocations } = trpc.locations.getAll.useQuery();
   const { data: allRegions } = trpc.regions.getAll.useQuery();
@@ -29,17 +33,19 @@ export const useMapElementsByYear = (currentYear: number) => {
   // Reconstruct elements for current year
   const locations = useMemo(() => {
     if (!allLocations || !timelineData?.entries) return allLocations || [];
-    
+
     const changeMap = buildChangeMap(timelineData.entries);
     return allLocations
-      .map(location => getLocationStateForYear(location, currentYear, changeMap))
+      .map(location =>
+        getLocationStateForYear(location, currentYear, changeMap)
+      )
       .filter((location): location is Location => location !== null)
       .filter(location => location.creationYear <= currentYear);
   }, [allLocations, timelineData?.entries, currentYear]);
 
   const regions = useMemo(() => {
     if (!allRegions || !timelineData?.entries) return allRegions || [];
-    
+
     const changeMap = buildChangeMap(timelineData.entries);
     return allRegions
       .map(region => getRegionStateForYear(region, currentYear, changeMap))
@@ -58,7 +64,7 @@ export const useMapElementsByYear = (currentYear: number) => {
 export const useCreateLocation = () => {
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
-  
+
   return trpc.locations.create.useMutation({
     onSuccess: () => {
       utils.locations.getAll.invalidate();
@@ -71,7 +77,7 @@ export const useCreateLocation = () => {
 export const useUpdateLocation = () => {
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
-  
+
   return trpc.locations.update.useMutation({
     onSuccess: () => {
       utils.locations.getAll.invalidate();
@@ -84,7 +90,7 @@ export const useUpdateLocation = () => {
 export const useDeleteLocation = () => {
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
-  
+
   return trpc.locations.delete.useMutation({
     onSuccess: () => {
       utils.locations.getAll.invalidate();
@@ -98,7 +104,7 @@ export const useDeleteLocation = () => {
 export const useCreateRegion = () => {
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
-  
+
   return trpc.regions.create.useMutation({
     onSuccess: () => {
       utils.regions.getAll.invalidate();
@@ -111,7 +117,7 @@ export const useCreateRegion = () => {
 export const useUpdateRegion = () => {
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
-  
+
   return trpc.regions.update.useMutation({
     onSuccess: () => {
       utils.regions.getAll.invalidate();
@@ -124,7 +130,7 @@ export const useUpdateRegion = () => {
 export const useDeleteRegion = () => {
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
-  
+
   return trpc.regions.delete.useMutation({
     onSuccess: () => {
       utils.regions.getAll.invalidate();
@@ -137,7 +143,7 @@ export const useDeleteRegion = () => {
 // Timeline mutations using tRPC
 export const useCreateTimelineChange = () => {
   const utils = trpc.useUtils();
-  
+
   return trpc.timeline.recordChange.useMutation({
     onSuccess: () => {
       utils.timeline.getAll.invalidate();
@@ -147,10 +153,10 @@ export const useCreateTimelineChange = () => {
 
 export const useDeleteTimelineChanges = () => {
   const utils = trpc.useUtils();
-  
+
   return trpc.timeline.deleteChange.useMutation({
     onSuccess: () => {
       utils.timeline.getAll.invalidate();
     },
   });
-}; 
+};

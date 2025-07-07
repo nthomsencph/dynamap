@@ -1,10 +1,13 @@
-"use client";
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useTimelineContext } from '@/app/contexts/TimelineContext';
 import type { TimelineEntry, TimelineNote } from '@/types/timeline';
 import { useMapElementsByYear } from '@/hooks/queries/useMapElements';
 import { usePanelWidth } from '@/hooks/ui/usePanelWidth';
-import { formatEpochDateRange, calculateDisplayYear } from '@/app/utils/timeline';
+import {
+  formatEpochDateRange,
+  calculateDisplayYear,
+} from '@/app/utils/timeline';
 import DescriptionEditor from '@/app/components/editor/DescriptionEditor';
 import '@/css/dialogs/base-dialog.css';
 import '@/css/panels/sidepanel.css';
@@ -16,10 +19,17 @@ interface NoteDialogProps {
 }
 
 export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
-  const { currentYear, currentEpoch, getEntryForYear, updateEntry, createEntry, fetchTimeline } = useTimelineContext();
+  const {
+    currentYear,
+    currentEpoch,
+    getEntryForYear,
+    updateEntry,
+    createEntry,
+    fetchTimeline,
+  } = useTimelineContext();
   const { locations, regions } = useMapElementsByYear(currentYear);
   const { width, handleMouseDown } = usePanelWidth();
-  
+
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [saving, setSaving] = useState(false);
@@ -31,7 +41,9 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
     if (isOpen) {
       if (noteId && currentEntry?.notes) {
         // Edit mode: load existing note data
-        const existingNote = currentEntry.notes.find((note: TimelineNote) => note.id === noteId);
+        const existingNote = currentEntry.notes.find(
+          (note: TimelineNote) => note.id === noteId
+        );
         if (existingNote) {
           setTitle(existingNote.title || '');
           setDescription(existingNote.description || '');
@@ -53,22 +65,27 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
     try {
       if (noteId && currentEntry?.notes) {
         // Edit existing note
-        const existingNoteIndex = currentEntry.notes.findIndex((note: TimelineNote) => note.id === noteId);
+        const existingNoteIndex = currentEntry.notes.findIndex(
+          (note: TimelineNote) => note.id === noteId
+        );
         if (existingNoteIndex !== -1) {
           const updatedNotes = [...currentEntry.notes];
           updatedNotes[existingNoteIndex] = {
             ...updatedNotes[existingNoteIndex],
             title: title.trim() || 'Untitled',
             description: description.trim(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           };
 
           const updatedEntry: TimelineEntry = {
             ...currentEntry,
-            notes: updatedNotes
+            notes: updatedNotes,
           };
-          
-          console.log('Updating existing note:', updatedNotes[existingNoteIndex]);
+
+          console.log(
+            'Updating existing note:',
+            updatedNotes[existingNoteIndex]
+          );
           await updateEntry(currentYear, updatedEntry);
         }
       } else {
@@ -78,17 +95,19 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
           title: title.trim() || 'Untitled',
           description: description.trim(),
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         };
 
         console.log('Creating new note:', newNote);
 
         if (currentEntry) {
           // Add note to existing entry
-          const existingNotes = Array.isArray(currentEntry.notes) ? currentEntry.notes : [];
+          const existingNotes = Array.isArray(currentEntry.notes)
+            ? currentEntry.notes
+            : [];
           const updatedEntry: TimelineEntry = {
             ...currentEntry,
-            notes: [...existingNotes, newNote]
+            notes: [...existingNotes, newNote],
           };
           console.log('Updating entry with new note:', updatedEntry);
           await updateEntry(currentYear, updatedEntry);
@@ -97,11 +116,11 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
           console.log('Creating new entry with note');
           await createEntry({
             year: currentYear,
-            notes: [newNote]
+            notes: [newNote],
           });
         }
       }
-      
+
       await fetchTimeline();
       onClose();
     } catch (error) {
@@ -121,14 +140,16 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
   };
 
   const isEditMode = !!noteId;
-  const dialogTitle = isEditMode ? `Edit note in ${formatYear(currentYear)}` : `Create note in ${formatYear(currentYear)}`;
+  const dialogTitle = isEditMode
+    ? `Edit note in ${formatYear(currentYear)}`
+    : `Create note in ${formatYear(currentYear)}`;
 
   if (!isOpen) return null;
 
   return (
     <>
       {/* Backdrop to prevent clicks from reaching TimelineSlider */}
-      <div 
+      <div
         style={{
           position: 'fixed',
           top: 0,
@@ -136,19 +157,19 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
           right: 0,
           bottom: 0,
           zIndex: 10015,
-          background: 'transparent'
+          background: 'transparent',
         }}
         onClick={onClose}
       />
       <div
         className="sidepanel"
-        style={{ 
+        style={{
           width,
           background: 'rgba(0,0,0,0.9)', // Permanent hover background
-          zIndex: 10016 // Higher than timeline notes (10006)
+          zIndex: 10016, // Higher than timeline notes (10006)
         }}
         data-testid="timeline-note-dialog"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div className="sidepanel-drag-handle" onMouseDown={handleMouseDown} />
         <div className="sidepanel-header">
@@ -162,7 +183,12 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
               </p>
             )}
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-200 text-xl ml-4">×</button>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-200 text-xl ml-4"
+          >
+            ×
+          </button>
         </div>
         <div className="sidepanel-content flex-1 overflow-y-auto px-0 py-0 space-y-4">
           <div>
@@ -176,11 +202,11 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
             />
           </div>
           <div>
-            <DescriptionEditor 
-              value={description} 
-              onChange={setDescription} 
-              elements={[...locations, ...regions]} 
-              rows={8} 
+            <DescriptionEditor
+              value={description}
+              onChange={setDescription}
+              elements={[...locations, ...regions]}
+              rows={8}
             />
           </div>
         </div>
@@ -191,10 +217,10 @@ export function NoteDialog({ noteId, isOpen, onClose }: NoteDialogProps) {
             className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1 rounded"
             disabled={saving}
           >
-            {saving ? 'Saving...' : (isEditMode ? 'Update' : 'Save')}
+            {saving ? 'Saving...' : isEditMode ? 'Update' : 'Save'}
           </button>
         </div>
       </div>
     </>
   );
-} 
+}

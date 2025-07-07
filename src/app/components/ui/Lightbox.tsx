@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import '@/css/ui/lightbox.css';
+import Image from 'next/image';
 
 interface LightboxProps {
   imageUrl: string | undefined;
@@ -29,17 +30,19 @@ export function Lightbox({ imageUrl, alt, onClose }: LightboxProps) {
   if (!imageUrl) return null;
 
   return (
-    <div 
-      className={`lightbox-backdrop ${isVisible ? 'visible' : ''}`} 
+    <div
+      className={`lightbox-backdrop ${isVisible ? 'visible' : ''}`}
       onClick={onClose}
     >
-      <div 
+      <div
         className={`lightbox-content ${isVisible ? 'visible' : ''}`}
         onClick={e => e.stopPropagation()}
       >
-        <img src={imageUrl} alt={alt} />
-        <button className="lightbox-close" onClick={onClose}>×</button>
+        <Image src={imageUrl} alt={alt} width={800} height={800} />
+        <button className="lightbox-close" onClick={onClose}>
+          ×
+        </button>
       </div>
     </div>
   );
-} 
+}

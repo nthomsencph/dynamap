@@ -25,11 +25,11 @@
   box-shadow: none;
   padding: 4px 6px 2px 6px;
   min-height: 1.2em;
-/*  border: 2px solid magenta !important;*/
+  /*  border: 2px solid magenta !important;*/
 }
 
 /* Style for labels with background color */
-.custom-pin-label span[style*="background-color"] {
+.custom-pin-label span[style*='background-color'] {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 6px;
@@ -46,4 +46,4 @@
 /* Add a subtle border for better contrast against light backgrounds */
 .location-label [data-background-color] {
   border: 1px solid rgba(0, 0, 0, 0.1);
-} 
+}

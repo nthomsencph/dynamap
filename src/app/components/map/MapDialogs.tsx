@@ -1,27 +1,27 @@
 import React from 'react';
-import { LocationDialog } from "../dialogs/LocationDialog";
-import { RegionDialog } from "../dialogs/RegionDialog";
-import { ConfirmDialog } from "../dialogs/ConfirmDialog";
+import { LocationDialog } from '../dialogs/LocationDialog';
+import { RegionDialog } from '../dialogs/RegionDialog';
+import { ConfirmDialog } from '../dialogs/ConfirmDialog';
 import { EpochDialog } from '../dialogs/EpochDialog';
 import { NoteDialog } from '../dialogs/NoteDialog';
-import type { Location } from "@/types/locations";
-import type { Region } from "@/types/regions";
-import type { TimelineNote, TimelineEpoch } from "@/types/timeline";
+import type { Location } from '@/types/locations';
+import type { Region } from '@/types/regions';
+import type { TimelineNote, TimelineEpoch } from '@/types/timeline';
 
 interface MapDialogsProps {
   // Element dialogs
   locationDialog: {
     open: boolean;
-    mode: "create" | "edit";
+    mode: 'create' | 'edit';
     location: Partial<Location> | null;
   };
   regionDialog: {
     open: boolean;
-    mode: "create" | "edit";
+    mode: 'create' | 'edit';
     region: Partial<Region> | null;
     position: [number, number][] | null;
   };
-  
+
   // Save handlers
   onSaveLocation: (location: Location) => Promise<void>;
   onSaveRegion: (region: Region) => Promise<void>;
@@ -29,13 +29,13 @@ interface MapDialogsProps {
   onCloseRegion: () => void;
   onDeleteLocation: (location: Location) => void;
   onDeleteRegion: (region: Region) => void;
-  
+
   // Preview states
   previewLocation: Partial<Location> | null;
   previewRegion: Partial<Region> | null;
   onPreviewLocationChange: (location: Partial<Location> | null) => void;
   onPreviewRegionChange: (region: Partial<Region> | null) => void;
-  
+
   // Delete confirmation
   deleteConfirm: {
     open: boolean;
@@ -47,7 +47,7 @@ interface MapDialogsProps {
   onDeleteElement: () => Promise<void>;
   onDeleteFromTimeline: () => Promise<void>;
   onDeleteCancel: () => void;
-  
+
   // Timeline dialogs
   timelineEpochDialog: {
     open: boolean;
@@ -60,7 +60,7 @@ interface MapDialogsProps {
   };
   onCloseEpochDialog: () => void;
   onCloseNoteDialog: () => void;
-  
+
   // Map reference for dialogs
   mapRef: React.RefObject<any>;
 }
@@ -84,7 +84,7 @@ export function MapDialogs({
   timelineNoteDialog,
   onCloseEpochDialog,
   onCloseNoteDialog,
-  mapRef
+  mapRef,
 }: MapDialogsProps) {
   return (
     <>
@@ -139,4 +139,4 @@ export function MapDialogs({
       />
     </>
   );
-} 
+}

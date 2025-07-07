@@ -13,9 +13,15 @@
 }
 
 @keyframes buttonPress {
-  0% { transform: scale(1); }
-  50% { transform: scale(0.96); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Main Timeline Container */
@@ -31,7 +37,7 @@
   /* -webkit-backdrop-filter: blur(16px); */
   /* border: 1px solid rgba(0, 0, 0, 0.08); */
   border-radius: 20px;
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.12),
     0 2px 8px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(0, 0, 0, 0.9);
@@ -42,7 +48,7 @@
 }
 
 .timeline-slider:hover {
-  box-shadow: 
+  box-shadow:
     0 12px 48px rgba(0, 0, 0, 0.15),
     0 4px 16px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(0, 0, 0, 0.9);
@@ -50,7 +56,7 @@
 
 /* Epoch Display Section */
 .timeline-epoch {
-  padding: 18px 24px 8px 24px;  /* Reduced bottom padding from 18px to 8px */
+  padding: 18px 24px 8px 24px; /* Reduced bottom padding from 18px to 8px */
   background: transparent;
   /* border-left: 4px solid; */
 
@@ -119,7 +125,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 8px 24px 20px 24px;  /* Reduced top padding from 20px to 8px */
+  padding: 8px 24px 20px 24px; /* Reduced top padding from 20px to 8px */
   /* background: rgba(0, 0, 0, 0.02); */
   /* border-top: 1px solid rgba(0, 0, 0, 0.06); */
 }
@@ -150,7 +156,11 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.1),
+    rgba(59, 130, 246, 0.05)
+  );
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -195,7 +205,7 @@
   letter-spacing: 0.05em;
   position: relative;
   overflow: hidden;
-  box-shadow: 
+  box-shadow:
     0 2px 8px rgba(15, 23, 42, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
@@ -282,7 +292,7 @@
   backdrop-filter: blur(16px);
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 16px;
-  box-shadow: 
+  box-shadow:
     0 12px 32px rgba(0, 0, 0, 0.15),
     0 2px 8px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
@@ -322,31 +332,31 @@
     right: 12px;
     top: 12px;
   }
-  
+
   .timeline-nav-button {
     height: 32px;
     width: 32px;
     font-size: 12px;
   }
-  
+
   .timeline-year-display {
     height: 32px;
     font-size: 14px;
   }
-  
+
   .timeline-action-button {
     height: 36px;
     font-size: 13px;
   }
-  
+
   .timeline-epoch {
     padding: 16px 20px;
   }
-  
+
   .timeline-year-nav {
     padding: 16px 20px;
   }
-  
+
   .timeline-actions {
     padding: 16px 20px 20px;
   }

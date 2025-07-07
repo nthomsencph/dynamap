@@ -11,9 +11,5 @@ interface DrawingModeBannerProps {
 export function DrawingModeBanner({ isVisible }: DrawingModeBannerProps) {
   if (!isVisible) return null;
 
-  return (
-    <div className="drawing-mode-banner-minimal">
-      In drawing mode
-    </div>
-  );
-} 
+  return <div className="drawing-mode-banner-minimal">In drawing mode</div>;
+}

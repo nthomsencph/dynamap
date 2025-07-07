@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React, { useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import { TimelineNote } from '@/types/timeline';
@@ -13,7 +13,14 @@ interface TimelineNotesProps {
   onNoteContextMenu?: (e: React.MouseEvent, note: TimelineNote) => void;
 }
 
-export function TimelineNotes({ notes, year, isOpen, onClose, onNoteClick, onNoteContextMenu }: TimelineNotesProps) {
+export function TimelineNotes({
+  notes,
+  year,
+  isOpen,
+  onClose,
+  onNoteClick,
+  onNoteContextMenu,
+}: TimelineNotesProps) {
   const [closedNotes, setClosedNotes] = useState<Set<string>>(new Set());
 
   if (!isOpen || notes.length === 0) return null;
@@ -21,10 +28,10 @@ export function TimelineNotes({ notes, year, isOpen, onClose, onNoteClick, onNot
   const handleNoteClick = (note: TimelineNote) => {
     // Close the note when clicked (notification behavior)
     setClosedNotes(prev => new Set([...prev, note.id]));
-    
+
     // Call the original onNoteClick handler
     onNoteClick(note);
-    
+
     // If all notes are closed, close the entire notes display
     if (closedNotes.size + 1 >= notes.length) {
       onClose();
@@ -35,7 +42,7 @@ export function TimelineNotes({ notes, year, isOpen, onClose, onNoteClick, onNot
   const handleNoteContextMenu = (e: React.MouseEvent, note: TimelineNote) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Always call the context menu handler, let the parent decide what to show
     if (onNoteContextMenu) {
       onNoteContextMenu(e, note);
@@ -45,7 +52,7 @@ export function TimelineNotes({ notes, year, isOpen, onClose, onNoteClick, onNot
   const handleCloseNote = (noteId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setClosedNotes(prev => new Set([...prev, noteId]));
-    
+
     // If all notes are closed, close the entire notes display
     if (closedNotes.size + 1 >= notes.length) {
       onClose();
@@ -64,14 +71,14 @@ export function TimelineNotes({ notes, year, isOpen, onClose, onNoteClick, onNot
           className="timeline-note-widget"
           style={{ animationDelay: `${index * 0.1}s` }}
           onClick={() => handleNoteClick(note)}
-          onContextMenu={(e) => handleNoteContextMenu(e, note)}
+          onContextMenu={e => handleNoteContextMenu(e, note)}
         >
           <div className="timeline-note-widget-header">
             <div className="timeline-note-widget-title">
               {note.title || 'Untitled'}
             </div>
-            <button 
-              onClick={(e) => handleCloseNote(note.id, e)} 
+            <button
+              onClick={e => handleCloseNote(note.id, e)}
               className="timeline-note-widget-close"
             >
               <FaTimes size={12} />
@@ -86,4 +93,4 @@ export function TimelineNotes({ notes, year, isOpen, onClose, onNoteClick, onNot
       ))}
     </div>
   );
-} 
+}

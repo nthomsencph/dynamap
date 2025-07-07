@@ -50,7 +50,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
   // Use ref to avoid stale closure issues
   const elementsRef = useRef(elements);
   const { currentYear, currentEpoch } = useTimelineContext();
-  
+
   // Update ref whenever elements change
   useEffect(() => {
     elementsRef.current = elements;
@@ -59,13 +59,14 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
   // Create mention extension with ref to avoid stale closure
   const mentionExtension = useMemo(() => {
     return createMentionExtension(() => {
-
       return elementsRef.current;
     });
   }, []); // Empty deps - create once, ref will always have fresh elements
 
   // Check if toolbar should be excluded from tab navigation
-  const skipToolbarInTab = className.includes('description-editor-no-toolbar-tab');
+  const skipToolbarInTab = className.includes(
+    'description-editor-no-toolbar-tab'
+  );
 
   // Initialize editor with description-specific extensions
   const editor = useEditor({
@@ -77,11 +78,11 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
       FontSize,
       Color,
       Underline,
-      TextAlign.configure({ 
+      TextAlign.configure({
         types: ['heading', 'paragraph'],
-        defaultAlignment: 'left' // Set default alignment to left
+        defaultAlignment: 'left', // Set default alignment to left
       }),
-      Link.configure({ 
+      Link.configure({
         openOnClick: true,
         autolink: true,
         HTMLAttributes: {
@@ -145,43 +146,47 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
       const mentionId = target.getAttribute('data-id');
       const mentionName = target.getAttribute('data-name');
       const mentionType = target.getAttribute('data-element-type');
-      
+
       if (!mentionId || !mentionName) return;
 
       const element = elementsRef.current.find(el => el.id === mentionId);
 
       if (element) {
         // Element exists - could trigger navigation or other action
-  
       } else {
         // Element doesn't exist in current year - show tooltip
-        const displayYear = currentEpoch 
+        const displayYear = currentEpoch
           ? calculateDisplayYear(currentYear, currentEpoch)
           : currentYear;
-        const yearLabel = currentEpoch 
+        const yearLabel = currentEpoch
           ? `${currentEpoch.yearPrefix || ''} ${displayYear} ${currentEpoch.yearSuffix || ''}`.trim()
           : displayYear;
-        
-        toast.info(`${mentionName} doesn't exist in the current year (${yearLabel})`, {
-          position: "bottom-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+
+        toast.info(
+          `${mentionName} doesn't exist in the current year (${yearLabel})`,
+          {
+            position: 'bottom-right',
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          }
+        );
       }
     };
 
     // Add visual styling for deleted mentions
     const updateMentionStyling = () => {
       const mentions = editor.view.dom.querySelectorAll('.mention');
-      mentions.forEach((mention) => {
+      mentions.forEach(mention => {
         const mentionId = mention.getAttribute('data-id');
-        
+
         if (mentionId) {
-          const elementExists = elementsRef.current.some(el => el.id === mentionId);
-          
+          const elementExists = elementsRef.current.some(
+            el => el.id === mentionId
+          );
+
           if (!elementExists) {
             mention.classList.add('mention-deleted');
           } else {
@@ -193,10 +198,10 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
 
     // Add click handler
     editor.view.dom.addEventListener('click', handleMentionClick);
-    
+
     // Update styling initially and when elements change
     updateMentionStyling();
-    
+
     return () => {
       editor.view.dom.removeEventListener('click', handleMentionClick);
     };
@@ -214,7 +219,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
   // Media insertion handlers
   const insertImage = useCallback(() => {
     if (!editor) return;
-    
+
     const url = window.prompt('Enter image URL:');
     if (url?.trim()) {
       try {
@@ -227,11 +232,16 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
 
   const insertLink = useCallback(() => {
     if (!editor) return;
-    
+
     const url = window.prompt('Enter link URL:');
     if (url?.trim()) {
       try {
-        editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
+        editor
+          .chain()
+          .focus()
+          .extendMarkRange('link')
+          .setLink({ href: url.trim() })
+          .run();
       } catch (error) {
         console.warn('Failed to insert link:', error);
       }
@@ -246,7 +256,11 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
     <div className={`description-editor-wrapper ${className}`} data-rows={rows}>
       <div className="description-editor-container">
         {/* Toolbar */}
-        <div className="description-editor-toolbar" role="toolbar" aria-label="Text formatting">
+        <div
+          className="description-editor-toolbar"
+          role="toolbar"
+          aria-label="Text formatting"
+        >
           {/* Text Formatting */}
           <button
             type="button"
@@ -258,7 +272,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
           >
             <Bold size={16} />
           </button>
-          
+
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleItalic().run()}
@@ -269,7 +283,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
           >
             <Italic size={16} />
           </button>
-          
+
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleUnderline().run()}
@@ -285,7 +299,12 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
 
           {/* Font Settings */}
           <Dropdown
-            icon={<RxFontFamily size={20} style={{ color: '#fff', fontWeight: 'bold' }} />}
+            icon={
+              <RxFontFamily
+                size={20}
+                style={{ color: '#fff', fontWeight: 'bold' }}
+              />
+            }
             options={[
               { label: 'Arial', value: 'Arial, sans-serif' },
               { label: 'Georgia', value: 'Georgia, serif' },
@@ -295,13 +314,22 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
               { label: 'Serif', value: 'serif' },
               { label: 'Sans-serif', value: 'sans-serif' },
               { label: 'Monospace', value: 'monospace' },
-              { label: 'UnifrakturMaguntia', value: "'UnifrakturMaguntia', cursive" },
-              { label: 'Passions Conflict', value: "'Passions Conflict', cursive" },
+              {
+                label: 'UnifrakturMaguntia',
+                value: "'UnifrakturMaguntia', cursive",
+              },
+              {
+                label: 'Passions Conflict',
+                value: "'Passions Conflict', cursive",
+              },
               { label: 'Festive', value: "'Festive', cursive" },
               { label: 'Arizonia', value: "'Arizonia', cursive" },
               { label: 'Petemoss', value: "'Petemoss', cursive" },
               { label: 'Kaushan Script', value: "'Kaushan Script', cursive" },
-              { label: 'Fredericka the Great', value: "'Fredericka the Great', cursive" },
+              {
+                label: 'Fredericka the Great',
+                value: "'Fredericka the Great', cursive",
+              },
               { label: 'Meddon', value: "'Meddon', cursive" },
               { label: 'Jim Nightshade', value: "'Jim Nightshade', cursive" },
               { label: 'Felipa', value: "'Felipa', cursive" },
@@ -346,7 +374,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
           >
             <AlignLeft size={16} />
           </button>
-          
+
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign('center').run()}
@@ -357,7 +385,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
           >
             <AlignCenter size={16} />
           </button>
-          
+
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign('right').run()}
@@ -376,7 +404,9 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
             <label title="Text Color">
               <input
                 type="color"
-                onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+                onChange={e =>
+                  editor.chain().focus().setColor(e.target.value).run()
+                }
                 aria-label="Text Color"
                 tabIndex={skipToolbarInTab ? -1 : 0}
               />
@@ -395,7 +425,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
           >
             <ImageIcon size={16} />
           </button>
-          
+
           <button
             type="button"
             onClick={insertLink}

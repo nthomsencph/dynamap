@@ -13,22 +13,17 @@ interface PanelRouterProps {
   onElementClick: (element: Location | Region) => void;
 }
 
-export function PanelRouter({ 
-  entry, 
-  onClose, 
+export function PanelRouter({
+  entry,
+  onClose,
   onBack,
-  onElementClick
+  onElementClick,
 }: PanelRouterProps) {
   // Route to the appropriate panel based on entry type
   switch (entry.elementType) {
     case 'search':
-      return (
-        <SearchPanel
-          onClose={onClose}
-          onElementClick={onElementClick}
-        />
-      );
-    
+      return <SearchPanel onClose={onClose} onElementClick={onElementClick} />;
+
     case 'location':
       return (
         <LocationPanel
@@ -37,7 +32,7 @@ export function PanelRouter({
           onBack={onBack}
         />
       );
-    
+
     case 'region':
       return (
         <RegionPanel
@@ -46,12 +41,10 @@ export function PanelRouter({
           onBack={onBack}
         />
       );
-    
+
     default:
       // This should never happen, but provides a fallback
       console.warn(`Unknown panel type: ${entry.elementType}`);
       return null;
   }
 }
-
- 

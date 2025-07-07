@@ -22,4 +22,4 @@ export async function updateSettings(client: PoolClient, input: any) {
     [SETTINGS_KEY, JSON.stringify(input)]
   );
   return input;
-} 
+}

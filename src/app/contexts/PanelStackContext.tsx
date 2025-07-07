@@ -1,5 +1,12 @@
-"use client";
-import React, { createContext, useContext, ReactNode, useState, useCallback, useMemo } from 'react';
+'use client';
+import React, {
+  createContext,
+  useContext,
+  ReactNode,
+  useState,
+  useCallback,
+  useMemo,
+} from 'react';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
 
@@ -30,72 +37,71 @@ interface PanelStackContextType {
   goBack: () => void;
 }
 
-const PanelStackContext = createContext<PanelStackContextType | undefined>(undefined);
+const PanelStackContext = createContext<PanelStackContextType | undefined>(
+  undefined
+);
 
 export function PanelStackProvider({ children }: { children: ReactNode }) {
   const [panelStack, setPanelStack] = useState<PanelEntry[]>([]);
-  
+
   const pushPanel = useCallback((entry: PanelEntry) => {
     setPanelStack(prev => [...prev, entry]);
   }, []);
-  
+
   const popPanel = useCallback(() => {
     setPanelStack(prev => prev.slice(0, -1));
   }, []);
-  
+
   const clearStack = useCallback(() => {
     setPanelStack([]);
   }, []);
-  
+
   const replaceCurrentPanel = useCallback((entry: PanelEntry) => {
     setPanelStack(prev => {
       if (prev.length === 0) return [entry];
       return [...prev.slice(0, -1), entry];
     });
   }, []);
-  
+
   const goBack = useCallback(() => {
     if (panelStack.length > 1) {
       popPanel();
     }
   }, [panelStack.length, popPanel]);
-  
-  const currentPanel = useMemo(() => 
-    panelStack[panelStack.length - 1] || null, 
+
+  const currentPanel = useMemo(
+    () => panelStack[panelStack.length - 1] || null,
     [panelStack]
   );
-  
-  const canGoBack = useMemo(() => 
-    panelStack.length > 1, 
-    [panelStack.length]
+
+  const canGoBack = useMemo(() => panelStack.length > 1, [panelStack.length]);
+
+  const stackDepth = useMemo(() => panelStack.length, [panelStack.length]);
+
+  const value = useMemo(
+    () => ({
+      panelStack,
+      currentPanel,
+      canGoBack,
+      stackDepth,
+      pushPanel,
+      popPanel,
+      clearStack,
+      replaceCurrentPanel,
+      goBack,
+    }),
+    [
+      panelStack,
+      currentPanel,
+      canGoBack,
+      stackDepth,
+      pushPanel,
+      popPanel,
+      clearStack,
+      replaceCurrentPanel,
+      goBack,
+    ]
   );
-  
-  const stackDepth = useMemo(() => 
-    panelStack.length, 
-    [panelStack.length]
-  );
-  
-  const value = useMemo(() => ({
-    panelStack,
-    currentPanel,
-    canGoBack,
-    stackDepth,
-    pushPanel,
-    popPanel,
-    clearStack,
-    replaceCurrentPanel,
-    goBack
-  }), [
-    panelStack,
-    currentPanel,
-    canGoBack,
-    stackDepth,
-    pushPanel,
-    popPanel,
-    clearStack,
-    replaceCurrentPanel,
-    goBack
-  ]);
 
   return (
     <PanelStackContext.Provider value={value}>
@@ -110,4 +116,4 @@ export function usePanelStack() {
     throw new Error('usePanelStack must be used within a PanelStackProvider');
   }
   return context;
-} 
+}

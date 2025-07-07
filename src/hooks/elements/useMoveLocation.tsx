@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
-import { renderToStaticMarkup } from "react-dom/server";
-import { ELEMENT_ICONS } from "../../types/elements";
-import type { Location } from "../../types/locations";
-import type { MapElement } from "../../types/elements";
+import { renderToStaticMarkup } from 'react-dom/server';
+import { ELEMENT_ICONS } from '../../types/elements';
+import type { Location } from '../../types/locations';
+import type { MapElement } from '../../types/elements';
 
 interface MoveMode {
   location: Location;
@@ -11,7 +11,9 @@ interface MoveMode {
 }
 
 // Type guard to ensure a Location has all required MapElement properties
-function hasMapElementProperties(location: Location): location is Location & MapElement {
+function hasMapElementProperties(
+  location: Location
+): location is Location & MapElement {
   return (
     'id' in location &&
     'color' in location &&
@@ -20,10 +22,8 @@ function hasMapElementProperties(location: Location): location is Location & Map
   );
 }
 
-
-
 export function useMoveLocation(
-  mapRef: React.RefObject<L.Map | null>, 
+  mapRef: React.RefObject<L.Map | null>,
   onLocationUpdate: (location: Location) => void,
   onLocationCreate?: (location: Location) => void
 ) {
@@ -36,54 +36,55 @@ export function useMoveLocation(
   onLocationCreateRef.current = onLocationCreate;
 
   // Handle moving or duplicating a location
-  const handleMoveLocation = useCallback((location: Location, isDuplicating: boolean = false) => {
-    if (!hasMapElementProperties(location)) {
-      console.error('Location is missing required MapElement properties');
-      return;
-    }
-
-    setMoveMode({ location, isDuplicating });
-    
-    // Change cursor to indicate move mode
-    if (mapRef.current) {
-      const map = mapRef.current;
-      const container = map.getContainer();
-      
-      // Set a default move cursor first
-      container.style.cursor = 'move';
-
-      try {
-        // Get the icon component
-        const IconComponent = ELEMENT_ICONS[location.icon]?.icon || ELEMENT_ICONS.MdCastle.icon;
-        
-        // Create a simple SVG string with the icon
-        const svgContent = renderToStaticMarkup(
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            width="32" 
-            height="32" 
-            viewBox="0 0 32 32"
-            style={{ backgroundColor: 'transparent' }}
-          >
-            <IconComponent 
-              color={location.color || "#2563eb"} 
-              size={32}
-            />
-          </svg>
-        );
-
-        // Create a data URL
-        const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`;
-        
-        // Set the cursor directly
-        container.style.cursor = `url("${dataUrl}") 16 16, move`;
-      } catch (error) {
-        console.error('Error setting custom cursor:', error);
-        // Keep the move cursor if custom cursor fails
-        container.style.cursor = 'move';
+  const handleMoveLocation = useCallback(
+    (location: Location, isDuplicating: boolean = false) => {
+      if (!hasMapElementProperties(location)) {
+        console.error('Location is missing required MapElement properties');
+        return;
       }
-    }
-  }, []);
+
+      setMoveMode({ location, isDuplicating });
+
+      // Change cursor to indicate move mode
+      if (mapRef.current) {
+        const map = mapRef.current;
+        const container = map.getContainer();
+
+        // Set a default move cursor first
+        container.style.cursor = 'move';
+
+        try {
+          // Get the icon component
+          const IconComponent =
+            ELEMENT_ICONS[location.icon]?.icon || ELEMENT_ICONS.MdCastle.icon;
+
+          // Create a simple SVG string with the icon
+          const svgContent = renderToStaticMarkup(
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="32"
+              height="32"
+              viewBox="0 0 32 32"
+              style={{ backgroundColor: 'transparent' }}
+            >
+              <IconComponent color={location.color || '#2563eb'} size={32} />
+            </svg>
+          );
+
+          // Create a data URL
+          const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`;
+
+          // Set the cursor directly
+          container.style.cursor = `url("${dataUrl}") 16 16, move`;
+        } catch (error) {
+          console.error('Error setting custom cursor:', error);
+          // Keep the move cursor if custom cursor fails
+          container.style.cursor = 'move';
+        }
+      }
+    },
+    []
+  );
 
   // Add a visual indicator for move mode
   useEffect(() => {
@@ -95,7 +96,7 @@ export function useMoveLocation(
       if (parent) {
         parent.classList.add('move-mode');
       }
-      
+
       return () => {
         container.classList.remove('move-mode');
         if (parent) {
@@ -116,36 +117,39 @@ export function useMoveLocation(
   }, []);
 
   // Handle map click when in move mode
-  const handleMapClick = useCallback((e: L.LeafletMouseEvent) => {
-    if (!moveMode || !mapRef.current) return;
-    
-    const { lat, lng } = e.latlng;
-    
-    // Store current move mode and reset it immediately
-    const currentMoveMode = { ...moveMode };
-    resetMoveMode();
-    
-    // Use setTimeout to ensure the move mode is fully reset before updating
-    setTimeout(() => {
-      if (currentMoveMode.isDuplicating && onLocationCreateRef.current) {
-        // Create a new location with a new UUID
-        const newLocation: Location = {
-          ...currentMoveMode.location,
-          id: crypto.randomUUID(),
-          position: [lat, lng] as [number, number],
-          name: `${currentMoveMode.location.name} (Copy)`
-        };
-        onLocationCreateRef.current(newLocation);
-      } else {
-        // Update existing location
-        const updatedLocation = { 
-          ...currentMoveMode.location, 
-          position: [lat, lng] as [number, number] 
-        };
-        onLocationUpdateRef.current(updatedLocation);
-      }
-    }, 0);
-  }, [moveMode, resetMoveMode]);
+  const handleMapClick = useCallback(
+    (e: L.LeafletMouseEvent) => {
+      if (!moveMode || !mapRef.current) return;
+
+      const { lat, lng } = e.latlng;
+
+      // Store current move mode and reset it immediately
+      const currentMoveMode = { ...moveMode };
+      resetMoveMode();
+
+      // Use setTimeout to ensure the move mode is fully reset before updating
+      setTimeout(() => {
+        if (currentMoveMode.isDuplicating && onLocationCreateRef.current) {
+          // Create a new location with a new UUID
+          const newLocation: Location = {
+            ...currentMoveMode.location,
+            id: crypto.randomUUID(),
+            geom: [lat, lng] as [number, number],
+            name: `${currentMoveMode.location.name} (Copy)`,
+          };
+          onLocationCreateRef.current(newLocation);
+        } else {
+          // Update existing location
+          const updatedLocation = {
+            ...currentMoveMode.location,
+            geom: [lat, lng] as [number, number],
+          };
+          onLocationUpdateRef.current(updatedLocation);
+        }
+      }, 0);
+    },
+    [moveMode, resetMoveMode]
+  );
 
   // Add click handler when in move mode
   useEffect(() => {
@@ -193,6 +197,6 @@ export function useMoveLocation(
   return {
     moveMode,
     handleMoveLocation,
-    resetMoveMode
+    resetMoveMode,
   };
-} 
+}

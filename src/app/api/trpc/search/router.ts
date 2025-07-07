@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
-import { getDatabase, getElementsAtYear, locationFromRow, regionFromRow } from '@/database';
+import {
+  getDatabase,
+  getElementsAtYear,
+  locationFromRow,
+  regionFromRow,
+} from '@/database';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
 
@@ -22,34 +27,34 @@ export const searchRouter = router({
     .query(async ({ input }) => {
       const db = await getDatabase();
       const client = await db.connect();
-      
+
       try {
         const searchQuery = input.query?.trim() || '';
         const year = input.year || 2024;
         const limit = input.limit;
-        
+
         // If no query, return all elements for the year using existing functions
         if (!searchQuery) {
           const [locations, regions] = await Promise.all([
             getElementsAtYear(client, 'locations', year, locationFromRow),
-            getElementsAtYear(client, 'regions', year, regionFromRow)
+            getElementsAtYear(client, 'regions', year, regionFromRow),
           ]);
-          
+
           // Convert to SearchResult format using existing types
           const allResults: SearchResult[] = [
             ...locations.map(location => ({
               ...location,
-              relevance: 0
+              relevance: 0,
             })),
             ...regions.map(region => ({
               ...region,
-              relevance: 0
-            }))
+              relevance: 0,
+            })),
           ];
-          
+
           return allResults.slice(0, limit);
         }
-        
+
         // Use PostgreSQL's trigram similarity for fuzzy search
         const locationsQuery = `
           SELECT *, 
@@ -68,7 +73,7 @@ export const searchRouter = router({
           ORDER BY relevance DESC, name ASC
           LIMIT $3
         `;
-        
+
         const regionsQuery = `
           SELECT *, 
             GREATEST(
@@ -86,33 +91,34 @@ export const searchRouter = router({
           ORDER BY relevance DESC, name ASC
           LIMIT $3
         `;
-        
+
         const [locationsResult, regionsResult] = await Promise.all([
           client.query(locationsQuery, [year, searchQuery, limit]),
-          client.query(regionsQuery, [year, searchQuery, limit])
+          client.query(regionsQuery, [year, searchQuery, limit]),
         ]);
-        
+
         // Convert results using existing functions
         const locations = locationsResult.rows
           .map(locationFromRow)
           .map(location => ({
             ...location,
-            relevance: Math.round(locationsResult.rows.find(row => row.id === location.id)?.relevance * 100)
+            relevance: Math.round(
+              locationsResult.rows.find(row => row.id === location.id)
+                ?.relevance * 100
+            ),
           }));
-        
-        const regions = regionsResult.rows
-          .map(regionFromRow)
-          .map(region => ({
-            ...region,
-            relevance: Math.round(regionsResult.rows.find(row => row.id === region.id)?.relevance * 100)
-          }));
-        
+
+        const regions = regionsResult.rows.map(regionFromRow).map(region => ({
+          ...region,
+          relevance: Math.round(
+            regionsResult.rows.find(row => row.id === region.id)?.relevance *
+              100
+          ),
+        }));
+
         // Combine results using existing types
-        const allResults: SearchResult[] = [
-          ...locations,
-          ...regions
-        ];
-        
+        const allResults: SearchResult[] = [...locations, ...regions];
+
         // Sort by relevance (highest first), then by name
         allResults.sort((a, b) => {
           if (b.relevance !== a.relevance) {
@@ -120,11 +126,11 @@ export const searchRouter = router({
           }
           return (a.name || '').localeCompare(b.name || '');
         });
-        
+
         // Apply limit
         return allResults.slice(0, limit);
       } finally {
         client.release();
       }
     }),
-}); 
+});

@@ -39,7 +39,10 @@ const Dropdown: React.FC<DropdownProps> = ({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -86,13 +89,17 @@ const Dropdown: React.FC<DropdownProps> = ({
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
-        onMouseDown={e => { e.preventDefault(); toggleDropdown(); }}
+        onMouseDown={e => {
+          e.preventDefault();
+          toggleDropdown();
+        }}
         disabled={disabled}
         className={`
           flex items-center justify-center gap-1 px-2 py-1 rounded transition-colors
-          ${disabled 
-            ? 'opacity-50 cursor-not-allowed' 
-            : 'hover:bg-gray-200 active:bg-gray-300'
+          ${
+            disabled
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:bg-gray-200 active:bg-gray-300'
           }
           ${buttonClassName}
         `}
@@ -101,10 +108,8 @@ const Dropdown: React.FC<DropdownProps> = ({
         aria-haspopup="listbox"
       >
         {/* Icon */}
-        <span className="flex items-center justify-center">
-          {icon}
-        </span>
-        
+        <span className="flex items-center justify-center">{icon}</span>
+
         {/* Dropdown arrow */}
         <svg
           width="12"
@@ -123,7 +128,7 @@ const Dropdown: React.FC<DropdownProps> = ({
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div 
+        <div
           className={`
             absolute left-0 top-full mt-1 z-50 overflow-hidden
             bg-[#222] text-white border border-[#444] rounded-lg shadow-xl whitespace-nowrap
@@ -132,15 +137,13 @@ const Dropdown: React.FC<DropdownProps> = ({
           role="listbox"
           style={{ minWidth: 'max-content' }}
         >
-          <div 
-            style={{ maxHeight, overflowY: 'scroll' }}
-          >
+          <div style={{ maxHeight, overflowY: 'scroll' }}>
             {options.length === 0 ? (
               <div className="px-3 py-2 text-gray-400 text-sm">
                 No options available
               </div>
             ) : (
-              options.map((option) => {
+              options.map(option => {
                 const isSelected = selected === option.value;
                 return (
                   <button
@@ -155,7 +158,11 @@ const Dropdown: React.FC<DropdownProps> = ({
                     `}
                     role="option"
                     aria-selected={isSelected}
-                    style={{ border: 'none', borderRadius: 0, background: 'none' }}
+                    style={{
+                      border: 'none',
+                      borderRadius: 0,
+                      background: 'none',
+                    }}
                   >
                     {option.label}
                   </button>

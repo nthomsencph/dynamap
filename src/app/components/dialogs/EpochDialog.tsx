@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useTimelineContext } from '@/app/contexts/TimelineContext';
 import type { TimelineEpoch } from '@/types/timeline';
@@ -15,11 +15,17 @@ interface EpochDialogProps {
   onClose: () => void;
 }
 
-export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) {
-  const { createEpoch, updateEpoch, currentYear, fetchTimeline } = useTimelineContext();
+export function EpochDialog({
+  isOpen,
+  mode,
+  epoch,
+  onClose,
+}: EpochDialogProps) {
+  const { createEpoch, updateEpoch, currentYear, fetchTimeline } =
+    useTimelineContext();
   const { locations, regions } = useMapElementsByYear(currentYear);
   const { width, handleMouseDown } = usePanelWidth();
-  
+
   const [name, setName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [startYear, setStartYear] = useState<number>(currentYear);
@@ -78,7 +84,7 @@ export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) 
         yearSuffix,
         restartAtZero,
         showEndDate,
-        reverseYears
+        reverseYears,
       };
 
       if (mode === 'create') {
@@ -86,7 +92,7 @@ export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) 
       } else if (epoch) {
         await updateEpoch(epoch.id, epochData);
       }
-      
+
       await fetchTimeline();
       onClose();
     } catch (error) {
@@ -101,7 +107,7 @@ export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) 
   return (
     <>
       {/* Backdrop to prevent clicks from reaching TimelineSlider */}
-      <div 
+      <div
         style={{
           position: 'fixed',
           top: 0,
@@ -109,19 +115,19 @@ export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) 
           right: 0,
           bottom: 0,
           zIndex: 10003,
-          background: 'transparent'
+          background: 'transparent',
         }}
         onClick={onClose}
       />
       <div
         className="sidepanel"
-        style={{ 
+        style={{
           width,
           background: 'rgba(0,0,0,0.9)', // Permanent hover background
-          zIndex: 10004 // Higher than TimelineSlider (10002)
+          zIndex: 10004, // Higher than TimelineSlider (10002)
         }}
         data-testid="timeline-epoch-dialog"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div className="sidepanel-drag-handle" onMouseDown={handleMouseDown} />
         <div className="sidepanel-header">
@@ -130,10 +136,17 @@ export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) 
               {mode === 'create' ? 'Create Epoch' : 'Edit Epoch'}
             </h2>
             <p className="text-sm text-gray-400 mt-1">
-              {mode === 'create' ? 'Define a new time period' : `Editing: ${epoch?.name}`}
+              {mode === 'create'
+                ? 'Define a new time period'
+                : `Editing: ${epoch?.name}`}
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-200 text-xl ml-4">×</button>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-200 text-xl ml-4"
+          >
+            ×
+          </button>
         </div>
         <div className="sidepanel-content flex-1 overflow-y-auto px-4 py-4 space-y-4">
           <div>
@@ -154,11 +167,11 @@ export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) 
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Description
             </label>
-            <DescriptionEditor 
-              value={description} 
-              onChange={setDescription} 
-              elements={[...locations, ...regions]} 
-              rows={6} 
+            <DescriptionEditor
+              value={description}
+              onChange={setDescription}
+              elements={[...locations, ...regions]}
+              rows={6}
             />
           </div>
 
@@ -256,10 +269,10 @@ export function EpochDialog({ isOpen, mode, epoch, onClose }: EpochDialogProps) 
             className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1 rounded"
             disabled={saving || !name.trim() || startYear >= endYear}
           >
-            {saving ? 'Saving...' : (mode === 'create' ? 'Create' : 'Save')}
+            {saving ? 'Saving...' : mode === 'create' ? 'Create' : 'Save'}
           </button>
         </div>
       </div>
     </>
   );
-} 
+}

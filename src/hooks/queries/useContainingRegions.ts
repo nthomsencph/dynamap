@@ -35,4 +35,4 @@ export function useContainingRegions(element: Location | Region | null) {
       refetch: () => Promise.resolve(),
     };
   }
-} 
+}

@@ -24,12 +24,12 @@ export function usePolygonDraw(
 ) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentTool, setCurrentTool] = useState<DrawingTool>('polygon');
-  
+
   // Use refs to avoid dependency issues
   const onCompleteRef = useRef(onComplete);
   const drawControlRef = useRef<DrawControl | null>(null);
   const featureGroupRef = useRef<L.FeatureGroup | null>(null);
-  
+
   onCompleteRef.current = onComplete;
 
   // Cleanup function - more Leaflet-native approach
@@ -37,7 +37,7 @@ export function usePolygonDraw(
     const map = mapRef.current;
     const drawControl = drawControlRef.current;
     const featureGroup = featureGroupRef.current;
-    
+
     if (!map) return;
 
     // Remove draw control if it exists
@@ -95,15 +95,15 @@ export function usePolygonDraw(
           allowIntersection: false,
           drawError: {
             color: '#e1e4e8',
-            timeout: 2500
+            timeout: 2500,
           },
-          shapeOptions
+          shapeOptions,
         },
         polyline: { shapeOptions },
         rectangle: { shapeOptions },
         circle: { shapeOptions },
         marker: false,
-        circlemarker: false
+        circlemarker: false,
       };
 
       // Create draw control with all tools
@@ -112,8 +112,8 @@ export function usePolygonDraw(
         draw: drawOptions,
         edit: {
           featureGroup,
-          remove: false
-        }
+          remove: false,
+        },
       }) as DrawControl;
 
       // Add draw control to map
@@ -128,9 +128,11 @@ export function usePolygonDraw(
       const handleDrawCreated = (e: L.LeafletEvent) => {
         const layer = (e as any).layer;
         const layerType = (e as any).layerType;
-        
+
         // Only handle supported layer types
-        if (!['polygon', 'circle', 'rectangle', 'polyline'].includes(layerType)) {
+        if (
+          !['polygon', 'circle', 'rectangle', 'polyline'].includes(layerType)
+        ) {
           return;
         }
 
@@ -139,8 +141,12 @@ export function usePolygonDraw(
 
           switch (layerType) {
             case 'polygon':
-              const latlngs = (layer as L.Polygon).getLatLngs()[0] as L.LatLng[];
-              const points = latlngs.map(latlng => [latlng.lat, latlng.lng] as [number, number]);
+              const latlngs = (
+                layer as L.Polygon
+              ).getLatLngs()[0] as L.LatLng[];
+              const points = latlngs.map(
+                latlng => [latlng.lat, latlng.lng] as [number, number]
+              );
               result = { type: 'polygon', points };
               break;
             case 'circle': {
@@ -164,29 +170,35 @@ export function usePolygonDraw(
               const bounds = rectangle.getBounds();
               const rectPoints: [number, number][] = [
                 [bounds.getSouthWest().lat, bounds.getSouthWest().lng],
-                [bounds.getNorthEast().lat, bounds.getNorthEast().lng]
+                [bounds.getNorthEast().lat, bounds.getNorthEast().lng],
               ];
-              result = { type: 'rectangle', points: rectPoints, bounds: [rectPoints[0], rectPoints[1]] };
+              result = {
+                type: 'rectangle',
+                points: rectPoints,
+                bounds: [rectPoints[0], rectPoints[1]],
+              };
               break;
             case 'polyline':
               const polyline = layer as L.Polyline;
               const polylineLatlngs = polyline.getLatLngs() as L.LatLng[];
-              const polylinePoints = polylineLatlngs.map(latlng => [latlng.lat, latlng.lng] as [number, number]);
+              const polylinePoints = polylineLatlngs.map(
+                latlng => [latlng.lat, latlng.lng] as [number, number]
+              );
               result = { type: 'polyline', points: polylinePoints };
               break;
             default:
               return;
           }
-          
+
           // Remove the drawn layer from the feature group
           const featureGroup = featureGroupRef.current;
           if (featureGroup) {
             featureGroup.removeLayer(layer);
           }
-          
+
           // Call onComplete with the result - this should open the RegionDialog
           onCompleteRef.current(result);
-          
+
           // Clean up the drawing mode after calling onComplete
           cleanupDrawControl();
         } catch (error) {
@@ -211,15 +223,16 @@ export function usePolygonDraw(
   // Stop drawing mode
   const stopDrawing = useCallback(() => {
     const map = mapRef.current;
-    
+
     // Remove event listeners if they exist
     if (map && (map as any)._drawEventHandlers) {
-      const { handleDrawCreated, handleDrawStop } = (map as any)._drawEventHandlers;
+      const { handleDrawCreated, handleDrawStop } = (map as any)
+        ._drawEventHandlers;
       map.off('draw:created', handleDrawCreated);
       map.off('draw:drawstop', handleDrawStop);
       delete (map as any)._drawEventHandlers;
     }
-    
+
     cleanupDrawControl();
   }, [cleanupDrawControl]);
 
@@ -229,4 +242,4 @@ export function usePolygonDraw(
     startDrawing,
     stopDrawing,
   };
-} 
+}

@@ -5,6 +5,7 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
 ## 🚀 Features
 
 ### Core Functionality
+
 - **Interactive Map Interface**: Built with Leaflet and react-leaflet for smooth, responsive map interactions
 - **Custom Map Background**: Support for custom map images with flexible sizing and positioning options
 - **Location Management**: Create, edit, and delete point locations with custom icons and colors
@@ -14,8 +15,9 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
 - **Type System**: Categorize locations and regions with free-form types (Cities, Kingdoms, Forests, etc.)
 
 ### Map Settings & Customization
+
 - **General Settings Panel**: Comprehensive settings interface accessible via the settings button
-- **Map Image Controls**: 
+- **Map Image Controls**:
   - Upload custom map images via file upload
   - Set map images from URLs
   - Choose from image gallery
@@ -34,7 +36,7 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
   - Show/hide toggle for map name visibility
   - Position options: Center (with fade on zoom), corners
   - Smooth fade animation on zoom level changes
-- **Edit Mode Toggle**: 
+- **Edit Mode Toggle**:
   - Enable/disable editing capabilities
   - When disabled, context menus are completely disabled
   - Perfect for presentation mode or view-only access
@@ -45,6 +47,7 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
   - Maintains UI cleanliness at different zoom levels
 
 ### Advanced Features
+
 - **Dynamic Font Sizing**: Region labels automatically scale based on polygon area
 - **Mention System**: Link locations and regions within descriptions using @mentions
 - **Prominence System**: Advanced visibility-based system with prominence ranges (lower/upper bounds)
@@ -57,7 +60,20 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
 - **Icon Gallery**: Extensive collection of themed icons (castles, dungeons, landmarks, etc.)
 - **Search Functionality**: Full-text search across locations and regions with relevance scoring
 
+### PostGIS Spatial Features
+
+- **Unified Geometry Storage**: Single PostGIS geometry column replaces separate position columns
+- **Spatial Indexing**: GIST indexes for fast spatial queries on locations and regions
+- **Area Calculations**: Accurate polygon area calculations using PostGIS ST_Area()
+- **Spatial Containment**: Efficient point-in-polygon and polygon-in-polygon queries
+- **Spatial Relationships**: Find parent regions, child regions, and contained locations
+- **Centroid Calculations**: Precise polygon center calculations using PostGIS ST_Centroid()
+- **Performance Optimization**: Database-level spatial operations for better performance
+- **Reduced Storage**: Eliminates duplicate position data by using only PostGIS geometry
+- **Fallback Support**: Manual calculations as fallback when PostGIS is unavailable
+
 ### Timeline System
+
 - **Interactive Timeline Navigation**: Comprehensive timeline system for managing map states across different years
 - **Timeline Slider**: Compact, minimalistic timeline interface with smooth navigation controls
 - **Year-based Navigation**: Navigate between specific years with precise year selection
@@ -68,6 +84,7 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
 - **Creation Year Tracking**: Elements are only visible after their creation year
 
 ### Label System
+
 - **Label Collision Strategies**: Three strategies for handling overlapping labels:
   - `None`: Show label regardless of overlap (default)
   - `Hide`: Hide this label if it overlaps with another
@@ -76,6 +93,7 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
 - **Custom Label Offsets**: Adjustable distance between element and label
 
 ### Prominence System
+
 - **Prominence Ranges**: Elements use lower and upper prominence bounds instead of single values
 - **Flexible Visibility**: Set minimum and maximum zoom levels for element visibility
 - **Real-time Prominence Display**: Current prominence level shown on map
@@ -90,7 +108,7 @@ A dynamic, interactive map application built with Next.js and Leaflet that allow
 - **Icons**: React Icons 5.5.0 and Lucide React 0.513.0
 - **Type Safety**: TypeScript 5
 - **API**: tRPC 11.4.3 for type-safe API communication
-- **Database**: PostgreSQL with pg driver
+- **Database**: PostgreSQL with PostGIS spatial extension
 - **State Management**: Zustand for UI state, React Query for server state
 - **UI Components**: Custom components with Floating UI for tooltips
 - **Notifications**: React Toastify for user feedback
@@ -130,34 +148,38 @@ dynamap/
 
 ### Prerequisites
 
-- Node.js 18+ 
-- PostgreSQL 14+
+- Node.js 18+
+- PostgreSQL 14+ with PostGIS extension
 - npm or yarn
 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd dynamap
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up PostgreSQL database**
+
    ```bash
    # Create the database
    createdb -U postgres dynamap
-   
+
    # Set up database schema
    npm run setup-db
    ```
 
 4. **Configure environment variables**
    Create a `.env.local` file in the root directory:
+
    ```env
    DB_USER=postgres
    DB_HOST=localhost
@@ -166,12 +188,14 @@ dynamap/
    DB_PORT=5432
    ```
 
-5. **Run database migrations**
+5. **Set up database with PostGIS**
+
    ```bash
-   npm run migrate
+   npm run setup-postgis
    ```
 
 6. **Start the development server**
+
    ```bash
    npm run dev
    ```
@@ -185,14 +209,16 @@ dynamap/
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
-- `npm run setup-db` - Set up PostgreSQL database schema
-- `npm run migrate` - Run database migrations
+- `npm run setup-db` - Set up PostgreSQL database schema (legacy)
+- `npm run setup-postgis` - Set up database with PostGIS geometry columns (recommended)
+- `npm run migrate-postgis` - Migrate existing data to PostGIS (legacy)
 
 ### PostgreSQL Service Management
 
 PostgreSQL runs as a background service. You can manage it based on your workflow:
 
 **Option 1: Keep PostgreSQL Running (Recommended for frequent development)**
+
 - PostgreSQL will start automatically with your system
 - No need to start/stop when working on the project
 - Uses minimal resources when idle (~50-100MB)
@@ -200,6 +226,7 @@ PostgreSQL runs as a background service. You can manage it based on your workflo
 **Option 2: Start/Stop PostgreSQL as Needed (Recommended for memory-conscious users)**
 
 When starting work:
+
 ```bash
 # Start PostgreSQL
 brew services start postgresql@14
@@ -209,6 +236,7 @@ npm run dev
 ```
 
 When stopping work:
+
 ```bash
 # Stop your development server (Ctrl+C)
 # Stop PostgreSQL
@@ -216,11 +244,12 @@ brew services stop postgresql@14
 ```
 
 **Useful PostgreSQL Commands:**
+
 ```bash
 # Start PostgreSQL
 brew services start postgresql@14
 
-# Stop PostgreSQL  
+# Stop PostgreSQL
 brew services stop postgresql@14
 
 # Check status
@@ -237,7 +266,7 @@ brew services restart postgresql@14
 The application uses PostgreSQL with the following main tables:
 
 - **locations** - Point locations on the map
-- **regions** - Polygon regions on the map  
+- **regions** - Polygon regions on the map
 - **timeline_entries** - Timeline entries for each year
 - **timeline_changes** - Progressive changes between years
 - **epochs** - Time periods/eras

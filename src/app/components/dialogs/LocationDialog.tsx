@@ -11,15 +11,15 @@ interface ExtendedLocationDialogProps extends LocationDialogProps {
   onPreviewChange?: (previewElement: Partial<Location>) => void;
 }
 
-export function LocationDialog({ 
-  open, 
-  mode, 
-  location, 
-  onSave, 
-  onDelete, 
+export function LocationDialog({
+  open,
+  mode,
+  location,
+  onSave,
+  onDelete,
   onClose,
   mapRef,
-  onPreviewChange
+  onPreviewChange,
 }: ExtendedLocationDialogProps) {
   const validateForm = (form: Partial<Location>): string | null => {
     // Check required text fields
@@ -29,7 +29,7 @@ export function LocationDialog({
     if (!form.type?.toString().trim()) {
       return 'Type is required';
     }
-    if (!form.position) {
+    if (!form.geom) {
       return 'Position is required';
     }
     return null;
@@ -48,16 +48,21 @@ export function LocationDialog({
       typeCategory="locations"
       validateForm={validateForm}
       stylingFields={{
-        fields: [{
-          id: 'iconSize',
-          label: 'Icon size',
-          type: 'range',
-          min: 1,
-          max: 24,
-          defaultValue: DEFAULT_ICON_SIZE,
-          getValue: (element) => element?.iconSize || DEFAULT_ICON_SIZE,
-          onChange: (element, value) => ({ ...element, iconSize: value as number })
-        }]
+        fields: [
+          {
+            id: 'iconSize',
+            label: 'Icon size',
+            type: 'range',
+            min: 1,
+            max: 24,
+            defaultValue: DEFAULT_ICON_SIZE,
+            getValue: element => element?.iconSize || DEFAULT_ICON_SIZE,
+            onChange: (element, value) => ({
+              ...element,
+              iconSize: value as number,
+            }),
+          },
+        ],
       }}
       mapRef={mapRef}
       onPreviewChange={onPreviewChange}

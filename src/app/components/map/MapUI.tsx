@@ -11,18 +11,22 @@ interface MapUIProps {
   isDrawing: boolean;
   currentTool: DrawingTool;
   onDrawingCancel: () => void;
-  
+
   // Settings
   showSettings: boolean;
   onOpenSettings: () => void;
   onCloseSettings: () => void;
-  
+
   // Timeline
   currentZoom: number;
   fitZoom: number;
   showTimelineWhenZoomed: boolean;
   showSettingsWhenZoomed: boolean;
-  onTimelineContextMenu: (e: React.MouseEvent, type: 'note' | 'epoch', element?: TimelineNote | TimelineEpoch) => void;
+  onTimelineContextMenu: (
+    e: React.MouseEvent,
+    type: 'note' | 'epoch',
+    element?: TimelineNote | TimelineEpoch
+  ) => void;
   onOpenEpochDialog: (epoch: TimelineEpoch) => void;
   onOpenNoteDialog: (note: TimelineNote, year: number) => void;
 }
@@ -40,7 +44,7 @@ export function MapUI({
   showSettingsWhenZoomed,
   onTimelineContextMenu,
   onOpenEpochDialog,
-  onOpenNoteDialog
+  onOpenNoteDialog,
 }: MapUIProps) {
   return (
     <>
@@ -64,8 +68,8 @@ export function MapUI({
 
       {/* Timeline Button - Show based on zoom settings */}
       {(currentZoom === fitZoom || showTimelineWhenZoomed) && (
-        <TimelineIcon 
-          onOpenSettings={onOpenSettings} 
+        <TimelineIcon
+          onOpenSettings={onOpenSettings}
           onContextMenu={onTimelineContextMenu}
           onOpenEpochDialog={onOpenEpochDialog}
           onOpenNoteDialog={onOpenNoteDialog}
@@ -73,9 +77,7 @@ export function MapUI({
       )}
 
       {/* Settings Dialog */}
-      {showSettings && (
-        <GeneralSettingsDialog onClose={onCloseSettings} />
-      )}
+      {showSettings && <GeneralSettingsDialog onClose={onCloseSettings} />}
     </>
   );
-} 
+}

@@ -78,11 +78,11 @@
   .drawing-mode-content {
     padding: 10px 16px;
   }
-  
+
   .drawing-mode-title {
     font-size: 16px;
   }
-  
+
   .drawing-mode-description {
     font-size: 13px;
   }
@@ -101,7 +101,7 @@
   border-radius: 16px;
   font-size: 15px;
   font-weight: 500;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   pointer-events: none;
   opacity: 0.96;
 }
@@ -113,4 +113,4 @@
 .drawing-mode-title { ... }
 .drawing-mode-description { ... }
 .drawing-mode-cancel { ... }
-*/ 
+*/

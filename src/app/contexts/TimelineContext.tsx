@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React, { createContext, useContext, ReactNode, useState } from 'react';
 import { trpc } from '@/trpc';
 import type { TimelineEntry, TimelineEpoch } from '@/types/timeline';
@@ -27,13 +27,19 @@ interface TimelineContextType {
   fetchTimeline: () => Promise<void>;
 }
 
-const TimelineContext = createContext<TimelineContextType | undefined>(undefined);
+const TimelineContext = createContext<TimelineContextType | undefined>(
+  undefined
+);
 
 export function TimelineProvider({ children }: { children: ReactNode }) {
   const [currentYear, setCurrentYear] = useState(0);
-  
+
   // Use tRPC queries
-  const { data: timelineData, isLoading, error } = trpc.timeline.getAll.useQuery();
+  const {
+    data: timelineData,
+    isLoading,
+    error,
+  } = trpc.timeline.getAll.useQuery();
   const utils = trpc.useUtils();
 
   const entries = timelineData?.entries || [];
@@ -42,11 +48,11 @@ export function TimelineProvider({ children }: { children: ReactNode }) {
   // Calculate year range
   const yearRange = React.useMemo(() => {
     if (entries.length === 0) return { min: 0, max: 0 };
-    
+
     const years = entries.map(entry => entry.year);
     return {
       min: Math.min(...years),
-      max: Math.max(...years)
+      max: Math.max(...years),
     };
   }, [entries]);
 
@@ -56,8 +62,8 @@ export function TimelineProvider({ children }: { children: ReactNode }) {
   }, [entries, currentYear]);
 
   const currentEpoch = React.useMemo(() => {
-    return epochs.find(epoch => 
-      currentYear >= epoch.startYear && currentYear <= epoch.endYear
+    return epochs.find(
+      epoch => currentYear >= epoch.startYear && currentYear <= epoch.endYear
     );
   }, [epochs, currentYear]);
 
@@ -71,7 +77,9 @@ export function TimelineProvider({ children }: { children: ReactNode }) {
   };
 
   const getEntriesForYearRange = (fromYear: number, toYear: number) => {
-    return entries.filter(entry => entry.year >= fromYear && entry.year <= toYear);
+    return entries.filter(
+      entry => entry.year >= fromYear && entry.year <= toYear
+    );
   };
 
   const isYearInTimeline = (year: number) => {
@@ -131,7 +139,7 @@ export function TimelineProvider({ children }: { children: ReactNode }) {
     if (!currentEntry) {
       throw new Error('Timeline entry not found');
     }
-    
+
     return updateEntryMutation.mutateAsync({
       ...currentEntry,
       ...updates,
@@ -196,7 +204,9 @@ export function TimelineProvider({ children }: { children: ReactNode }) {
 export function useTimelineContext() {
   const context = useContext(TimelineContext);
   if (context === undefined) {
-    throw new Error('useTimelineContext must be used within a TimelineProvider');
+    throw new Error(
+      'useTimelineContext must be used within a TimelineProvider'
+    );
   }
   return context;
-} 
+}

@@ -6,7 +6,11 @@ import L from 'leaflet';
  * @param position [lat, lng] array
  * @param zoom Optional zoom level
  */
-export function flyToLocation(map: L.Map, position: [number, number], zoom?: number) {
+export function flyToLocation(
+  map: L.Map,
+  position: [number, number],
+  zoom?: number
+) {
   if (!map) return;
   // Use panTo instead of flyTo to avoid zoom changes in simple CRS maps
   map.panTo(L.latLng(position[0], position[1]), {
@@ -32,7 +36,12 @@ export function getMapCenter(map: L.Map): [number, number] {
  * @param panelWidthPx Width of the side panel in pixels
  * @param zoom Optional zoom level
  */
-export function flyToLocationWithPanel(map: L.Map, position: [number, number], panelWidthPx: number, zoom?: number) {
+export function flyToLocationWithPanel(
+  map: L.Map,
+  position: [number, number],
+  panelWidthPx: number,
+  zoom?: number
+) {
   if (!map) return;
   const mapSize = map.getSize();
   const point = map.latLngToContainerPoint(L.latLng(position[0], position[1]));
@@ -46,10 +55,10 @@ export function flyToLocationWithPanel(map: L.Map, position: [number, number], p
   // Move the location's point by this offset
   const newPoint = L.point(point.x + offsetX, point.y + offsetY);
   const newLatLng = map.containerPointToLatLng(newPoint);
-  
+
   // Use panTo instead of flyTo to avoid zoom changes in simple CRS maps
   map.panTo(newLatLng, {
     animate: true,
     duration: 0.7,
   });
-} 
+}

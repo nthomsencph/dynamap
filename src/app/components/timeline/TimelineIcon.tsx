@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React, { useState } from 'react';
 import { FaTimeline } from 'react-icons/fa6';
 import { TimelineSlider } from './TimelineController';
@@ -8,15 +8,26 @@ import { useSettings } from '@/hooks/useSettings';
 import type { TimelineEpoch, TimelineNote } from '@/types/timeline';
 import '@/css/map-ui.css';
 
-export function TimelineIcon({ onOpenSettings, onContextMenu, onOpenEpochDialog, onOpenNoteDialog }: { 
+export function TimelineIcon({
+  onOpenSettings,
+  onContextMenu,
+  onOpenEpochDialog,
+  onOpenNoteDialog,
+}: {
   onOpenSettings?: () => void;
-  onContextMenu?: (e: React.MouseEvent, type: 'note' | 'epoch', element?: TimelineNote | TimelineEpoch) => void;
+  onContextMenu?: (
+    e: React.MouseEvent,
+    type: 'note' | 'epoch',
+    element?: TimelineNote | TimelineEpoch
+  ) => void;
   onOpenEpochDialog?: (epoch: TimelineEpoch) => void;
   onOpenNoteDialog?: (note: TimelineNote, year: number) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [isEpochPanelOpen, setIsEpochPanelOpen] = useState(false);
-  const [selectedEpoch, setSelectedEpoch] = useState<TimelineEpoch | null>(null);
+  const [selectedEpoch, setSelectedEpoch] = useState<TimelineEpoch | null>(
+    null
+  );
   const { currentEpoch } = useTimelineContext();
   const { settings } = useSettings();
   const { showTimeline = true } = settings || {};
@@ -41,7 +52,7 @@ export function TimelineIcon({ onOpenSettings, onContextMenu, onOpenEpochDialog,
     <>
       {/* Floating Icon Button */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(v => !v)}
         className="timeline-fab"
         title="Timeline"
         aria-label="Open timeline"
@@ -51,7 +62,7 @@ export function TimelineIcon({ onOpenSettings, onContextMenu, onOpenEpochDialog,
 
       {/* Timeline Slider Panel */}
       {open && (
-        <TimelineSlider 
+        <TimelineSlider
           onClose={() => setOpen(false)}
           onEpochClick={handleEpochClick}
           onOpenSettings={onOpenSettings}
@@ -71,4 +82,4 @@ export function TimelineIcon({ onOpenSettings, onContextMenu, onOpenEpochDialog,
       )}
     </>
   );
-} 
+}

@@ -12,14 +12,24 @@ import { usePanelStack } from '@/app/contexts/PanelStackContext';
 import { calculateDisplayYear } from '@/app/utils/timeline';
 import { toast } from 'react-toastify';
 import { useContainingRegions } from '@/hooks/queries/useContainingRegions';
+import Image from 'next/image';
 
 // Helper function to find locations within a region
-export const findLocationsInRegion = (locations: MapElement[], region: MapElement) =>
-  Array.isArray(region.position) 
-    ? locations.filter(loc => pointInPolygon(loc.position as [number, number], region.position as [number, number][]))
-    : [];
+export const findLocationsInRegion = (
+  locations: MapElement[],
+  region: MapElement
+) => {
+  if (region.elementType !== 'region') return [];
 
+  const regionGeom = (region as any).geom as [number, number][];
+  if (!Array.isArray(regionGeom)) return [];
 
+  return locations.filter(loc => {
+    if (loc.elementType !== 'location') return false;
+    const locGeom = (loc as any).geom as [number, number];
+    return pointInPolygon(locGeom, regionGeom);
+  });
+};
 
 export interface BasePanelProps {
   element: MapElement;
@@ -30,42 +40,50 @@ export interface BasePanelProps {
   children?: ReactNode;
 }
 
-export function BasePanel({ 
-  element, 
-  onClose, 
-  onBack, 
+export function BasePanel({
+  element,
+  onClose,
+  onBack,
   className = '',
   contentClassName = '',
-  children
+  children,
 }: BasePanelProps) {
   const { currentYear, currentEpoch } = useTimelineContext();
   const { pushPanel } = usePanelStack();
   const { locations, regions } = useMapElementsByYear(currentYear);
   const locationsRef = useRef(locations);
   const regionsRef = useRef(regions);
-  
+
   // Get containing regions using the hook
-  const { data: containingRegions = [] } = useContainingRegions(element as Location | Region);
-  
+  const { data: containingRegions = [] } = useContainingRegions(
+    element as Location | Region
+  );
+
   // Create navigation handlers using panel stack context
-  const handleLocationClick = useCallback((location: MapElement) => {
-    pushPanel({
-      id: location.id,
-      elementType: 'location',
-      element: location as Location,
-      metadata: {}
-    });
-  }, [pushPanel]);
-  
-  const handleRegionClick = useCallback((region: MapElement) => {
-    pushPanel({
-      id: region.id,
-      elementType: 'region',
-      element: region as Region,
-      metadata: {}
-    });
-  }, [pushPanel]);
-  
+  const handleLocationClick = useCallback(
+    (location: MapElement) => {
+      pushPanel({
+        id: location.id,
+        elementType: 'location',
+        element: location as Location,
+        metadata: {},
+      });
+    },
+    [pushPanel]
+  );
+
+  const handleRegionClick = useCallback(
+    (region: MapElement) => {
+      pushPanel({
+        id: region.id,
+        elementType: 'region',
+        element: region as Region,
+        metadata: {},
+      });
+    },
+    [pushPanel]
+  );
+
   // Panel width management
   const { width, handleMouseDown } = usePanelWidth();
 
@@ -76,41 +94,50 @@ export function BasePanel({
   }, [locations, regions]);
 
   // Handle click on a mention
-  const handleMentionClick = (e: Event) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleMentionClick = useCallback(
+    (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-    const target = e.target as HTMLElement;
-    const mentionId = target.getAttribute('data-id');
-    const mentionName = target.getAttribute('data-name');
-    const mentionType = target.getAttribute('data-element-type');
-    if (!mentionId || !mentionName) return;
+      const target = e.target as HTMLElement;
+      const mentionId = target.getAttribute('data-id');
+      const mentionName = target.getAttribute('data-name');
+      const mentionType = target.getAttribute('data-element-type');
+      if (!mentionId || !mentionName) return;
 
-    const element = mentionType === 'region' 
-      ? regionsRef.current.find(r => r.id === mentionId)
-      : locationsRef.current.find(l => l.id === mentionId);
+      const element =
+        mentionType === 'region'
+          ? regionsRef.current.find(r => r.id === mentionId)
+          : locationsRef.current.find(l => l.id === mentionId);
 
-    if (element) {
-      mentionType === 'region' ? handleRegionClick(element) : handleLocationClick(element);
-    } else {
-      // Element doesn't exist in current year - show tooltip
-      const displayYear = currentEpoch 
-        ? calculateDisplayYear(currentYear, currentEpoch)
-        : currentYear;
-      const yearLabel = currentEpoch 
-        ? `${currentEpoch.yearPrefix || ''} ${displayYear} ${currentEpoch.yearSuffix || ''}`.trim()
-        : displayYear;
-      
-      toast.info(`${mentionName} doesn't exist in the current year (${yearLabel})`, {
-        position: "bottom-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
-    }
-  };
+      if (element) {
+        mentionType === 'region'
+          ? handleRegionClick(element)
+          : handleLocationClick(element);
+      } else {
+        // Element doesn't exist in current year - show tooltip
+        const displayYear = currentEpoch
+          ? calculateDisplayYear(currentYear, currentEpoch)
+          : currentYear;
+        const yearLabel = currentEpoch
+          ? `${currentEpoch.yearPrefix || ''} ${displayYear} ${currentEpoch.yearSuffix || ''}`.trim()
+          : displayYear;
+
+        toast.info(
+          `${mentionName} doesn't exist in the current year (${yearLabel})`,
+          {
+            position: 'bottom-right',
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          }
+        );
+      }
+    },
+    [handleRegionClick, handleLocationClick, currentYear, currentEpoch]
+  );
 
   // Add click handlers to mentions
   useEffect(() => {
@@ -125,7 +152,14 @@ export function BasePanel({
 
     container.addEventListener('click', handleClick);
     return () => container.removeEventListener('click', handleClick);
-  }, [element?.description, handleRegionClick, handleLocationClick, currentYear, currentEpoch]);
+  }, [
+    element?.description,
+    handleRegionClick,
+    handleLocationClick,
+    currentYear,
+    currentEpoch,
+    handleMentionClick,
+  ]);
 
   // Add visual styling for deleted mentions
   useEffect(() => {
@@ -133,15 +167,16 @@ export function BasePanel({
     if (!container || !element?.description) return;
 
     const mentions = container.querySelectorAll('.mention');
-    mentions.forEach((mention) => {
+    mentions.forEach(mention => {
       const mentionId = mention.getAttribute('data-id');
       const mentionType = mention.getAttribute('data-element-type');
-      
+
       if (mentionId) {
-        const elementExists = mentionType === 'region' 
-          ? regionsRef.current.some(r => r.id === mentionId)
-          : locationsRef.current.some(l => l.id === mentionId);
-        
+        const elementExists =
+          mentionType === 'region'
+            ? regionsRef.current.some(r => r.id === mentionId)
+            : locationsRef.current.some(l => l.id === mentionId);
+
         if (!elementExists) {
           mention.classList.add('mention-deleted');
         } else {
@@ -162,8 +197,9 @@ export function BasePanel({
     // Global wheel event handler to prevent map zooming when panels are open
     const handleGlobalWheel = (e: WheelEvent) => {
       const target = e.target as HTMLElement;
-      const isInPanel = target.closest('.sidepanel') || target.closest('.sidepanel-backdrop');
-      
+      const isInPanel =
+        target.closest('.sidepanel') || target.closest('.sidepanel-backdrop');
+
       if (isInPanel) {
         // Check if the target is inside scrollable content
         const scrollableContainer = target.closest('.sidepanel-content');
@@ -176,7 +212,7 @@ export function BasePanel({
             return;
           }
         }
-        
+
         // Prevent the event from bubbling up to the map
         e.stopImmediatePropagation();
         e.preventDefault();
@@ -186,17 +222,22 @@ export function BasePanel({
 
     // Only attach the global listener if it's not already attached
     if (!(document as any).__wheelListenerAttached) {
-      document.addEventListener('wheel', handleGlobalWheel, { passive: false, capture: true });
+      document.addEventListener('wheel', handleGlobalWheel, {
+        passive: false,
+        capture: true,
+      });
       (document as any).__wheelListenerAttached = true;
     }
-    
+
     document.body.style.overflow = 'hidden';
-    
+
     return () => {
       // Only remove the global listener if no panels are left
       const remainingPanels = document.querySelectorAll('.sidepanel');
       if (remainingPanels.length === 0) {
-        document.removeEventListener('wheel', handleGlobalWheel, { capture: true });
+        document.removeEventListener('wheel', handleGlobalWheel, {
+          capture: true,
+        });
         (document as any).__wheelListenerAttached = false;
         document.body.style.overflow = '';
       }
@@ -236,25 +277,24 @@ export function BasePanel({
         <div className="path-pills">
           {pathPills.map((pill, index) => (
             <React.Fragment key={pill.region.id}>
-              <button 
+              <button
                 className="path-pill path-pill--parent"
                 onClick={() => handleRegionClick(pill.region)}
                 title={pill.region.name || 'Unknown'}
               >
                 <span className="path-pill-name">
-                  {(pill.region.name || 'Unknown').length > 12 
-                    ? `${(pill.region.name || 'Unknown').substring(0, 12)}...` 
-                    : (pill.region.name || 'Unknown')
-                  }
+                  {(pill.region.name || 'Unknown').length > 12
+                    ? `${(pill.region.name || 'Unknown').substring(0, 12)}...`
+                    : pill.region.name || 'Unknown'}
                 </span>
               </button>
               <div className="path-separator">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path 
-                    d="M6 4L10 8L6 12" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
+                  <path
+                    d="M6 4L10 8L6 12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 </svg>
@@ -263,10 +303,9 @@ export function BasePanel({
           ))}
           <div className="path-pill path-pill--current">
             <span className="path-pill-name">
-              {(element.name || 'Unknown').length > 15 
-                ? `${(element.name || 'Unknown').substring(0, 15)}...` 
-                : (element.name || 'Unknown')
-              }
+              {(element.name || 'Unknown').length > 15
+                ? `${(element.name || 'Unknown').substring(0, 15)}...`
+                : element.name || 'Unknown'}
             </span>
           </div>
         </div>
@@ -287,37 +326,45 @@ export function BasePanel({
   }, [pathPills]);
 
   return (
-    <div 
-      className={`sidepanel-backdrop`} 
+    <div
+      className={`sidepanel-backdrop`}
       onClick={onClose}
       onWheel={handleBackdropWheel}
     >
-      <div 
-        className={`sidepanel ${className}`} 
+      <div
+        className={`sidepanel ${className}`}
         onClick={e => e.stopPropagation()}
         style={{ width: `${width}px` }}
       >
         {/* Draggable handle */}
-        <div 
+        <div
           className="sidepanel-drag-handle"
           onMouseDown={handleMouseDown}
           style={{ cursor: 'col-resize' }}
         />
-        
+
         <div className={`sidepanel-content ${contentClassName}`}>
-          <div className="sidepanel-topbar" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {onBack && (
+          <div
+            className="sidepanel-topbar"
+            style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+          >
+            {onBack && (
               <div className="sidepanel-header" style={{ marginBottom: 0 }}>
-            <button className="sidepanel-back-button" onClick={onBack}>
-              <IoArrowBack size={22} />
-            </button>
-          </div>
-        )}
+                <button className="sidepanel-back-button" onClick={onBack}>
+                  <IoArrowBack size={22} />
+                </button>
+              </div>
+            )}
             {renderPathPillsSection}
           </div>
-          {element.image && (
+          {typeof element.image === 'string' && (
             <div className="sidepanel-image">
-              <img src={element.image} alt={element.name} />
+              <Image
+                src={element.image || ''}
+                alt={element.name || ''}
+                width={400}
+                height={400}
+              />
             </div>
           )}
 
@@ -326,7 +373,7 @@ export function BasePanel({
             <div className="sidepanel-type">{element.type}</div>
           </div>
 
-          {(Object.keys(element.fields || {}).length > 0) && (
+          {Object.keys(element.fields || {}).length > 0 && (
             <div className="sidepanel-fields">
               <table className="fields-table">
                 <tbody>
@@ -343,7 +390,7 @@ export function BasePanel({
 
           {element.description && (
             <div className="sidepanel-description rich-text-content">
-              <div 
+              <div
                 className="panel-description"
                 dangerouslySetInnerHTML={{ __html: element.description }}
               />
@@ -355,4 +402,4 @@ export function BasePanel({
       </div>
     </div>
   );
-} 
+}

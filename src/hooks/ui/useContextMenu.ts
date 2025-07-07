@@ -54,11 +54,11 @@ export function useContextMenu({
   onEditEpoch,
   onDeleteEpoch,
 }: UseContextMenuProps) {
-  const [menu, setMenu] = useState<ContextMenuState>({ 
-    open: false, 
-    x: 0, 
-    y: 0, 
-    type: 'map' 
+  const [menu, setMenu] = useState<ContextMenuState>({
+    open: false,
+    x: 0,
+    y: 0,
+    type: 'map',
   });
 
   // Use a ref to access the current menu state without causing re-renders
@@ -81,137 +81,168 @@ export function useContextMenu({
   }, []);
 
   // Type-safe handlers for different element types
-  const handleContextMenu = useCallback((e: React.MouseEvent | L.LeafletMouseEvent) => {
-    // Check if any panels are open - if so, prevent context menu
-    if (hasOpenPanels()) {
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent | L.LeafletMouseEvent) => {
+      // Check if any panels are open - if so, prevent context menu
+      if (hasOpenPanels()) {
+        if ('preventDefault' in e) {
+          e.preventDefault();
+        } else if (
+          'originalEvent' in e &&
+          'preventDefault' in e.originalEvent
+        ) {
+          e.originalEvent.preventDefault();
+        }
+        return;
+      }
+
       if ('preventDefault' in e) {
         e.preventDefault();
       } else if ('originalEvent' in e && 'preventDefault' in e.originalEvent) {
         e.originalEvent.preventDefault();
       }
-      return;
-    }
 
-    if ('preventDefault' in e) {
-      e.preventDefault();
-    } else if ('originalEvent' in e && 'preventDefault' in e.originalEvent) {
-      e.originalEvent.preventDefault();
-    }
-    
-    const clientX = 'clientX' in e ? e.clientX : (e as L.LeafletMouseEvent).originalEvent.clientX;
-    const clientY = 'clientY' in e ? e.clientY : (e as L.LeafletMouseEvent).originalEvent.clientY;
-    
-    setMenu({ 
-      open: true, 
-      x: clientX, 
-      y: clientY, 
-      type: 'map'
-    });
-  }, [hasOpenPanels]);
+      const clientX =
+        'clientX' in e
+          ? e.clientX
+          : (e as L.LeafletMouseEvent).originalEvent.clientX;
+      const clientY =
+        'clientY' in e
+          ? e.clientY
+          : (e as L.LeafletMouseEvent).originalEvent.clientY;
 
-  const handleLocationContextMenu = useCallback((e: L.LeafletMouseEvent, location: Location) => {
-    // Check if edit mode is disabled - if so, prevent context menu
-    if (!editMode) {
-      e.originalEvent.preventDefault();
-      return;
-    }
-
-    // Check if any panels are open - if so, prevent context menu
-    if (hasOpenPanels()) {
-      e.originalEvent.preventDefault();
-      return;
-    }
-
-    e.originalEvent.preventDefault();
-    
-    // Stop propagation to prevent map context menu from overriding marker context menu
-    e.originalEvent.stopPropagation();
-    
-    const clientX = e.originalEvent.clientX;
-    const clientY = e.originalEvent.clientY;
-    
-    setMenu({ 
-      open: true, 
-      x: clientX, 
-      y: clientY, 
-      type: 'marker',
-      location
-    });
-  }, [hasOpenPanels, editMode]);
-
-  const handleRegionContextMenu = useCallback((e: L.LeafletMouseEvent, region: Region) => {
-    // Check if edit mode is disabled - if so, prevent context menu
-    if (!editMode) {
-      e.originalEvent.preventDefault();
-      return;
-    }
-
-    // Check if any panels are open - if so, prevent context menu
-    if (hasOpenPanels()) {
-      e.originalEvent.preventDefault();
-      return;
-    }
-
-    e.originalEvent.preventDefault();
-    
-    // Stop propagation to prevent map context menu from overriding marker context menu
-    e.originalEvent.stopPropagation();
-    
-    const clientX = e.originalEvent.clientX;
-    const clientY = e.originalEvent.clientY;
-    
-    // Find all regions containing this right-click point
-    const clickPoint: [number, number] = [e.latlng.lat, e.latlng.lng];
-    const allContainingRegions = findContainingRegions(clickPoint, regions);
-    
-    let targetRegion = region; // Default to the clicked region
-    
-    if (allContainingRegions.length > 0) {
-      // Find the smallest containing region (first in the sorted list)
-      targetRegion = allContainingRegions[0];
-      
-      console.log('🔍 useContextMenu: Context menu for overlapping regions:', {
-        clickPoint,
-        clickedRegion: { id: region.id, name: region.name },
-        smallestRegion: { id: targetRegion.id, name: targetRegion.name },
-        allContainingRegions: allContainingRegions.map(r => ({ id: r.id, name: r.name, area: r.area }))
+      setMenu({
+        open: true,
+        x: clientX,
+        y: clientY,
+        type: 'map',
       });
-    }
-    
-    setMenu({ 
-      open: true, 
-      x: clientX, 
-      y: clientY, 
-      type: 'marker',
-      region: targetRegion
-    });
-  }, [hasOpenPanels, regions, editMode]);
+    },
+    [hasOpenPanels]
+  );
 
-  const handleNoteContextMenu = useCallback((e: React.MouseEvent, note: TimelineNote) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    setMenu({ 
-      open: true, 
-      x: e.clientX, 
-      y: e.clientY, 
-      type: 'timeline',
-      note
-    });
-  }, []);
+  const handleLocationContextMenu = useCallback(
+    (e: L.LeafletMouseEvent, location: Location) => {
+      // Check if edit mode is disabled - if so, prevent context menu
+      if (!editMode) {
+        e.originalEvent.preventDefault();
+        return;
+      }
 
-  const handleEpochContextMenu = useCallback((e: React.MouseEvent, epoch: TimelineEpoch) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    setMenu({ 
-      open: true, 
-      x: e.clientX, 
-      y: e.clientY, 
-      type: 'timeline',
-      epoch
-    });
-  }, []);
+      // Check if any panels are open - if so, prevent context menu
+      if (hasOpenPanels()) {
+        e.originalEvent.preventDefault();
+        return;
+      }
+
+      e.originalEvent.preventDefault();
+
+      // Stop propagation to prevent map context menu from overriding marker context menu
+      e.originalEvent.stopPropagation();
+
+      const clientX = e.originalEvent.clientX;
+      const clientY = e.originalEvent.clientY;
+
+      setMenu({
+        open: true,
+        x: clientX,
+        y: clientY,
+        type: 'marker',
+        location,
+      });
+    },
+    [hasOpenPanels, editMode]
+  );
+
+  const handleRegionContextMenu = useCallback(
+    (e: L.LeafletMouseEvent, region: Region) => {
+      // Check if edit mode is disabled - if so, prevent context menu
+      if (!editMode) {
+        e.originalEvent.preventDefault();
+        return;
+      }
+
+      // Check if any panels are open - if so, prevent context menu
+      if (hasOpenPanels()) {
+        e.originalEvent.preventDefault();
+        return;
+      }
+
+      e.originalEvent.preventDefault();
+
+      // Stop propagation to prevent map context menu from overriding marker context menu
+      e.originalEvent.stopPropagation();
+
+      const clientX = e.originalEvent.clientX;
+      const clientY = e.originalEvent.clientY;
+
+      // Find all regions containing this right-click point
+      const clickPoint: [number, number] = [e.latlng.lat, e.latlng.lng];
+      const allContainingRegions = findContainingRegions(clickPoint, regions);
+
+      let targetRegion = region; // Default to the clicked region
+
+      if (allContainingRegions.length > 0) {
+        // Find the smallest containing region (first in the sorted list)
+        targetRegion = allContainingRegions[0];
+
+        console.log(
+          '🔍 useContextMenu: Context menu for overlapping regions:',
+          {
+            clickPoint,
+            clickedRegion: { id: region.id, name: region.name },
+            smallestRegion: { id: targetRegion.id, name: targetRegion.name },
+            allContainingRegions: allContainingRegions.map(r => ({
+              id: r.id,
+              name: r.name,
+              area: r.area,
+            })),
+          }
+        );
+      }
+
+      setMenu({
+        open: true,
+        x: clientX,
+        y: clientY,
+        type: 'marker',
+        region: targetRegion,
+      });
+    },
+    [hasOpenPanels, regions, editMode]
+  );
+
+  const handleNoteContextMenu = useCallback(
+    (e: React.MouseEvent, note: TimelineNote) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      setMenu({
+        open: true,
+        x: e.clientX,
+        y: e.clientY,
+        type: 'timeline',
+        note,
+      });
+    },
+    []
+  );
+
+  const handleEpochContextMenu = useCallback(
+    (e: React.MouseEvent, epoch: TimelineEpoch) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      setMenu({
+        open: true,
+        x: e.clientX,
+        y: e.clientY,
+        type: 'timeline',
+        epoch,
+      });
+    },
+    []
+  );
 
   const closeMenu = useCallback(() => {
     setMenu(m => ({ ...m, open: false }));
@@ -219,83 +250,103 @@ export function useContextMenu({
 
   const getMenuItems = useCallback(() => {
     const currentMenu = menuRef.current;
-    
+
     // If edit mode is disabled, show a helpful message
     if (!editMode) {
       return [
         {
-          label: "Edit Mode disabled",
+          label: 'Edit Mode disabled',
           onClick: () => {
             if (onOpenSettings) {
               onOpenSettings();
             }
             closeMenu();
-          }
-        }
+          },
+        },
       ];
     }
-    
+
     if (currentMenu.type === 'marker') {
       if (currentMenu.location) {
         return [
-          { 
-            label: "Edit location", 
-            onClick: () => { 
-              onEditLocation(currentMenu.location!); 
-              closeMenu(); 
-            } 
+          {
+            label: 'Edit location',
+            onClick: () => {
+              onEditLocation(currentMenu.location!);
+              closeMenu();
+            },
           },
-          { 
-            label: "Move location", 
-            onClick: () => { 
-              onMoveLocation(currentMenu.location!); 
-              closeMenu(); 
-            } 
+          {
+            label: 'Move location',
+            onClick: () => {
+              onMoveLocation(currentMenu.location!);
+              closeMenu();
+            },
           },
-          { 
-            label: "Duplicate location", 
-            onClick: () => { 
-              onMoveLocation(currentMenu.location!, true); 
-              closeMenu(); 
-            } 
+          {
+            label: 'Duplicate location',
+            onClick: () => {
+              onMoveLocation(currentMenu.location!, true);
+              closeMenu();
+            },
           },
-          { 
-            label: "Delete location", 
-            onClick: () => { 
-              onDeleteLocation(currentMenu.location!); 
-              closeMenu(); 
-            } 
+          {
+            label: 'Delete location',
+            onClick: () => {
+              onDeleteLocation(currentMenu.location!);
+              closeMenu();
+            },
           },
         ];
       } else if (currentMenu.region) {
         return [
-          { 
-            label: "Edit region", 
-            onClick: () => { 
-              onEditRegion(currentMenu.region!); 
-              closeMenu(); 
-            } 
+          {
+            label: 'Edit region',
+            onClick: () => {
+              onEditRegion(currentMenu.region!);
+              closeMenu();
+            },
           },
-          { 
-            label: "Add location", 
+          {
+            label: 'Add location',
             onClick: () => {
               if (mapRef.current) {
                 const map = mapRef.current;
                 const container = map.getContainer();
                 const rect = container.getBoundingClientRect();
-                const point = L.point(currentMenu.x - rect.left, currentMenu.y - rect.top);
+                const point = L.point(
+                  currentMenu.x - rect.left,
+                  currentMenu.y - rect.top
+                );
                 const latlng = map.containerPointToLatLng(point);
                 onAddLocation([latlng.lat, latlng.lng]);
               }
               closeMenu();
-            }
+            },
           },
-          { 
-            label: "Delete region", 
-            onClick: () => { 
-              onDeleteRegion(currentMenu.region!); 
-              closeMenu(); 
-            } 
+          {
+            label: 'Add region',
+            onClick: () => {
+              if (mapRef.current) {
+                const map = mapRef.current;
+                const container = map.getContainer();
+                const rect = container.getBoundingClientRect();
+                const point = L.point(
+                  currentMenu.x - rect.left,
+                  currentMenu.y - rect.top
+                );
+                const latlng = map.containerPointToLatLng(point);
+                onAddRegion([latlng.lat, latlng.lng]);
+              }
+              closeMenu();
+            },
+          },
+          {
+            label: 'Delete region',
+            onClick: () => {
+              onDeleteRegion(currentMenu.region!);
+              closeMenu();
+            },
           },
         ];
       }
@@ -307,7 +358,7 @@ export function useContextMenu({
             onClick: () => {
               onEditNote(currentMenu.note!, 0); // year will be passed by the caller
               closeMenu();
-            }
+            },
           },
           {
             label: 'Delete note',
@@ -315,8 +366,8 @@ export function useContextMenu({
               onDeleteNote(currentMenu.note!.id);
               closeMenu();
             },
-            danger: true
-          }
+            danger: true,
+          },
         ];
       } else if (currentMenu.epoch && onEditEpoch && onDeleteEpoch) {
         return [
@@ -325,7 +376,7 @@ export function useContextMenu({
             onClick: () => {
               onEditEpoch(currentMenu.epoch!);
               closeMenu();
-            }
+            },
           },
           {
             label: 'Delete epoch',
@@ -333,43 +384,65 @@ export function useContextMenu({
               onDeleteEpoch(currentMenu.epoch!.id);
               closeMenu();
             },
-            danger: true
-          }
+            danger: true,
+          },
         ];
       }
     }
-    
+
     return [
-      { 
-        label: "Add location", 
+      {
+        label: 'Add location',
         onClick: () => {
           if (currentMenu.type === 'map' && mapRef.current) {
             const map = mapRef.current;
             const container = map.getContainer();
             const rect = container.getBoundingClientRect();
-            const point = L.point(currentMenu.x - rect.left, currentMenu.y - rect.top);
+            const point = L.point(
+              currentMenu.x - rect.left,
+              currentMenu.y - rect.top
+            );
             const latlng = map.containerPointToLatLng(point);
             onAddLocation([latlng.lat, latlng.lng]);
           }
           closeMenu();
-        } 
+        },
       },
-      { 
-        label: "Add region", 
+      {
+        label: 'Add region',
         onClick: () => {
           if (currentMenu.type === 'map' && mapRef.current) {
             const map = mapRef.current;
             const container = map.getContainer();
             const rect = container.getBoundingClientRect();
-            const point = L.point(currentMenu.x - rect.left, currentMenu.y - rect.top);
+            const point = L.point(
+              currentMenu.x - rect.left,
+              currentMenu.y - rect.top
+            );
             const latlng = map.containerPointToLatLng(point);
             onAddRegion([latlng.lat, latlng.lng]);
           }
           closeMenu();
-        } 
+        },
       },
     ];
-  }, [onEditLocation, onMoveLocation, onDeleteLocation, onEditRegion, onAddLocation, onDeleteRegion, mapRef, startDrawing, closeMenu, editMode, onOpenSettings, onEditNote, onDeleteNote, onEditEpoch, onDeleteEpoch]);
+  }, [
+    onEditLocation,
+    onMoveLocation,
+    onDeleteLocation,
+    onEditRegion,
+    onAddLocation,
+    onDeleteRegion,
+    mapRef,
+    startDrawing,
+    closeMenu,
+    editMode,
+    onOpenSettings,
+    onEditNote,
+    onDeleteNote,
+    onEditEpoch,
+    onDeleteEpoch,
+  ]);
 
   return {
     menu,
@@ -381,4 +454,4 @@ export function useContextMenu({
     closeMenu,
     getMenuItems,
   };
-} 
+}

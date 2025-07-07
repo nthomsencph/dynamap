@@ -1,11 +1,24 @@
 import type { PoolClient } from 'pg';
-import type { TimelineData, TimelineEntry, TimelineEpoch, TimelineChange, TimelineNote, TimelineChanges, TimelineLocationModification, TimelineRegionModification } from '@/types/timeline';
+import type {
+  TimelineData,
+  TimelineEntry,
+  TimelineEpoch,
+  TimelineChange,
+  TimelineNote,
+  TimelineChanges,
+  TimelineLocationModification,
+  TimelineRegionModification,
+} from '@/types/timeline';
 import { createEmptyChanges, isEmptyChanges } from '@/types/timeline';
 import crypto from 'crypto';
 
 // Fetch all epochs
-export async function getAllEpochs(client: PoolClient): Promise<TimelineEpoch[]> {
-  const res = await client.query('SELECT * FROM epochs ORDER BY start_year ASC');
+export async function getAllEpochs(
+  client: PoolClient
+): Promise<TimelineEpoch[]> {
+  const res = await client.query(
+    'SELECT * FROM epochs ORDER BY start_year ASC'
+  );
   return res.rows.map(row => ({
     id: row.id,
     name: row.name,
@@ -22,7 +35,10 @@ export async function getAllEpochs(client: PoolClient): Promise<TimelineEpoch[]>
 }
 
 // Create a new epoch
-export async function createEpoch(client: PoolClient, epoch: Omit<TimelineEpoch, 'id'>): Promise<TimelineEpoch> {
+export async function createEpoch(
+  client: PoolClient,
+  epoch: Omit<TimelineEpoch, 'id'>
+): Promise<TimelineEpoch> {
   const id = crypto.randomUUID();
   const res = await client.query(
     `INSERT INTO epochs (id, name, description, start_year, end_year, color, year_prefix, year_suffix, restart_at_zero, show_end_date, reverse_years)
@@ -42,7 +58,7 @@ export async function createEpoch(client: PoolClient, epoch: Omit<TimelineEpoch,
       epoch.reverseYears || false,
     ]
   );
-  
+
   const row = res.rows[0];
   return {
     id: row.id,
@@ -60,7 +76,11 @@ export async function createEpoch(client: PoolClient, epoch: Omit<TimelineEpoch,
 }
 
 // Update an epoch
-export async function updateEpoch(client: PoolClient, id: string, updates: Partial<TimelineEpoch>): Promise<TimelineEpoch | null> {
+export async function updateEpoch(
+  client: PoolClient,
+  id: string,
+  updates: Partial<TimelineEpoch>
+): Promise<TimelineEpoch | null> {
   const res = await client.query(
     `UPDATE epochs 
      SET name = COALESCE($2, name),
@@ -89,11 +109,11 @@ export async function updateEpoch(client: PoolClient, id: string, updates: Parti
       updates.reverseYears,
     ]
   );
-  
+
   if (res.rows.length === 0) {
     return null;
   }
-  
+
   const row = res.rows[0];
   return {
     id: row.id,
@@ -111,14 +131,26 @@ export async function updateEpoch(client: PoolClient, id: string, updates: Parti
 }
 
 // Delete an epoch
-export async function deleteEpoch(client: PoolClient, id: string): Promise<boolean> {
-  const res = await client.query('DELETE FROM epochs WHERE id = $1 RETURNING id', [id]);
+export async function deleteEpoch(
+  client: PoolClient,
+  id: string
+): Promise<boolean> {
+  const res = await client.query(
+    'DELETE FROM epochs WHERE id = $1 RETURNING id',
+    [id]
+  );
   return res.rows.length > 0;
 }
 
 // Fetch all notes for a given year (optional, for TimelineEntry.notes)
-export async function getNotesForYear(client: PoolClient, year: number): Promise<TimelineNote[]> {
-  const res = await client.query('SELECT * FROM notes WHERE year = $1 ORDER BY created_at ASC', [year]);
+export async function getNotesForYear(
+  client: PoolClient,
+  year: number
+): Promise<TimelineNote[]> {
+  const res = await client.query(
+    'SELECT * FROM notes WHERE year = $1 ORDER BY created_at ASC',
+    [year]
+  );
   return res.rows.map(row => ({
     id: row.id,
     title: row.title,
@@ -129,7 +161,11 @@ export async function getNotesForYear(client: PoolClient, year: number): Promise
 }
 
 // Create a new note
-export async function createNote(client: PoolClient, year: number, note: Omit<TimelineNote, 'id' | 'createdAt' | 'updatedAt'>): Promise<TimelineNote> {
+export async function createNote(
+  client: PoolClient,
+  year: number,
+  note: Omit<TimelineNote, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<TimelineNote> {
   const id = crypto.randomUUID();
   const res = await client.query(
     `INSERT INTO notes (id, year, title, content, created_at, updated_at)
@@ -137,7 +173,7 @@ export async function createNote(client: PoolClient, year: number, note: Omit<Ti
      RETURNING *`,
     [id, year, note.title, note.description]
   );
-  
+
   const row = res.rows[0];
   return {
     id: row.id,
@@ -149,7 +185,11 @@ export async function createNote(client: PoolClient, year: number, note: Omit<Ti
 }
 
 // Update a note
-export async function updateNote(client: PoolClient, id: string, updates: Partial<TimelineNote>): Promise<TimelineNote | null> {
+export async function updateNote(
+  client: PoolClient,
+  id: string,
+  updates: Partial<TimelineNote>
+): Promise<TimelineNote | null> {
   const res = await client.query(
     `UPDATE notes 
      SET title = COALESCE($2, title),
@@ -159,11 +199,11 @@ export async function updateNote(client: PoolClient, id: string, updates: Partia
      RETURNING *`,
     [id, updates.title, updates.description]
   );
-  
+
   if (res.rows.length === 0) {
     return null;
   }
-  
+
   const row = res.rows[0];
   return {
     id: row.id,
@@ -175,14 +215,26 @@ export async function updateNote(client: PoolClient, id: string, updates: Partia
 }
 
 // Delete a note
-export async function deleteNote(client: PoolClient, id: string): Promise<boolean> {
-  const res = await client.query('DELETE FROM notes WHERE id = $1 RETURNING id', [id]);
+export async function deleteNote(
+  client: PoolClient,
+  id: string
+): Promise<boolean> {
+  const res = await client.query(
+    'DELETE FROM notes WHERE id = $1 RETURNING id',
+    [id]
+  );
   return res.rows.length > 0;
 }
 
 // Fetch all changes for a given year
-export async function getChangesForYear(client: PoolClient, year: number): Promise<TimelineChanges> {
-  const res = await client.query('SELECT * FROM timeline_changes WHERE year = $1', [year]);
+export async function getChangesForYear(
+  client: PoolClient,
+  year: number
+): Promise<TimelineChanges> {
+  const res = await client.query(
+    'SELECT * FROM timeline_changes WHERE year = $1',
+    [year]
+  );
   const changesArr: TimelineChange[] = res.rows.map(row => ({
     year: row.year,
     elementId: row.element_id,
@@ -194,9 +246,11 @@ export async function getChangesForYear(client: PoolClient, year: number): Promi
   for (const change of changesArr) {
     if (change.changeType === 'updated') {
       if (change.elementType === 'location') {
-        changes.modified.locations[change.elementId] = change.changes as TimelineLocationModification;
+        changes.modified.locations[change.elementId] =
+          change.changes as TimelineLocationModification;
       } else if (change.elementType === 'region') {
-        changes.modified.regions[change.elementId] = change.changes as TimelineRegionModification;
+        changes.modified.regions[change.elementId] =
+          change.changes as TimelineRegionModification;
       }
     } else if (change.changeType === 'deleted') {
       if (change.elementType === 'location') {
@@ -210,7 +264,10 @@ export async function getChangesForYear(client: PoolClient, year: number): Promi
 }
 
 // Record a timeline change
-export async function recordChange(client: PoolClient, change: TimelineChange): Promise<void> {
+export async function recordChange(
+  client: PoolClient,
+  change: TimelineChange
+): Promise<void> {
   // First, ensure there's a timeline entry for this year
   await client.query(
     `INSERT INTO timeline_entries (year) 
@@ -218,7 +275,7 @@ export async function recordChange(client: PoolClient, change: TimelineChange): 
      ON CONFLICT (year) DO NOTHING`,
     [change.year]
   );
-  
+
   // Then insert the change
   await client.query(
     `INSERT INTO timeline_changes (year, element_id, element_type, change_type, changes)
@@ -236,7 +293,12 @@ export async function recordChange(client: PoolClient, change: TimelineChange): 
 }
 
 // Delete a timeline change
-export async function deleteChange(client: PoolClient, year: number, elementId: string, elementType: 'location' | 'region'): Promise<boolean> {
+export async function deleteChange(
+  client: PoolClient,
+  year: number,
+  elementId: string,
+  elementType: 'location' | 'region'
+): Promise<boolean> {
   const res = await client.query(
     'DELETE FROM timeline_changes WHERE year = $1 AND element_id = $2 AND element_type = $3 RETURNING id',
     [year, elementId, elementType]
@@ -245,9 +307,13 @@ export async function deleteChange(client: PoolClient, year: number, elementId: 
 }
 
 // Fetch all timeline entries (with changes and notes)
-export async function getAllEntries(client: PoolClient): Promise<TimelineEntry[]> {
+export async function getAllEntries(
+  client: PoolClient
+): Promise<TimelineEntry[]> {
   // Get all entries
-  const res = await client.query('SELECT * FROM timeline_entries ORDER BY year ASC');
+  const res = await client.query(
+    'SELECT * FROM timeline_entries ORDER BY year ASC'
+  );
   const entries: TimelineEntry[] = [];
   for (const row of res.rows) {
     // Fetch changes and notes for this year
@@ -266,7 +332,10 @@ export async function getAllEntries(client: PoolClient): Promise<TimelineEntry[]
 }
 
 // Create or update a timeline entry
-export async function upsertEntry(client: PoolClient, entry: TimelineEntry): Promise<TimelineEntry> {
+export async function upsertEntry(
+  client: PoolClient,
+  entry: TimelineEntry
+): Promise<TimelineEntry> {
   // Insert or update the main entry
   await client.query(
     `INSERT INTO timeline_entries (year, age) 
@@ -275,12 +344,12 @@ export async function upsertEntry(client: PoolClient, entry: TimelineEntry): Pro
      DO UPDATE SET age = $2`,
     [entry.year, entry.age]
   );
-  
+
   // Handle notes
   if (entry.notes) {
     // Delete existing notes for this year
     await client.query('DELETE FROM notes WHERE year = $1', [entry.year]);
-    
+
     // Insert new notes
     for (const note of entry.notes) {
       await createNote(client, entry.year, {
@@ -289,14 +358,18 @@ export async function upsertEntry(client: PoolClient, entry: TimelineEntry): Pro
       });
     }
   }
-  
+
   // Handle changes
   if (entry.changes && !isEmptyChanges(entry.changes)) {
     // Delete existing changes for this year
-    await client.query('DELETE FROM timeline_changes WHERE year = $1', [entry.year]);
-    
+    await client.query('DELETE FROM timeline_changes WHERE year = $1', [
+      entry.year,
+    ]);
+
     // Insert new changes
-    for (const [locationId, changes] of Object.entries(entry.changes.modified.locations)) {
+    for (const [locationId, changes] of Object.entries(
+      entry.changes.modified.locations
+    )) {
       await recordChange(client, {
         year: entry.year,
         elementId: locationId,
@@ -305,8 +378,10 @@ export async function upsertEntry(client: PoolClient, entry: TimelineEntry): Pro
         changes,
       });
     }
-    
-    for (const [regionId, changes] of Object.entries(entry.changes.modified.regions)) {
+
+    for (const [regionId, changes] of Object.entries(
+      entry.changes.modified.regions
+    )) {
       await recordChange(client, {
         year: entry.year,
         elementId: regionId,
@@ -315,7 +390,7 @@ export async function upsertEntry(client: PoolClient, entry: TimelineEntry): Pro
         changes,
       });
     }
-    
+
     for (const locationId of entry.changes.deleted.locations) {
       await recordChange(client, {
         year: entry.year,
@@ -325,7 +400,7 @@ export async function upsertEntry(client: PoolClient, entry: TimelineEntry): Pro
         changes: {},
       });
     }
-    
+
     for (const regionId of entry.changes.deleted.regions) {
       await recordChange(client, {
         year: entry.year,
@@ -336,13 +411,13 @@ export async function upsertEntry(client: PoolClient, entry: TimelineEntry): Pro
       });
     }
   }
-  
+
   // Return the updated entry
   const [changes, notes] = await Promise.all([
     getChangesForYear(client, entry.year),
     getNotesForYear(client, entry.year),
   ]);
-  
+
   return {
     year: entry.year,
     age: entry.age,
@@ -352,13 +427,19 @@ export async function upsertEntry(client: PoolClient, entry: TimelineEntry): Pro
 }
 
 // Delete a timeline entry
-export async function deleteEntry(client: PoolClient, year: number): Promise<boolean> {
+export async function deleteEntry(
+  client: PoolClient,
+  year: number
+): Promise<boolean> {
   // Delete related data first
   await client.query('DELETE FROM notes WHERE year = $1', [year]);
   await client.query('DELETE FROM timeline_changes WHERE year = $1', [year]);
-  
+
   // Delete the entry
-  const res = await client.query('DELETE FROM timeline_entries WHERE year = $1 RETURNING year', [year]);
+  const res = await client.query(
+    'DELETE FROM timeline_entries WHERE year = $1 RETURNING year',
+    [year]
+  );
   return res.rows.length > 0;
 }
 
@@ -377,4 +458,4 @@ export async function purgeTimeline(client: PoolClient): Promise<void> {
   await client.query('DELETE FROM notes');
   await client.query('DELETE FROM timeline_entries');
   await client.query('DELETE FROM epochs');
-} 
+}

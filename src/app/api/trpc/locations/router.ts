@@ -8,7 +8,7 @@ import {
   createLocation,
   updateLocation,
   deleteLocation,
-  getLocationParents
+  getLocationParents,
 } from '@/database/locations';
 
 export const locationsRouter = router({
@@ -82,5 +82,5 @@ export const locationsRouter = router({
       } finally {
         client.release();
       }
-    })
-}); 
+    }),
+});

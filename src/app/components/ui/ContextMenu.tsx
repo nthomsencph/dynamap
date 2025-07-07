@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import '@/css/ui/context-menu.css';
 
 interface ContextMenuItem {
@@ -27,8 +27,8 @@ export function ContextMenu({ open, x, y, items, onClose }: ContextMenuProps) {
         onClose();
       }
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
   }, [open, onClose]);
 
   if (!open) return null;
@@ -43,7 +43,10 @@ export function ContextMenu({ open, x, y, items, onClose }: ContextMenuProps) {
         top: y,
         left: x,
       }}
-      onContextMenu={e => { e.preventDefault(); onClose(); }}
+      onContextMenu={e => {
+        e.preventDefault();
+        onClose();
+      }}
     >
       {items.map((item, idx) => (
         <button
@@ -62,4 +65,4 @@ export function ContextMenu({ open, x, y, items, onClose }: ContextMenuProps) {
   );
 
   return createPortal(menu, document.body);
-} 
+}

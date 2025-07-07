@@ -20,12 +20,14 @@ export const ScaleBar: React.FC = () => {
   });
 
   // mapScale is km per pixel at BASE_ZOOM
-  const km = mapScale * BASE_PIXELS / Math.pow(2, currentZoom - BASE_ZOOM);
+  const km = (mapScale * BASE_PIXELS) / Math.pow(2, currentZoom - BASE_ZOOM);
 
   return (
     <div className="custom-scale-bar-container">
       <div className="custom-scale-bar" style={{ width: BASE_PIXELS }} />
-      <div className="custom-scale-label">{Math.round(km).toLocaleString()} km</div>
+      <div className="custom-scale-label">
+        {Math.round(km).toLocaleString()} km
+      </div>
     </div>
   );
-}; 
+};

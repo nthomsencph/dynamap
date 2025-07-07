@@ -1,4 +1,9 @@
-import type { TimelineEntry, TimelineChange, ChangeMap, TimelineEpoch } from '@/types/timeline';
+import type {
+  TimelineEntry,
+  TimelineChange,
+  ChangeMap,
+  TimelineEpoch,
+} from '@/types/timeline';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
 import { calculateDisplayYear } from '@/app/utils/timeline';
@@ -9,25 +14,29 @@ import { calculateDisplayYear } from '@/app/utils/timeline';
 export function buildChangeMap(entries: TimelineEntry[]): ChangeMap {
   const changeMap: ChangeMap = {
     locations: new Map(),
-    regions: new Map()
+    regions: new Map(),
   };
 
   entries.forEach(entry => {
     if (entry.changes) {
       // Handle modified elements
-      Object.entries(entry.changes.modified.locations).forEach(([id, changes]) => {
-        if (!changeMap.locations.has(id)) {
-          changeMap.locations.set(id, new Map());
+      Object.entries(entry.changes.modified.locations).forEach(
+        ([id, changes]) => {
+          if (!changeMap.locations.has(id)) {
+            changeMap.locations.set(id, new Map());
+          }
+          changeMap.locations.get(id)!.set(entry.year, changes);
         }
-        changeMap.locations.get(id)!.set(entry.year, changes);
-      });
+      );
 
-      Object.entries(entry.changes.modified.regions).forEach(([id, changes]) => {
-        if (!changeMap.regions.has(id)) {
-          changeMap.regions.set(id, new Map());
+      Object.entries(entry.changes.modified.regions).forEach(
+        ([id, changes]) => {
+          if (!changeMap.regions.has(id)) {
+            changeMap.regions.set(id, new Map());
+          }
+          changeMap.regions.get(id)!.set(entry.year, changes);
         }
-        changeMap.regions.get(id)!.set(entry.year, changes);
-      });
+      );
 
       // Handle deleted elements
       entry.changes.deleted.locations.forEach(id => {
@@ -52,7 +61,9 @@ export function buildChangeMap(entries: TimelineEntry[]): ChangeMap {
 /**
  * Get the state of an element (location or region) for a specific year
  */
-export function getElementStateForYear<T extends { id: string; creationYear: number }>(
+export function getElementStateForYear<
+  T extends { id: string; creationYear: number },
+>(
   element: T,
   targetYear: number,
   changeMap: ChangeMap,
@@ -63,7 +74,9 @@ export function getElementStateForYear<T extends { id: string; creationYear: num
     return null;
   }
 
-  const elementChanges = changeMap[elementType === 'location' ? 'locations' : 'regions'].get(element.id);
+  const elementChanges = changeMap[
+    elementType === 'location' ? 'locations' : 'regions'
+  ].get(element.id);
   if (!elementChanges) {
     // No changes recorded, return the base element
     return element;
@@ -87,12 +100,12 @@ export function getElementStateForYear<T extends { id: string; creationYear: num
 
   // Start with the base element and apply modifications chronologically
   let reconstructedElement = { ...element };
-  
+
   applicableChanges.forEach(([year, changes]) => {
     if (!changes._deleted) {
       reconstructedElement = {
         ...reconstructedElement,
-        ...changes
+        ...changes,
       };
     }
   });
@@ -108,7 +121,12 @@ export function getLocationStateForYear(
   targetYear: number,
   changeMap: ChangeMap
 ): Location | null {
-  return getElementStateForYear(location, targetYear, changeMap, 'location') as Location | null;
+  return getElementStateForYear(
+    location,
+    targetYear,
+    changeMap,
+    'location'
+  ) as Location | null;
 }
 
 /**
@@ -119,7 +137,12 @@ export function getRegionStateForYear(
   targetYear: number,
   changeMap: ChangeMap
 ): Region | null {
-  return getElementStateForYear(region, targetYear, changeMap, 'region') as Region | null;
+  return getElementStateForYear(
+    region,
+    targetYear,
+    changeMap,
+    'region'
+  ) as Region | null;
 }
 
 /**
@@ -137,15 +160,19 @@ export function diffObjects<T extends Record<string, any>>(
   for (const key in newObj) {
     const oldValue = oldObj[key];
     const newValue = newObj[key];
-    
+
     // Deep comparison for objects and arrays
     if (Array.isArray(oldValue) && Array.isArray(newValue)) {
       if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
         changes[key] = newValue;
         hasChanges = true;
       }
-    } else if (typeof oldValue === 'object' && oldValue !== null && 
-               typeof newValue === 'object' && newValue !== null) {
+    } else if (
+      typeof oldValue === 'object' &&
+      oldValue !== null &&
+      typeof newValue === 'object' &&
+      newValue !== null
+    ) {
       if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
         changes[key] = newValue;
         hasChanges = true;
@@ -174,7 +201,7 @@ export function createTimelineChange(
     elementId,
     elementType,
     changeType,
-    changes
+    changes,
   };
 }
 
@@ -198,8 +225,15 @@ export function getFutureChangesForElement(
 
     // Check modified changes
     if (entry.changes.modified) {
-      const elementChanges = entry.changes.modified[`${elementType}s` as keyof typeof entry.changes.modified];
-      if (elementChanges && typeof elementChanges === 'object' && elementId in elementChanges) {
+      const elementChanges =
+        entry.changes.modified[
+          `${elementType}s` as keyof typeof entry.changes.modified
+        ];
+      if (
+        elementChanges &&
+        typeof elementChanges === 'object' &&
+        elementId in elementChanges
+      ) {
         yearsWithChanges.push(entry.year);
         foundChangeInYear = true;
       }
@@ -207,8 +241,14 @@ export function getFutureChangesForElement(
 
     // Check deleted changes
     if (!foundChangeInYear && entry.changes.deleted) {
-      const deletedElements = entry.changes.deleted[`${elementType}s` as keyof typeof entry.changes.deleted];
-      if (Array.isArray(deletedElements) && deletedElements.includes(elementId)) {
+      const deletedElements =
+        entry.changes.deleted[
+          `${elementType}s` as keyof typeof entry.changes.deleted
+        ];
+      if (
+        Array.isArray(deletedElements) &&
+        deletedElements.includes(elementId)
+      ) {
         yearsWithChanges.push(entry.year);
       }
     }
@@ -231,4 +271,4 @@ export function getFutureChangesForElement(
   });
 
   return { hasChanges: true, years: displayYears };
-} 
+}

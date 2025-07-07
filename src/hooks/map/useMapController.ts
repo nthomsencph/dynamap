@@ -1,16 +1,16 @@
 import { useRef, useState, useEffect } from 'react';
 import L from 'leaflet';
-import { useFitZoom } from "@/hooks/view/useFitZoom";
-import { useSmoothWheelZoom } from "@/hooks/view/useSmoothWheelZoom";
-import { useMapEvents } from "@/hooks/ui/useMapEvents";
-import { useUIStore } from "@/stores/uiStore";
+import { useFitZoom } from '@/hooks/view/useFitZoom';
+import { useSmoothWheelZoom } from '@/hooks/view/useSmoothWheelZoom';
+import { useMapEvents } from '@/hooks/ui/useMapEvents';
+import { useUIStore } from '@/stores/uiStore';
 import { MAP_CENTER } from '@/constants/map';
 
 export function useMapController() {
   const mapRef = useRef<L.Map | null>(null);
   const [leafletMap, setLeafletMap] = useState<L.Map | null>(null);
   const fitZoom = useFitZoom();
-  
+
   // Zoom state management
   const { currentZoom, setCurrentZoom, isZooming, setIsZooming } = useUIStore();
   const zoomTimeoutRef = useRef<number | undefined>(undefined);
@@ -21,7 +21,7 @@ export function useMapController() {
   // Map event handlers
   useMapEvents(leafletMap, {
     onZoomStart: () => setIsZooming(true),
-    onZoom: (newZoom) => {
+    onZoom: newZoom => {
       if (zoomTimeoutRef.current) {
         clearTimeout(zoomTimeoutRef.current);
       }
@@ -29,7 +29,7 @@ export function useMapController() {
         setCurrentZoom(newZoom);
       }, 100) as unknown as number;
     },
-    onZoomEnd: (zoom) => {
+    onZoomEnd: zoom => {
       setIsZooming(false);
       const zoomThreshold = 0.2;
       if (Math.abs(zoom - fitZoom) < zoomThreshold && leafletMap) {
@@ -45,7 +45,7 @@ export function useMapController() {
     },
     onMove: () => {
       // Handle move events if needed
-    }
+    },
   });
 
   // Cleanup zoom timeout on unmount
@@ -63,6 +63,6 @@ export function useMapController() {
     setLeafletMap,
     fitZoom,
     currentZoom,
-    isZooming
+    isZooming,
   };
-} 
+}

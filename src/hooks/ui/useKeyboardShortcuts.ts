@@ -11,29 +11,32 @@ interface KeyboardShortcut {
 }
 
 export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    // Defensive check for event properties
-    if (!e || typeof e.key !== 'string') {
-      return;
-    }
-
-    for (const shortcut of shortcuts) {
-      const keyMatch = e.key.toLowerCase() === shortcut.key.toLowerCase();
-      const ctrlMatch = shortcut.ctrlKey ? e.ctrlKey : !e.ctrlKey;
-      const metaMatch = shortcut.metaKey ? e.metaKey : !e.metaKey;
-      const shiftMatch = shortcut.shiftKey ? e.shiftKey : !e.shiftKey;
-      const altMatch = shortcut.altKey ? e.altKey : !e.altKey;
-
-      if (keyMatch && ctrlMatch && metaMatch && shiftMatch && altMatch) {
-        if (shortcut.preventDefault !== false) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        shortcut.action();
-        break;
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      // Defensive check for event properties
+      if (!e || typeof e.key !== 'string') {
+        return;
       }
-    }
-  }, [shortcuts]);
+
+      for (const shortcut of shortcuts) {
+        const keyMatch = e.key.toLowerCase() === shortcut.key.toLowerCase();
+        const ctrlMatch = shortcut.ctrlKey ? e.ctrlKey : !e.ctrlKey;
+        const metaMatch = shortcut.metaKey ? e.metaKey : !e.metaKey;
+        const shiftMatch = shortcut.shiftKey ? e.shiftKey : !e.shiftKey;
+        const altMatch = shortcut.altKey ? e.altKey : !e.altKey;
+
+        if (keyMatch && ctrlMatch && metaMatch && shiftMatch && altMatch) {
+          if (shortcut.preventDefault !== false) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          shortcut.action();
+          break;
+        }
+      }
+    },
+    [shortcuts]
+  );
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown, true);
@@ -41,4 +44,4 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
       document.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [handleKeyDown]);
-} 
+}

@@ -12,21 +12,21 @@ interface ConfirmDialogProps {
   warning?: string;
 }
 
-export function ConfirmDialog({ 
-  open, 
-  title, 
-  message, 
-  onConfirm, 
-  onCancel, 
+export function ConfirmDialog({
+  open,
+  title,
+  message,
+  onConfirm,
+  onCancel,
   onDeleteFromTimeline,
   showDeleteFromTimeline = false,
-  warning
+  warning,
 }: ConfirmDialogProps) {
   if (!open) return null;
 
   return (
     <div className="confirm-dialog-backdrop" onClick={onCancel}>
-      <div 
+      <div
         className="confirm-dialog"
         onClick={e => e.stopPropagation()}
         role="dialog"
@@ -34,19 +34,25 @@ export function ConfirmDialog({
       >
         <h2>{title}</h2>
         <p>{message}</p>
-        {warning && (
-          <p className="confirm-dialog-warning">{warning}</p>
-        )}
+        {warning && <p className="confirm-dialog-warning">{warning}</p>}
         <div className="dialog-actions">
-          <button type="button" className="dialog-cancel" onClick={onCancel}>Cancel</button>
+          <button type="button" className="dialog-cancel" onClick={onCancel}>
+            Cancel
+          </button>
           {showDeleteFromTimeline && onDeleteFromTimeline && (
-            <button type="button" className="dialog-delete-timeline" onClick={onDeleteFromTimeline}>
+            <button
+              type="button"
+              className="dialog-delete-timeline"
+              onClick={onDeleteFromTimeline}
+            >
               Delete from Timeline
             </button>
           )}
-          <button type="button" className="dialog-delete" onClick={onConfirm}>Delete</button>
+          <button type="button" className="dialog-delete" onClick={onConfirm}>
+            Delete
+          </button>
         </div>
       </div>
     </div>
   );
-} 
+}

@@ -1,7 +1,7 @@
-"use client";
-import dynamic from "next/dynamic";
+'use client';
+import dynamic from 'next/dynamic';
 
-const Map = dynamic(() => import("./components/map/Map"), { ssr: false });
+const Map = dynamic(() => import('./components/map/Map'), { ssr: false });
 
 export default function Home() {
   return (

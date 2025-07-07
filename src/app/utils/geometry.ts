@@ -4,21 +4,30 @@
  * @param polygon Array of [lat, lng] points defining the polygon
  * @returns true if the point is inside the polygon
  */
-export function pointInPolygon(point: [number, number], polygon: [number, number][]): boolean {
-  let x = point[0], y = point[1];
+export function pointInPolygon(
+  point: [number, number],
+  polygon: [number, number][]
+): boolean {
+  let x = point[0],
+    y = point[1];
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    let xi = polygon[i][0], yi = polygon[i][1];
-    let xj = polygon[j][0], yj = polygon[j][1];
-    let intersect = ((yi > y) !== (yj > y)) &&
-      (x < (xj - xi) * (y - yi) / (yj - yi + Number.EPSILON) + xi);
+    let xi = polygon[i][0],
+      yi = polygon[i][1];
+    let xj = polygon[j][0],
+      yj = polygon[j][1];
+    let intersect =
+      yi > y !== yj > y &&
+      x < ((xj - xi) * (y - yi)) / (yj - yi + Number.EPSILON) + xi;
     if (intersect) inside = !inside;
   }
   return inside;
 }
 
 // Helper function to calculate the center point of a polygon
-export function calculatePolygonCenter(points: [number, number][]): [number, number] {
+export function calculatePolygonCenter(
+  points: [number, number][]
+): [number, number] {
   let area = 0;
   let cx = 0;
   let cy = 0;
@@ -52,4 +61,4 @@ export function calculatePolygonAreaDirect(points: [number, number][]): number {
     area -= points[j][0] * points[i][1];
   }
   return Math.abs(area / 2);
-} 
+}

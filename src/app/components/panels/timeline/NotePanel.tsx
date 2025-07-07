@@ -1,7 +1,10 @@
 import React from 'react';
 import { TimelineNote } from '@/types/timeline';
 import { useTimelineContext } from '@/app/contexts/TimelineContext';
-import { formatEpochDateRange, calculateDisplayYear } from '@/app/utils/timeline';
+import {
+  formatEpochDateRange,
+  calculateDisplayYear,
+} from '@/app/utils/timeline';
 import { BasePanel } from '../BasePanel';
 import type { MapElement } from '@/types/elements';
 
@@ -38,15 +41,11 @@ export function NotePanel({ note, year, isOpen, onClose }: NotePanelProps) {
     icon: 'MdPlace',
     fields: {},
     creationYear: year,
-    description: note.description
+    description: note.description,
   };
 
   return (
-    <BasePanel
-      element={noteElement}
-      onClose={onClose}
-      className="note-panel"
-    >
+    <BasePanel element={noteElement} onClose={onClose} className="note-panel">
       {/* Epoch info if available */}
       {currentEpoch && (
         <div className="note-panel-epoch-info">
@@ -55,11 +54,11 @@ export function NotePanel({ note, year, isOpen, onClose }: NotePanelProps) {
           </p>
         </div>
       )}
-      
+
       {/* Note content */}
       {!note.description && (
         <p className="text-gray-500 italic">No description available</p>
       )}
     </BasePanel>
   );
-} 
+}

@@ -4,7 +4,7 @@
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
-  box-shadow: 
+  box-shadow:
     0 12px 32px rgba(0, 0, 0, 0.15),
     0 2px 8px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(0, 0, 0, 0.9);
@@ -32,7 +32,7 @@
 }
 
 .context-menu-item:hover {
-  background: rgba(59, 130, 246, 0.00);
+  background: rgba(59, 130, 246, 0);
   color: #ffffff;
   font-weight: 800;
 }
@@ -51,4 +51,4 @@
   text-align: left;
   cursor: pointer;
   font-size: 15px;
-} 
+}

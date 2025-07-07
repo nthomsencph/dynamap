@@ -19,20 +19,22 @@ async function setupDatabase() {
 
   // Test connection
   const pool = new Pool(config);
-  
+
   try {
     const client = await pool.connect();
     console.log('✅ Successfully connected to PostgreSQL!');
-    
+
     // Test if database exists
     const result = await client.query('SELECT current_database()');
     console.log(`✅ Connected to database: ${result.rows[0].current_database}`);
-    
+
     client.release();
-    
+
     console.log('');
     console.log('Next steps:');
-    console.log('1. Create a .env.local file with your database configuration:');
+    console.log(
+      '1. Create a .env.local file with your database configuration:'
+    );
     console.log('   DB_USER=postgres');
     console.log('   DB_HOST=localhost');
     console.log('   DB_NAME=dynamap');
@@ -40,7 +42,6 @@ async function setupDatabase() {
     console.log('   DB_PORT=5432');
     console.log('');
     console.log('2. Run the migration: npm run migrate');
-    
   } catch (error) {
     console.error('❌ Failed to connect to PostgreSQL:', error);
     console.log('');
@@ -52,4 +53,4 @@ async function setupDatabase() {
   }
 }
 
-setupDatabase().catch(console.error); 
+setupDatabase().catch(console.error);

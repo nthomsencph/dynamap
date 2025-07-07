@@ -33,4 +33,4 @@ export function useDynamicStyles(rules: StyleRule[]) {
       });
     };
   }, [rules]);
-} 
+}

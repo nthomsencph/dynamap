@@ -8,11 +8,11 @@ interface UseEditorSyncOptions {
   syncOnMount?: boolean;
 }
 
-export function useEditorSync({ 
-  editor, 
-  value, 
-  onChange, 
-  syncOnMount = true 
+export function useEditorSync({
+  editor,
+  value,
+  onChange,
+  syncOnMount = true,
 }: UseEditorSyncOptions) {
   const isUpdatingRef = useRef(false);
   const lastValueRef = useRef(value);
@@ -20,7 +20,7 @@ export function useEditorSync({
   // Sync external value changes to editor
   useEffect(() => {
     if (!editor || isUpdatingRef.current) return;
-    
+
     const currentContent = editor.getHTML();
     if (value !== currentContent && value !== lastValueRef.current) {
       lastValueRef.current = value;
@@ -34,7 +34,7 @@ export function useEditorSync({
 
     const handleUpdate = ({ editor }: { editor: Editor }) => {
       if (isUpdatingRef.current) return;
-      
+
       isUpdatingRef.current = true;
       const newContent = editor.getHTML();
       lastValueRef.current = newContent;
@@ -53,4 +53,4 @@ export function useEditorSync({
       editor.off('update', handleUpdate);
     };
   }, [editor, onChange, value, syncOnMount]);
-} 
+}

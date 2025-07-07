@@ -6,14 +6,14 @@ interface UIState {
   currentZoom: number;
   isZooming: boolean;
   mapCenter: [number, number];
-  
+
   // Panel state
   isPanelOpen: boolean;
   panelWidth: number;
-  
+
   // Dialog state
   activeDialogs: Set<string>;
-  
+
   // Actions
   setCurrentZoom: (zoom: number) => void;
   setIsZooming: (isZooming: boolean) => void;
@@ -37,23 +37,25 @@ export const useUIStore = create<UIState>()(
       activeDialogs: new Set(),
 
       // Actions
-      setCurrentZoom: (zoom) => set({ currentZoom: zoom }),
-      setIsZooming: (isZooming) => set({ isZooming }),
-      setMapCenter: (center) => set({ mapCenter: center }),
-      setPanelOpen: (isOpen) => set({ isPanelOpen: isOpen }),
-      setPanelWidth: (width) => set({ panelWidth: width }),
-      openDialog: (dialogId) => set((state) => ({
-        activeDialogs: new Set([...state.activeDialogs, dialogId])
-      })),
-      closeDialog: (dialogId) => set((state) => {
-        const newDialogs = new Set(state.activeDialogs);
-        newDialogs.delete(dialogId);
-        return { activeDialogs: newDialogs };
-      }),
+      setCurrentZoom: zoom => set({ currentZoom: zoom }),
+      setIsZooming: isZooming => set({ isZooming }),
+      setMapCenter: center => set({ mapCenter: center }),
+      setPanelOpen: isOpen => set({ isPanelOpen: isOpen }),
+      setPanelWidth: width => set({ panelWidth: width }),
+      openDialog: dialogId =>
+        set(state => ({
+          activeDialogs: new Set([...state.activeDialogs, dialogId]),
+        })),
+      closeDialog: dialogId =>
+        set(state => {
+          const newDialogs = new Set(state.activeDialogs);
+          newDialogs.delete(dialogId);
+          return { activeDialogs: newDialogs };
+        }),
       closeAllDialogs: () => set({ activeDialogs: new Set() }),
     }),
     {
       name: 'ui-store',
     }
   )
-); 
+);

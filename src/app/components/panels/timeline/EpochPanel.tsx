@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React from 'react';
 import { useTimelineContext } from '@/app/contexts/TimelineContext';
 import { NotePanel } from './NotePanel';
@@ -15,14 +15,17 @@ interface EpochPanelProps {
 
 export function EpochPanel({ epoch, isOpen, onClose }: EpochPanelProps) {
   const { entries } = useTimelineContext();
-  const [selectedNote, setSelectedNote] = React.useState<{ note: TimelineNote; year: number } | null>(null);
+  const [selectedNote, setSelectedNote] = React.useState<{
+    note: TimelineNote;
+    year: number;
+  } | null>(null);
   const [isNotePanelOpen, setIsNotePanelOpen] = React.useState(false);
   const { width, handleMouseDown } = usePanelWidth();
 
   // Get all notes for this epoch
   const epochNotes = React.useMemo(() => {
     const notes: Array<{ note: TimelineNote; year: number }> = [];
-    
+
     entries.forEach(entry => {
       if (entry.year >= epoch.startYear && entry.year <= epoch.endYear) {
         if (entry.notes && entry.notes.length > 0) {
@@ -32,7 +35,7 @@ export function EpochPanel({ epoch, isOpen, onClose }: EpochPanelProps) {
         }
       }
     });
-    
+
     return notes.sort((a, b) => a.year - b.year);
   }, [entries, epoch]);
 
@@ -50,22 +53,19 @@ export function EpochPanel({ epoch, isOpen, onClose }: EpochPanelProps) {
 
   return (
     <>
-      <div 
-        className="sidepanel-backdrop" 
-        onClick={onClose}
-      >
-        <div 
-          className="sidepanel epoch-panel" 
+      <div className="sidepanel-backdrop" onClick={onClose}>
+        <div
+          className="sidepanel epoch-panel"
           onClick={e => e.stopPropagation()}
           style={{ width: `${width}px` }}
         >
           {/* Draggable handle */}
-          <div 
+          <div
             className="sidepanel-drag-handle"
             onMouseDown={handleMouseDown}
             style={{ cursor: 'col-resize' }}
           />
-          
+
           <div className="sidepanel-content">
             <div className="sidepanel-header-section">
               <h2 className="sidepanel-title">{epoch.name}</h2>
@@ -74,7 +74,7 @@ export function EpochPanel({ epoch, isOpen, onClose }: EpochPanelProps) {
 
             {epoch.description && (
               <div className="sidepanel-description rich-text-content">
-                <div 
+                <div
                   className="panel-description"
                   dangerouslySetInnerHTML={{ __html: epoch.description }}
                 />
@@ -83,7 +83,6 @@ export function EpochPanel({ epoch, isOpen, onClose }: EpochPanelProps) {
 
             {/* Notes Section */}
             <div className="epoch-panel-notes-section">
-              
               {epochNotes.length > 0 ? (
                 <div className="epoch-panel-notes-list">
                   {epochNotes.map(({ note, year }) => (
@@ -96,9 +95,7 @@ export function EpochPanel({ epoch, isOpen, onClose }: EpochPanelProps) {
                         <div className="epoch-panel-note-title">
                           {note.title || 'Untitled'}
                         </div>
-                        <div className="epoch-panel-note-year">
-                          {year}
-                        </div>
+                        <div className="epoch-panel-note-year">{year}</div>
                       </div>
                       {note.description && (
                         <div className="epoch-panel-note-preview">
@@ -132,4 +129,4 @@ export function EpochPanel({ epoch, isOpen, onClose }: EpochPanelProps) {
       )}
     </>
   );
-} 
+}

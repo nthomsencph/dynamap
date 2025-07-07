@@ -61,4 +61,4 @@ export function useMapEvents(map: Map | null, handlers: MapEventHandlers) {
       map.off('moveend', onMoveEnd);
     };
   }, [map, onZoomStart, onZoom, onZoomEnd, onMove, onMoveStart, onMoveEnd]);
-} 
+}

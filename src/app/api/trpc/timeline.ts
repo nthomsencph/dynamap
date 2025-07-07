@@ -45,18 +45,20 @@ export const timelineRouter = router({
   }),
 
   createEpoch: publicProcedure
-    .input(z.object({
-      name: z.string(),
-      description: z.string(),
-      startYear: z.number(),
-      endYear: z.number(),
-      color: z.string().optional(),
-      yearPrefix: z.string().optional(),
-      yearSuffix: z.string().optional(),
-      restartAtZero: z.boolean().optional(),
-      showEndDate: z.boolean().optional(),
-      reverseYears: z.boolean().optional(),
-    }))
+    .input(
+      z.object({
+        name: z.string(),
+        description: z.string(),
+        startYear: z.number(),
+        endYear: z.number(),
+        color: z.string().optional(),
+        yearPrefix: z.string().optional(),
+        yearSuffix: z.string().optional(),
+        restartAtZero: z.boolean().optional(),
+        showEndDate: z.boolean().optional(),
+        reverseYears: z.boolean().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const pool = await getDatabase();
       const client = await pool.connect();
@@ -68,21 +70,23 @@ export const timelineRouter = router({
     }),
 
   updateEpoch: publicProcedure
-    .input(z.object({
-      id: z.string(),
-      updates: z.object({
-        name: z.string().optional(),
-        description: z.string().optional(),
-        startYear: z.number().optional(),
-        endYear: z.number().optional(),
-        color: z.string().optional(),
-        yearPrefix: z.string().optional(),
-        yearSuffix: z.string().optional(),
-        restartAtZero: z.boolean().optional(),
-        showEndDate: z.boolean().optional(),
-        reverseYears: z.boolean().optional(),
-      }),
-    }))
+    .input(
+      z.object({
+        id: z.string(),
+        updates: z.object({
+          name: z.string().optional(),
+          description: z.string().optional(),
+          startYear: z.number().optional(),
+          endYear: z.number().optional(),
+          color: z.string().optional(),
+          yearPrefix: z.string().optional(),
+          yearSuffix: z.string().optional(),
+          restartAtZero: z.boolean().optional(),
+          showEndDate: z.boolean().optional(),
+          reverseYears: z.boolean().optional(),
+        }),
+      })
+    )
     .mutation(async ({ input }) => {
       const pool = await getDatabase();
       const client = await pool.connect();
@@ -125,24 +129,32 @@ export const timelineRouter = router({
   }),
 
   upsertEntry: publicProcedure
-    .input(z.object({
-      year: z.number(),
-      age: z.string().nullable().optional(),
-      notes: z.array(z.object({
-        title: z.string(),
-        description: z.string(),
-      })).optional(),
-      changes: z.object({
-        modified: z.object({
-          locations: z.record(z.any()),
-          regions: z.record(z.any()),
-        }),
-        deleted: z.object({
-          locations: z.array(z.string()),
-          regions: z.array(z.string()),
-        }),
-      }).optional(),
-    }))
+    .input(
+      z.object({
+        year: z.number(),
+        age: z.string().nullable().optional(),
+        notes: z
+          .array(
+            z.object({
+              title: z.string(),
+              description: z.string(),
+            })
+          )
+          .optional(),
+        changes: z
+          .object({
+            modified: z.object({
+              locations: z.record(z.any()),
+              regions: z.record(z.any()),
+            }),
+            deleted: z.object({
+              locations: z.array(z.string()),
+              regions: z.array(z.string()),
+            }),
+          })
+          .optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const pool = await getDatabase();
       const client = await pool.connect();
@@ -183,11 +195,13 @@ export const timelineRouter = router({
     }),
 
   createNote: publicProcedure
-    .input(z.object({
-      year: z.number(),
-      title: z.string(),
-      description: z.string(),
-    }))
+    .input(
+      z.object({
+        year: z.number(),
+        title: z.string(),
+        description: z.string(),
+      })
+    )
     .mutation(async ({ input }) => {
       const pool = await getDatabase();
       const client = await pool.connect();
@@ -202,11 +216,13 @@ export const timelineRouter = router({
     }),
 
   updateNote: publicProcedure
-    .input(z.object({
-      id: z.string(),
-      title: z.string().optional(),
-      description: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.string(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const pool = await getDatabase();
       const client = await pool.connect();
@@ -242,13 +258,15 @@ export const timelineRouter = router({
 
   // Change operations
   recordChange: publicProcedure
-    .input(z.object({
-      year: z.number(),
-      elementId: z.string(),
-      elementType: z.enum(['location', 'region']),
-      changeType: z.enum(['updated', 'deleted']),
-      changes: z.any(),
-    }))
+    .input(
+      z.object({
+        year: z.number(),
+        elementId: z.string(),
+        elementType: z.enum(['location', 'region']),
+        changeType: z.enum(['updated', 'deleted']),
+        changes: z.any(),
+      })
+    )
     .mutation(async ({ input }) => {
       const pool = await getDatabase();
       const client = await pool.connect();
@@ -261,16 +279,23 @@ export const timelineRouter = router({
     }),
 
   deleteChange: publicProcedure
-    .input(z.object({
-      year: z.number(),
-      elementId: z.string(),
-      elementType: z.enum(['location', 'region']),
-    }))
+    .input(
+      z.object({
+        year: z.number(),
+        elementId: z.string(),
+        elementType: z.enum(['location', 'region']),
+      })
+    )
     .mutation(async ({ input }) => {
       const pool = await getDatabase();
       const client = await pool.connect();
       try {
-        const success = await deleteChange(client, input.year, input.elementId, input.elementType);
+        const success = await deleteChange(
+          client,
+          input.year,
+          input.elementId,
+          input.elementType
+        );
         if (!success) {
           throw new Error('Change not found');
         }
@@ -291,4 +316,4 @@ export const timelineRouter = router({
       client.release();
     }
   }),
-}); 
+});

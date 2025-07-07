@@ -19,7 +19,7 @@ export function getFitZoom(width: number, height: number): number {
  */
 export function getZoomThreshold(prominence: number, fitZoom: number): number {
   // Wider offset range: prominence 10 = fitZoom, prominence 1 = fitZoom + 2.7
-  const zoomOffset = 3 - (prominence * 0.3);
+  const zoomOffset = 3 - prominence * 0.3;
   return fitZoom + zoomOffset;
 }
 
@@ -29,13 +29,16 @@ export function getZoomThreshold(prominence: number, fitZoom: number): number {
  * @param fitZoom The zoom level that fits the map in viewport
  * @returns The prominence level (10.0 to 1.0)
  */
-export function calculateProminenceLevel(currentZoom: number, fitZoom: number): number {
+export function calculateProminenceLevel(
+  currentZoom: number,
+  fitZoom: number
+): number {
   // From getZoomThreshold we know:
   // prominence 10 = fitZoom + 0
   // prominence 1 = fitZoom + 2.7
   // So we can calculate prominence directly:
   const zoomOffset = currentZoom - fitZoom;
-  return Math.max(0, 10 - (zoomOffset / 0.3));
+  return Math.max(0, 10 - zoomOffset / 0.3);
 }
 
 /**
@@ -45,22 +48,26 @@ export function calculateProminenceLevel(currentZoom: number, fitZoom: number): 
  * @param fitZoom The zoom level that fits the map in viewport
  * @returns boolean indicating if the map element should be visible
  */
-export function shouldShowElement(prominence: { lower: number; upper: number } | number, currentZoom: number, fitZoom: number): boolean {
+export function shouldShowElement(
+  prominence: { lower: number; upper: number } | number,
+  currentZoom: number,
+  fitZoom: number
+): boolean {
   const currentProminence = calculateProminenceLevel(currentZoom, fitZoom);
-  
+
   // Handle legacy single prominence values
   if (typeof prominence === 'number') {
     return currentProminence <= prominence;
   }
-  
+
   // Handle new prominence range
   const { lower, upper } = prominence;
-  
+
   // Element shows if current prominence is within the range
   // lower = 0 means no lower bound (always show if upper bound is met)
   const meetsLowerBound = lower === 0 || currentProminence >= lower;
   const meetsUpperBound = currentProminence <= upper;
-  
+
   return meetsLowerBound && meetsUpperBound;
 }
 
@@ -71,9 +78,13 @@ export function shouldShowElement(prominence: { lower: number; upper: number } |
  * @param offset Optional offset from the upper bound (default: 0.01)
  * @returns The optimal zoom level
  */
-export function getOptimalZoomForElement(upperProminence: number, fitZoom: number, offset: number = 0.01): number {
+export function getOptimalZoomForElement(
+  upperProminence: number,
+  fitZoom: number,
+  offset: number = 0.01
+): number {
   const targetProminence = upperProminence - offset;
-  const zoomOffset = 3 - (targetProminence * 0.3);
+  const zoomOffset = 3 - targetProminence * 0.3;
   return fitZoom + zoomOffset;
 }
 
@@ -85,13 +96,25 @@ export function getOptimalZoomForElement(upperProminence: number, fitZoom: numbe
  * @param currentYear The current year in the timeline
  * @returns boolean indicating if the map element should be visible
  */
-export function shouldShowElementInYear(element: { prominence: { lower: number; upper: number } | number; creationYear: number }, currentZoom: number, fitZoom: number, currentYear: number): boolean {
+export function shouldShowElementInYear(
+  element: {
+    prominence: { lower: number; upper: number } | number;
+    creationYear: number;
+  },
+  currentZoom: number,
+  fitZoom: number,
+  currentYear: number
+): boolean {
   // First check if the element should be shown based on prominence and zoom
-  const shouldShowByProminence = shouldShowElement(element.prominence, currentZoom, fitZoom);
-  
+  const shouldShowByProminence = shouldShowElement(
+    element.prominence,
+    currentZoom,
+    fitZoom
+  );
+
   // Then check if the element should be shown based on creation year
   const shouldShowByYear = element.creationYear <= currentYear;
-  
+
   // Element is only shown if both conditions are met
   return shouldShowByProminence && shouldShowByYear;
 }

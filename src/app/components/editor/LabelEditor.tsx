@@ -7,7 +7,7 @@ import Color from '@tiptap/extension-color';
 import Underline from '@tiptap/extension-underline';
 import FontFamily from '@tiptap/extension-font-family';
 import FontSize from '@tiptap/extension-font-size';
-import { Italic, Underline as UnderlineIcon} from 'lucide-react';
+import { Italic, Underline as UnderlineIcon } from 'lucide-react';
 import { AiOutlineFontSize } from 'react-icons/ai';
 import { RxFontFamily } from 'react-icons/rx';
 import { MdOutlineFormatClear } from 'react-icons/md';
@@ -29,14 +29,14 @@ interface LabelEditorProps {
   placeholder?: string;
 }
 
-const LabelEditor: React.FC<LabelEditorProps> = ({ 
-  value, 
-  onChange, 
-  text, 
-  isRegion = false, 
-  regionArea, 
+const LabelEditor: React.FC<LabelEditorProps> = ({
+  value,
+  onChange,
+  text,
+  isRegion = false,
+  regionArea,
   className = '',
-  placeholder
+  placeholder,
 }) => {
   const lastTextRef = useRef(text);
 
@@ -53,7 +53,7 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
       Underline,
       TextStyle,
       LineHeight.configure({
-        heights: ['50%', '75%', '80%', '100%', '125%', '150%', '175%', '200%']
+        heights: ['50%', '75%', '80%', '100%', '125%', '150%', '175%', '200%'],
       }),
       Placeholder.configure({
         placeholder: placeholder || 'Enter text...',
@@ -67,24 +67,27 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
     editable: true,
     onUpdate: ({ editor }) => {
       const htmlContent = editor.getHTML();
-      
+
       // If text prop is provided, prevent text content changes but allow styling
       if (text) {
         const currentText = editor.getText();
         if (currentText !== text) {
           // Text was changed, revert to original text but preserve styles
           const html = editor.getHTML();
-          const styledHTML = html.replace(/(<[^>]*>)(.*?)(<\/[^>]*>)/g, (match, openTag, content, closeTag) => {
-            if (content.trim() && content !== text) {
-              return `${openTag}${text}${closeTag}`;
+          const styledHTML = html.replace(
+            /(<[^>]*>)(.*?)(<\/[^>]*>)/g,
+            (match, openTag, content, closeTag) => {
+              if (content.trim() && content !== text) {
+                return `${openTag}${text}${closeTag}`;
+              }
+              return match;
             }
-            return match;
-          });
+          );
           editor.commands.setContent(styledHTML, false);
           return;
         }
       }
-      
+
       // Only call onChange for non-text props or when content actually changes
       if (!text && htmlContent !== value) {
         onChange(htmlContent);
@@ -102,9 +105,10 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
       handleKeyDown: (view, event) => {
         if (text) {
           // Allow only styling shortcuts, prevent text input
-          const isStyleShortcut = (event.ctrlKey || event.metaKey) && 
+          const isStyleShortcut =
+            (event.ctrlKey || event.metaKey) &&
             ['b', 'i', 'u'].includes(event.key.toLowerCase());
-          
+
           if (!isStyleShortcut) {
             event.preventDefault();
             return true;
@@ -118,7 +122,7 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
           return true;
         }
         return false;
-      }
+      },
     },
   });
 
@@ -127,13 +131,16 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
     if (editor && text && lastTextRef.current !== text) {
       const html = editor.getHTML();
       // Replace the text content but keep the styles
-      const styledHTML = html.replace(/(<[^>]*>)(.*?)(<\/[^>]*>)/g, (match, openTag, content, closeTag) => {
-        if (content.trim()) {
-          return `${openTag}${text}${closeTag}`;
+      const styledHTML = html.replace(
+        /(<[^>]*>)(.*?)(<\/[^>]*>)/g,
+        (match, openTag, content, closeTag) => {
+          if (content.trim()) {
+            return `${openTag}${text}${closeTag}`;
+          }
+          return match;
         }
-        return match;
-      });
-      
+      );
+
       if (html !== styledHTML) {
         editor.commands.setContent(styledHTML, false);
       }
@@ -163,7 +170,10 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
       editor.chain().focus().selectAll().setLineHeight(options).run();
     } else if (command === 'clearFormatting') {
       // Remove all styling: bold, italic, underline, color, background color, font family, font size
-      editor.chain().focus().selectAll()
+      editor
+        .chain()
+        .focus()
+        .selectAll()
         .unsetBold()
         .unsetItalic()
         .unsetUnderline()
@@ -186,20 +196,29 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
           role="toolbar"
           aria-label="Label formatting"
         >
-          <button 
-            type="button" 
-            onClick={(e) => {
+          <button
+            type="button"
+            onClick={e => {
               e.preventDefault();
               applyToAll('toggleBold');
             }}
             className={editor.isActive('bold') ? 'active' : ''}
           >
-            <span style={{ fontWeight: 'bold', fontSize: 16, fontFamily: 'inherit', letterSpacing: 1 }}>B</span>
+            <span
+              style={{
+                fontWeight: 'bold',
+                fontSize: 16,
+                fontFamily: 'inherit',
+                letterSpacing: 1,
+              }}
+            >
+              B
+            </span>
           </button>
-          
-          <button 
-            type="button" 
-            onClick={(e) => {
+
+          <button
+            type="button"
+            onClick={e => {
               e.preventDefault();
               applyToAll('toggleItalic');
             }}
@@ -207,10 +226,10 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
           >
             <Italic size={16} />
           </button>
-          
-          <button 
-            type="button" 
-            onClick={(e) => {
+
+          <button
+            type="button"
+            onClick={e => {
               e.preventDefault();
               applyToAll('toggleUnderline');
             }}
@@ -220,7 +239,12 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
           </button>
           {/* Font family dropdown */}
           <Dropdown
-            icon={<RxFontFamily size={20} style={{ color: '#fff', fontWeight: 'bold' }} />}
+            icon={
+              <RxFontFamily
+                size={20}
+                style={{ color: '#fff', fontWeight: 'bold' }}
+              />
+            }
             options={[
               { label: 'Arial', value: 'Arial, sans-serif' },
               { label: 'Georgia', value: 'Georgia, serif' },
@@ -230,13 +254,22 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
               { label: 'Serif', value: 'serif' },
               { label: 'Sans-serif', value: 'sans-serif' },
               { label: 'Monospace', value: 'monospace' },
-              { label: 'UnifrakturMaguntia', value: "'UnifrakturMaguntia', cursive" },
-              { label: 'Passions Conflict', value: "'Passions Conflict', cursive" },
+              {
+                label: 'UnifrakturMaguntia',
+                value: "'UnifrakturMaguntia', cursive",
+              },
+              {
+                label: 'Passions Conflict',
+                value: "'Passions Conflict', cursive",
+              },
               { label: 'Festive', value: "'Festive', cursive" },
               { label: 'Arizonia', value: "'Arizonia', cursive" },
               { label: 'Petemoss', value: "'Petemoss', cursive" },
               { label: 'Kaushan Script', value: "'Kaushan Script', cursive" },
-              { label: 'Fredericka the Great', value: "'Fredericka the Great', cursive" },
+              {
+                label: 'Fredericka the Great',
+                value: "'Fredericka the Great', cursive",
+              },
               { label: 'Meddon', value: "'Meddon', cursive" },
               { label: 'Jim Nightshade', value: "'Jim Nightshade', cursive" },
               { label: 'Felipa', value: "'Felipa', cursive" },
@@ -271,7 +304,14 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
               { label: '72px', value: '72px' },
               { label: '80px', value: '80px' },
               { label: '96px', value: '96px' },
-              ...(isRegion && regionArea != null ? [{ label: 'Area', value: `${getFontSizeForArea(regionArea)}px` }] : [])
+              ...(isRegion && regionArea != null
+                ? [
+                    {
+                      label: 'Area',
+                      value: `${getFontSizeForArea(regionArea)}px`,
+                    },
+                  ]
+                : []),
             ]}
             selected={undefined}
             onSelect={size => applyToAll('setFontSize', size)}
@@ -279,7 +319,7 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
             buttonClassName="rte-dropdown-btn"
             dropdownClassName="rte-dropdown-menu"
           />
-          
+
           {/* Line height dropdown */}
           <Dropdown
             icon={<RiLineHeight size={20} style={{ color: '#fff' }} />}
@@ -299,26 +339,26 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
             buttonClassName="rte-dropdown-btn"
             dropdownClassName="rte-dropdown-menu"
           />
-          
-          <input 
-            type="color" 
-            onChange={(e) => {
+
+          <input
+            type="color"
+            onChange={e => {
               applyToAll('setColor', e.target.value);
             }}
             title="Text Color"
           />
-          
+
           <input
             type="color"
-            onChange={(e) => {
+            onChange={e => {
               applyToAll('setBackgroundColor', e.target.value);
             }}
             aria-label="Background Color"
             title="Background Color"
           />
-          <button 
-            type="button" 
-            onClick={(e) => {
+          <button
+            type="button"
+            onClick={e => {
               e.preventDefault();
               applyToAll('clearFormatting');
             }}
@@ -326,7 +366,6 @@ const LabelEditor: React.FC<LabelEditorProps> = ({
           >
             <MdOutlineFormatClear size={16} />
           </button>
-          
         </div>
         <EditorContent editor={editor} style={{ borderRadius: 8 }} />
       </div>

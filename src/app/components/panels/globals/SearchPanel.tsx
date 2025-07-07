@@ -14,16 +14,20 @@ interface SearchPanelProps {
 }
 
 // Component to render element icons
-function ElementIcon({ iconKey, color = '#fff', size = 16 }: { 
-  iconKey: ElementIcon; 
-  color?: string; 
-  size?: number; 
+function ElementIcon({
+  iconKey,
+  color = '#fff',
+  size = 16,
+}: {
+  iconKey: ElementIcon;
+  color?: string;
+  size?: number;
 }) {
   const iconData = ELEMENT_ICONS[iconKey];
   if (!iconData) {
     return <Search size={size} color={color} />;
   }
-  
+
   const IconComponent = iconData.icon;
   return <IconComponent size={size} color={color} />;
 }
@@ -34,11 +38,15 @@ export function SearchPanel({ onClose, onElementClick }: SearchPanelProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Use the search API
-  const { data: searchResults = [], isLoading: searchLoading, error: searchError } = useSearch({
+  const {
+    data: searchResults = [],
+    isLoading: searchLoading,
+    error: searchError,
+  } = useSearch({
     query: searchQuery,
     year: currentYear,
     limit: 50,
-    enabled: true
+    enabled: true,
   });
 
   // Focus search input when panel opens
@@ -54,12 +62,11 @@ export function SearchPanel({ onClose, onElementClick }: SearchPanelProps) {
     name: 'Search Places',
     type: 'Search',
     elementType: 'location',
-    position: [0, 0],
     color: '#ffffff',
     prominence: { lower: 0, upper: 10 },
     icon: 'MdPlace',
     fields: {},
-    creationYear: 0
+    creationYear: 0,
   };
 
   return (
@@ -84,8 +91,8 @@ export function SearchPanel({ onClose, onElementClick }: SearchPanelProps) {
           className="search-panel-input"
           placeholder="Search by name, type, or description..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={(e) => {
+          onChange={e => setSearchQuery(e.target.value)}
+          onKeyDown={e => {
             if (e.key === 'Escape') {
               onClose();
             }
@@ -105,7 +112,7 @@ export function SearchPanel({ onClose, onElementClick }: SearchPanelProps) {
           </div>
         ) : searchResults.length > 0 ? (
           <div className="search-panel-results-list">
-            {searchResults.map((result) => (
+            {searchResults.map(result => (
               <div
                 key={`${result.elementType}-${result.id}`}
                 className="search-panel-result-item"
@@ -114,21 +121,21 @@ export function SearchPanel({ onClose, onElementClick }: SearchPanelProps) {
                   if (result.elementType === 'location') {
                     onElementClick({
                       ...result,
-                      position: result.position as [number, number]
+                      geom: result.geom as [number, number],
                     } as Location);
                   } else {
                     onElementClick({
                       ...result,
-                      position: result.position as [number, number][]
+                      geom: result.geom as [number, number][],
                     } as Region);
                   }
                 }}
               >
                 <div className="search-panel-result-icon">
-                  <ElementIcon 
-                    iconKey={result.icon as any} 
-                    color={result.color} 
-                    size={16} 
+                  <ElementIcon
+                    iconKey={result.icon as any}
+                    color={result.color}
+                    size={16}
                   />
                 </div>
                 <div className="search-panel-result-content">
@@ -140,7 +147,7 @@ export function SearchPanel({ onClose, onElementClick }: SearchPanelProps) {
           </div>
         ) : searchQuery.trim() ? (
           <div className="search-panel-no-results">
-            <p>No results found for "{searchQuery}"</p>
+            <p>No results found for &quot;{searchQuery}&quot;</p>
             <p>Try searching by name, type, or description</p>
           </div>
         ) : (
@@ -151,4 +158,4 @@ export function SearchPanel({ onClose, onElementClick }: SearchPanelProps) {
       </div>
     </BasePanel>
   );
-} 
+}

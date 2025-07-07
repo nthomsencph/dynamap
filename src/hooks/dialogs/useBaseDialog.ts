@@ -30,13 +30,19 @@ interface UseBaseDialogReturn<T extends MapElement> {
   setError: (error: string | null) => void;
   setLabelAutoInitialized: (initialized: boolean) => void;
   setShowIconGallery: (show: boolean) => void;
-  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  handleChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
   handleColorChange: (color: string) => void;
   handleProminenceChange: (type: 'lower' | 'upper', value: number) => void;
   handleIconSelect: (icon: string) => void;
   handleAddField: () => void;
   handleRemoveField: (key: string) => void;
-  handleSubmit: (e: React.FormEvent, validateForm: (form: Partial<T>) => string | null, onSave: (element: T) => void) => void;
+  handleSubmit: (
+    e: React.FormEvent,
+    validateForm: (form: Partial<T>) => string | null,
+    onSave: (element: T) => void
+  ) => void;
   handleTabSwitch: (tab: DialogTab) => void;
 }
 
@@ -44,12 +50,12 @@ interface UseBaseDialogReturn<T extends MapElement> {
 function getColorBrightness(color: string): number {
   // Remove # if present
   const hex = color.replace('#', '');
-  
+
   // Convert to RGB
   const r = parseInt(hex.substr(0, 2), 16);
   const g = parseInt(hex.substr(2, 2), 16);
   const b = parseInt(hex.substr(4, 2), 16);
-  
+
   // Calculate brightness using luminance formula
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 }
@@ -62,7 +68,7 @@ export function useBaseDialog<T extends MapElement>({
   typeCategory,
   onClose,
   mapRef,
-  onPreviewChange
+  onPreviewChange,
 }: UseBaseDialogOptions<T>): UseBaseDialogReturn<T> {
   // Form state
   const [form, setForm] = useState<Partial<T>>({} as Partial<T>);
@@ -111,7 +117,7 @@ export function useBaseDialog<T extends MapElement>({
         // For create mode, use defaults
         setForm(defaults as unknown as Partial<T>);
       }
-      
+
       setLabelAutoInitialized(mode === 'edit');
       setActiveTab('Content');
     } else {
@@ -135,10 +141,10 @@ export function useBaseDialog<T extends MapElement>({
     if (open && mode === 'edit' && element && mapRef?.current) {
       const { flyToLocation } = require('@/app/utils/fly');
       const { getElementCenter } = require('@/app/utils/area');
-      
+
       // Get the center position of the element
       const targetPosition = getElementCenter(element);
-      
+
       // Fly to the element with a slight delay to ensure dialog is rendered
       setTimeout(() => {
         flyToLocation(mapRef.current!, targetPosition);
@@ -148,61 +154,76 @@ export function useBaseDialog<T extends MapElement>({
 
   // Send preview updates when form changes (for immediate visual feedback)
   useEffect(() => {
-    if (onPreviewChange && form && Object.keys(form).length > 0 && element?.id) {
+    if (
+      onPreviewChange &&
+      form &&
+      Object.keys(form).length > 0 &&
+      element?.id
+    ) {
       // Create a preview element with current form data merged with original element
       const previewElement = {
         ...element,
         ...form,
         id: element.id,
-        elementType: typeCategory === 'regions' ? 'region' : 'location'
+        elementType: typeCategory === 'regions' ? 'region' : 'location',
       } as Partial<T>;
-      
+
       onPreviewChange(previewElement);
     }
   }, [form, element, typeCategory, onPreviewChange]);
 
   // Keyboard shortcuts - only active when dialog is open
-  useKeyboardShortcuts(open ? [
-    {
-      key: 'Escape',
-      action: () => {
-        setForm({} as Partial<T>);
-        onClose();
-      }
-    }
-  ] : []);
+  useKeyboardShortcuts(
+    open
+      ? [
+          {
+            key: 'Escape',
+            action: () => {
+              setForm({} as Partial<T>);
+              onClose();
+            },
+          },
+        ]
+      : []
+  );
 
   // Event handlers
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    
-    // Clear error when user starts filling required fields
-    if ((name === 'name' || name === 'type') && value.trim() && error) {
-      setError(null);
-    }
-  }, [error]);
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const { name, value } = e.target;
+      setForm(prev => ({ ...prev, [name]: value }));
+
+      // Clear error when user starts filling required fields
+      if ((name === 'name' || name === 'type') && value.trim() && error) {
+        setError(null);
+      }
+    },
+    [error]
+  );
 
   const handleColorChange = useCallback((color: string) => {
     setForm(prev => ({ ...prev, color }));
   }, []);
 
-  const handleProminenceChange = useCallback((type: 'lower' | 'upper', value: number) => {
-    setForm(prev => {
-      const currentProminence = prev.prominence || { lower: 0, upper: 5 };
-      const newProminence = { ...currentProminence, [type]: value };
-      
-      // Ensure lower <= upper
-      if (type === 'lower' && value > newProminence.upper) {
-        newProminence.upper = value;
-      }
-      if (type === 'upper' && value < newProminence.lower) {
-        newProminence.lower = value;
-      }
-      
-      return { ...prev, prominence: newProminence };
-    });
-  }, []);
+  const handleProminenceChange = useCallback(
+    (type: 'lower' | 'upper', value: number) => {
+      setForm(prev => {
+        const currentProminence = prev.prominence || { lower: 0, upper: 5 };
+        const newProminence = { ...currentProminence, [type]: value };
+
+        // Ensure lower <= upper
+        if (type === 'lower' && value > newProminence.upper) {
+          newProminence.upper = value;
+        }
+        if (type === 'upper' && value < newProminence.lower) {
+          newProminence.lower = value;
+        }
+
+        return { ...prev, prominence: newProminence };
+      });
+    },
+    []
+  );
 
   const handleIconSelect = useCallback((icon: string) => {
     setForm(prev => ({ ...prev, icon }));
@@ -223,57 +244,70 @@ export function useBaseDialog<T extends MapElement>({
 
   const handleRemoveField = useCallback((key: string) => {
     setForm(prev => {
-      const { [key]: _, ...rest } = (prev.fields || {}) as Record<string, string>;
+      const { [key]: _, ...rest } = (prev.fields || {}) as Record<
+        string,
+        string
+      >;
       return { ...prev, fields: rest };
     });
   }, []);
 
-  const handleSubmit = useCallback((e: React.FormEvent, validateForm: (form: Partial<T>) => string | null, onSave: (element: T) => void) => {
-    e.preventDefault();
-    
-    const formToValidate = {
-      ...form,
-    } as T;
-    
-    // If showLabel is true but no custom label is provided, use the name as the label
-    if (!formToValidate.label?.trim() && formToValidate.name) {
-      formToValidate.label = formToValidate.name;
-    }
-    
-    const validationError = validateForm(formToValidate);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+  const handleSubmit = useCallback(
+    (
+      e: React.FormEvent,
+      validateForm: (form: Partial<T>) => string | null,
+      onSave: (element: T) => void
+    ) => {
+      e.preventDefault();
 
-    const id = mode === 'create' ? crypto.randomUUID() : form.id!;
-    const elementType = typeCategory === 'regions' ? 'region' : 'location';
-    onSave({ ...formToValidate, id, elementType } as T);
-    setForm({} as Partial<T>);
-  }, [form, mode, typeCategory]);
+      const formToValidate = {
+        ...form,
+      } as T;
 
-  const handleTabSwitch = useCallback((tab: DialogTab) => {
-    // Always allow switching to Content tab
-    if (tab === 'Content') {
-      setActiveTab(tab);
+      // If showLabel is true but no custom label is provided, use the name as the label
+      if (!formToValidate.label?.trim() && formToValidate.name) {
+        formToValidate.label = formToValidate.name;
+      }
+
+      const validationError = validateForm(formToValidate);
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+
+      const id = mode === 'create' ? crypto.randomUUID() : form.id!;
+      const elementType = typeCategory === 'regions' ? 'region' : 'location';
+      onSave({ ...formToValidate, id, elementType } as T);
+      setForm({} as Partial<T>);
+    },
+    [form, mode, typeCategory]
+  );
+
+  const handleTabSwitch = useCallback(
+    (tab: DialogTab) => {
+      // Always allow switching to Content tab
+      if (tab === 'Content') {
+        setActiveTab(tab);
+        setError(null);
+        return;
+      }
+
+      // For Styling and Fields tabs, check required fields
+      if (!form.name?.trim()) {
+        setError('Name is required');
+        return;
+      }
+      if (!form.type?.trim()) {
+        setError('Type is required');
+        return;
+      }
+
+      // Clear any existing error and switch tab
       setError(null);
-      return;
-    }
-
-    // For Styling and Fields tabs, check required fields
-    if (!form.name?.trim()) {
-      setError('Name is required');
-      return;
-    }
-    if (!form.type?.trim()) {
-      setError('Type is required');
-      return;
-    }
-
-    // Clear any existing error and switch tab
-    setError(null);
-    setActiveTab(tab);
-  }, [form.name, form.type]);
+      setActiveTab(tab);
+    },
+    [form.name, form.type]
+  );
 
   return {
     form,
@@ -300,4 +334,4 @@ export function useBaseDialog<T extends MapElement>({
     handleSubmit,
     handleTabSwitch,
   };
-} 
+}

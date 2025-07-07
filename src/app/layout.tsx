@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '@/css/globals.css';
@@ -10,18 +10,18 @@ import { BackgroundImage } from './components/ui/BackgroundImage';
 import { QueryClientProvider } from '@/app/providers/QueryClientProvider';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: "Dynamap",
-  description: "Dynamic, interactive map application",
+  title: 'Dynamap',
+  description: 'Dynamic, interactive map application',
 };
 
 export default function RootLayout({

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import { useMap } from 'react-leaflet';
@@ -27,21 +27,21 @@ export function MapName() {
   // Calculate opacity for center position
   const getOpacity = () => {
     if (mapNameSettings.position !== 'center') return 1;
-    
+
     // Fade out quickly as zoom increases from fitZoom
     const fadeStartZoom = fitZoom + 0.1; // Start fading very soon after fitZoom
-    const fadeEndZoom = fitZoom + 0.3;   // End fading quickly (0.2 zoom levels later)
-    
+    const fadeEndZoom = fitZoom + 0.3; // End fading quickly (0.2 zoom levels later)
+
     if (currentZoom <= fadeStartZoom) return 1;
     if (currentZoom >= fadeEndZoom) return 0;
-    
+
     const fadeRange = fadeEndZoom - fadeStartZoom;
     const currentFade = currentZoom - fadeStartZoom;
-    return 1 - (currentFade / fadeRange);
+    return 1 - currentFade / fadeRange;
   };
 
   const opacity = getOpacity();
-  
+
   // Don't render if completely transparent
   if (opacity <= 0) return null;
 
@@ -63,10 +63,10 @@ export function MapName() {
   };
 
   return (
-    <div 
+    <div
       className={`map-name ${getPositionClass()}`}
       style={{ opacity }}
       dangerouslySetInnerHTML={{ __html: mapNameSettings.content }}
     />
   );
-} 
+}

@@ -14,21 +14,22 @@ const pool = new Pool({
 // Initialize database
 export async function initDatabase(): Promise<Pool> {
   const client = await pool.connect();
-  
+
   try {
     // Create tables with temporal support
     await createTables(client);
   } finally {
     client.release();
   }
-  
+
   return pool;
 }
 
 async function createTables(client: PoolClient) {
   // Enable required extensions
   await client.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
-  
+  await client.query(`CREATE EXTENSION IF NOT EXISTS postgis`);
+
   // Create locations table with temporal versioning
   await client.query(`
     CREATE TABLE IF NOT EXISTS locations (
@@ -47,7 +48,7 @@ async function createTables(client: PoolClient) {
       label_position JSONB, -- JSON object
       prominence JSONB, -- JSON object
       fields JSONB, -- JSON object
-      position JSONB NOT NULL, -- JSON array of [lat, lng]
+      geom GEOMETRY(POINT, 0) NOT NULL, -- PostGIS spatial column for custom coordinate system
       creation_year INTEGER NOT NULL,
       destruction_year INTEGER,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -73,7 +74,7 @@ async function createTables(client: PoolClient) {
       label_position JSONB, -- JSON object
       prominence JSONB, -- JSON object
       fields JSONB, -- JSON object
-      position JSONB NOT NULL, -- JSON array of [[lat, lng], ...]
+      geom GEOMETRY(POLYGON, 0) NOT NULL, -- PostGIS spatial column for custom coordinate system
       show_border BOOLEAN DEFAULT true,
       show_highlight BOOLEAN DEFAULT true,
       area_fade_duration INTEGER DEFAULT 800,
@@ -160,6 +161,12 @@ async function createTables(client: PoolClient) {
     CREATE INDEX IF NOT EXISTS idx_timeline_changes_year ON timeline_changes(year);
     CREATE INDEX IF NOT EXISTS idx_timeline_changes_element ON timeline_changes(element_id, element_type);
   `);
+
+  // Create spatial indexes for PostGIS
+  await client.query(`
+    CREATE INDEX IF NOT EXISTS idx_locations_geom ON locations USING GIST (geom);
+    CREATE INDEX IF NOT EXISTS idx_regions_geom ON regions USING GIST (geom);
+  `);
 }
 
 // Database instance (singleton)
@@ -174,6 +181,9 @@ export async function getDatabase(): Promise<Pool> {
 
 // Helper functions for data conversion
 export function locationFromRow(row: any): Location {
+  // Extract coordinates from PostGIS geometry
+  const geom: [number, number] = [row.x || 0, row.y || 0];
+
   return {
     id: row.id,
     name: row.name,
@@ -189,12 +199,30 @@ export function locationFromRow(row: any): Location {
     prominence: row.prominence || { lower: 0, upper: 10 },
     fields: row.fields || {},
     elementType: 'location',
-    position: row.position,
-    creationYear: row.creation_year
+    geom,
+    creationYear: row.creation_year,
   };
 }
 
 export function regionFromRow(row: any): Region {
+  // Extract coordinates from PostGIS geometry
+  let geom: [number, number][] = [[0, 0]];
+
+  if (row.geom_text) {
+    // Extract from geometry text (synchronous parsing)
+    const match = row.geom_text.match(/POLYGON\(\(([^)]+)\)\)/);
+    if (match) {
+      const coordPairs = match[1].trim().split(',');
+      geom = coordPairs.map((pair: string) => {
+        const coords = pair.trim().split(/\s+/);
+        return [parseFloat(coords[0]), parseFloat(coords[1])] as [
+          number,
+          number,
+        ];
+      });
+    }
+  }
+
   return {
     id: row.id,
     name: row.name,
@@ -212,9 +240,9 @@ export function regionFromRow(row: any): Region {
     showBorder: Boolean(row.show_border),
     showHighlight: Boolean(row.show_highlight),
     areaFadeDuration: row.area_fade_duration || 800,
-    position: row.position,
+    geom,
     area: row.area,
-    creationYear: row.creation_year
+    creationYear: row.creation_year,
   };
 }
 
@@ -226,13 +254,24 @@ export async function getElementAtYear<T extends Location | Region>(
   year: number,
   converter: (row: any) => T
 ): Promise<T | null> {
-  const query = `
-    SELECT * FROM ${table} 
-    WHERE id = $1 AND valid_from <= $2 AND (valid_to IS NULL OR valid_to > $2)
-    ORDER BY valid_from DESC 
-    LIMIT 1
-  `;
-  
+  let query: string;
+
+  if (table === 'locations') {
+    query = `
+      SELECT *, ST_X(geom) as x, ST_Y(geom) as y FROM ${table} 
+      WHERE id = $1 AND valid_from <= $2 AND (valid_to IS NULL OR valid_to > $2)
+      ORDER BY valid_from DESC 
+      LIMIT 1
+    `;
+  } else {
+    query = `
+      SELECT *, ST_AsText(geom) as geom_text FROM ${table} 
+      WHERE id = $1 AND valid_from <= $2 AND (valid_to IS NULL OR valid_to > $2)
+      ORDER BY valid_from DESC 
+      LIMIT 1
+    `;
+  }
+
   const result = await client.query(query, [id, year]);
   return result.rows.length > 0 ? converter(result.rows[0]) : null;
 }
@@ -244,12 +283,22 @@ export async function getElementsAtYear<T extends Location | Region>(
   year: number,
   converter: (row: any) => T
 ): Promise<T[]> {
-  const query = `
-    SELECT * FROM ${table}
-    WHERE valid_from <= $1 AND (valid_to IS NULL OR valid_to > $1)
-    ORDER BY name
-  `;
-  
+  let query: string;
+
+  if (table === 'locations') {
+    query = `
+      SELECT *, ST_X(geom) as x, ST_Y(geom) as y FROM ${table}
+      WHERE valid_from <= $1 AND (valid_to IS NULL OR valid_to > $1)
+      ORDER BY name
+    `;
+  } else {
+    query = `
+      SELECT *, ST_AsText(geom) as geom_text FROM ${table}
+      WHERE valid_from <= $1 AND (valid_to IS NULL OR valid_to > $1)
+      ORDER BY name
+    `;
+  }
+
   const result = await client.query(query, [year]);
   return result.rows.map(converter);
-} 
+}

@@ -13,11 +13,12 @@ interface BodyStyles {
 export function useBodyStyles(styles: BodyStyles) {
   useEffect(() => {
     const originalStyles: Record<string, string> = {};
-    
+
     // Apply new styles and store originals
     Object.entries(styles).forEach(([property, value]) => {
       if (value !== undefined) {
-        originalStyles[property] = document.body.style.getPropertyValue(property);
+        originalStyles[property] =
+          document.body.style.getPropertyValue(property);
         document.body.style.setProperty(property, value);
       }
     });
@@ -33,4 +34,4 @@ export function useBodyStyles(styles: BodyStyles) {
       });
     };
   }, [styles]);
-} 
+}

@@ -11,7 +11,7 @@ export const DEFAULT_LOCATION_TYPES = [
   'Village',
   'Castle',
   'Ruin',
-  'Landmark'
+  'Landmark',
 ] as const;
 
 // Default icon size for locations
@@ -19,6 +19,6 @@ export const DEFAULT_ICON_SIZE = 12;
 
 // Location interface
 export interface Location extends MapElement {
-  position: [number, number];  // Locations must have a single point
-  iconSize?: number;  // Base size of the icon (will be scaled based on zoom)
-} 
+  geom: [number, number]; // Locations must have a single point
+  iconSize?: number; // Base size of the icon (will be scaled based on zoom)
+}

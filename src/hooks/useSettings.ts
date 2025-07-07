@@ -8,10 +8,14 @@ import type { Settings } from '@/app/api/trpc/settings';
 import { DEFAULT_SETTINGS } from '@/app/api/trpc/settings/types';
 
 export function useSettings() {
-  const { data: settings, isLoading, error } = trpc.mapSettings.get.useQuery(undefined, {
+  const {
+    data: settings,
+    isLoading,
+    error,
+  } = trpc.mapSettings.get.useQuery(undefined, {
     retry: false, // Don't retry if database is not available
   });
-  
+
   const updateSettings = trpc.mapSettings.update.useMutation({
     onSuccess: () => {
       // Invalidate and refetch settings
@@ -36,7 +40,9 @@ export function useSettings() {
 /**
  * Hook for individual setting values with type safety
  */
-export function useSetting<K extends keyof Settings>(key: K): Settings[K] | undefined {
+export function useSetting<K extends keyof Settings>(
+  key: K
+): Settings[K] | undefined {
   const { settings } = useSettings();
   return settings?.[key];
 }
@@ -46,10 +52,10 @@ export function useSetting<K extends keyof Settings>(key: K): Settings[K] | unde
  */
 export function useUpdateSetting() {
   const { updateSettings } = useSettings();
-  
+
   return {
     updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => {
       updateSettings({ [key]: value } as Partial<Settings>);
-    }
+    },
   };
-} 
+}

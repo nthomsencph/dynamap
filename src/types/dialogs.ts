@@ -26,7 +26,7 @@ export interface RegionDialogProps extends BaseDialogProps {
 // Default values
 export const DEFAULT_DIALOG_COLORS = {
   location: '#ffffff',
-  region: '#2563eb'
+  region: '#2563eb',
 } as const;
 
-export const DEFAULT_ICON_SIZE = 24; 
+export const DEFAULT_ICON_SIZE = 24;

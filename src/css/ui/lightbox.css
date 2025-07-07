@@ -19,7 +19,9 @@
   max-height: 90vh;
   opacity: 0;
   transform: scale(0.95);
-  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
 }
 
 .lightbox-content.visible {
@@ -53,4 +55,4 @@
 
 .lightbox-close:hover {
   opacity: 1;
-} 
+}

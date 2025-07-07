@@ -19,7 +19,6 @@
   padding: 0 !important;
 }
 
-
 .transparent-toggle {
   width: 24px;
   height: 24px;
@@ -113,15 +112,15 @@
   gap: 8px;
 }
 
-.rte-wrapper[data-rows="1"] .tiptap-editor {
+.rte-wrapper[data-rows='1'] .tiptap-editor {
   min-height: 1.5em;
 }
 
-.rte-wrapper[data-rows="4"] .tiptap-editor {
+.rte-wrapper[data-rows='4'] .tiptap-editor {
   min-height: 6em;
 }
 
-.rte-wrapper[data-rows="6"] .tiptap-editor {
+.rte-wrapper[data-rows='6'] .tiptap-editor {
   min-height: 9em;
 }
 
@@ -277,7 +276,9 @@
   justify-content: center;
   padding: 0;
   margin: 0;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .rte-toolbar button.active,
@@ -417,7 +418,7 @@
 
 .rte-dropdown-menu .overflow-y-auto::-webkit-scrollbar-track {
   background: #222;
-} 
+}
 
 .tiptap.ProseMirror:focus,
 .tiptap.ProseMirror:focus-visible,
@@ -484,19 +485,19 @@
 }
 
 /* --- Font Size Styles --- */
-.tiptap-editor [style*="font-size: 0.875em"] {
+.tiptap-editor [style*='font-size: 0.875em'] {
   font-size: 0.875em !important;
 }
 
-.tiptap-editor [style*="font-size: 1em"] {
+.tiptap-editor [style*='font-size: 1em'] {
   font-size: 1em !important;
 }
 
-.tiptap-editor [style*="font-size: 1.25em"] {
+.tiptap-editor [style*='font-size: 1.25em'] {
   font-size: 1.25em !important;
 }
 
-.tiptap-editor [style*="font-size: 1.5em"] {
+.tiptap-editor [style*='font-size: 1.5em'] {
   font-size: 1.5em !important;
 }
 
@@ -578,15 +579,15 @@
   gap: 8px;
 }
 
-.description-editor-wrapper[data-rows="1"] .description-editor-content-wrapper {
+.description-editor-wrapper[data-rows='1'] .description-editor-content-wrapper {
   min-height: 1.5em;
 }
 
-.description-editor-wrapper[data-rows="4"] .description-editor-content-wrapper {
+.description-editor-wrapper[data-rows='4'] .description-editor-content-wrapper {
   min-height: 200px;
 }
 
-.description-editor-wrapper[data-rows="6"] .description-editor-content-wrapper {
+.description-editor-wrapper[data-rows='6'] .description-editor-content-wrapper {
   min-height: 250px;
 }
 
@@ -736,7 +737,9 @@
   justify-content: center;
   padding: 0;
   margin: 0;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .description-editor-toolbar button.active,
@@ -868,19 +871,19 @@
 }
 
 /* --- Font Size Styles --- */
-.tiptap-editor [style*="font-size: 0.875em"] {
+.tiptap-editor [style*='font-size: 0.875em'] {
   font-size: 0.875em !important;
 }
 
-.tiptap-editor [style*="font-size: 1em"] {
+.tiptap-editor [style*='font-size: 1em'] {
   font-size: 1em !important;
 }
 
-.tiptap-editor [style*="font-size: 1.25em"] {
+.tiptap-editor [style*='font-size: 1.25em'] {
   font-size: 1.25em !important;
 }
 
-.tiptap-editor [style*="font-size: 1.5em"] {
+.tiptap-editor [style*='font-size: 1.5em'] {
   font-size: 1.5em !important;
 }
 

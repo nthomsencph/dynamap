@@ -14,4 +14,4 @@ export const appRouter = router({
   search: searchRouter,
 });
 
-export type AppRouter = typeof appRouter; 
+export type AppRouter = typeof appRouter;

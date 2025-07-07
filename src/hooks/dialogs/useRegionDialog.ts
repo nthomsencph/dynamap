@@ -1,65 +1,90 @@
-import { useState, useCallback, useMemo } from "react";
-import type { Region } from "@/types/regions";
+import { useState, useCallback, useMemo } from 'react';
+import type { Region } from '@/types/regions';
+import { useTimelineContext } from '@/app/contexts/TimelineContext';
 
 interface RegionDialogState {
   open: boolean;
-  mode: "create" | "edit";
+  mode: 'create' | 'edit';
   position: [number, number][] | null;
   region: Partial<Region> | null;
 }
 
-export function useRegionDialog(currentYear: number = 0) {
+export function useRegionDialog() {
+  const { currentYear } = useTimelineContext();
   const [state, setState] = useState<RegionDialogState>({
     open: false,
-    mode: "create",
+    mode: 'create',
     position: null,
     region: null,
   });
 
-  // Open dialog to create a new region at a given position
-  const openCreate = useCallback((position: [number, number][]) => {
-    setState({
-      open: true,
-      mode: "create",
-      position,
-      region: { 
+  const openCreate = useCallback(
+    (position: [number, number][]) => {
+      setState({
+        open: true,
+        mode: 'create',
         position,
-        creationYear: currentYear 
-      } as Partial<Region>,
-    });
-  }, [currentYear]);
+        region: {
+          id: crypto.randomUUID(),
+          name: '',
+          type: 'Region',
+          description: '',
+          color: '#ffffff',
+          icon: 'MdPlace',
+          showLabel: true,
+          label: '',
+          labelPosition: { direction: 'Center', offset: 10 },
+          prominence: { lower: 0, upper: 10 },
+          fields: {},
+          elementType: 'region',
+          geom: position,
+          showBorder: true,
+          showHighlight: true,
+          areaFadeDuration: 800,
+          creationYear: currentYear,
+        },
+      });
+    },
+    [currentYear]
+  );
 
-  // Open dialog to edit an existing region
   const openEdit = useCallback((region: Region) => {
     setState({
       open: true,
-      mode: "edit",
-      position: region.position,
-      region: region as Partial<Region>,
+      mode: 'edit',
+      position: region.geom,
+      region,
     });
   }, []);
 
-  // Close dialog
   const close = useCallback(() => {
-    setState((s) => ({ ...s, open: false }));
+    setState(prev => ({ ...prev, open: false }));
   }, []);
 
-  // Save handler (to be passed to the dialog component)
   const onSave = useCallback((region: Region) => {
-    setState((s) => ({ ...s, open: false }));
+    // This will be handled by the parent component
   }, []);
 
-  // Memoize the return value to prevent unnecessary re-renders
-  const result = useMemo(() => ({
-    open: state.open,
-    mode: state.mode,
-    position: state.position,
-    region: state.region,
-    openCreate,
-    openEdit,
-    close,
-    onSave,
-  }), [state.open, state.mode, state.position, state.region, openCreate, openEdit, close, onSave]);
-
-  return result;
-} 
+  return useMemo(
+    () => ({
+      open: state.open,
+      mode: state.mode,
+      position: state.position,
+      region: state.region,
+      openCreate,
+      openEdit,
+      close,
+      onSave,
+    }),
+    [
+      state.open,
+      state.mode,
+      state.position,
+      state.region,
+      openCreate,
+      openEdit,
+      close,
+      onSave,
+    ]
+  );
+}

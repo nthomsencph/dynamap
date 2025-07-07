@@ -11,25 +11,25 @@ type Polygon = Point[];
  * @returns Array of regions containing the point, sorted by area (smallest first)
  */
 export function findContainingRegions(
-    clickPoint: Point,
-    regions: Region[]
-  ): Region[] {
-    // First, find all regions that contain the point
-    const containingRegions = regions.filter(region => 
-      pointInPolygon(clickPoint, region.position)
-    );
-  
-    // Sort by area (smallest first)
-    const sortedRegions = containingRegions.sort((a, b) => {
-      // Use calculated areas instead of stored areas since stored areas appear to be incorrect
-      const areaA = getArea(a.position);
-      const areaB = getArea(b.position);
-      
-      return areaA - areaB;
-    });
-    
-    return sortedRegions;
-  }
+  clickPoint: Point,
+  regions: Region[]
+): Region[] {
+  // First, find all regions that contain the point
+  const containingRegions = regions.filter(region =>
+    pointInPolygon(clickPoint, region.geom)
+  );
+
+  // Sort by area (smallest first)
+  const sortedRegions = containingRegions.sort((a, b) => {
+    // Use calculated areas instead of stored areas since stored areas appear to be incorrect
+    const areaA = getArea(a.geom);
+    const areaB = getArea(b.geom);
+
+    return areaA - areaB;
+  });
+
+  return sortedRegions;
+}
 
 /**
  * Returns true if `inner` polygon is at least `minPercent` contained within `outer` polygon
@@ -46,7 +46,7 @@ export function isPercentContained(
   // Early rejection 1: Bounding box check
   const innerBounds = getBounds(inner);
   const outerBounds = getBounds(outer);
-  
+
   if (!boundsOverlap(innerBounds, outerBounds)) {
     return false;
   }
@@ -54,7 +54,7 @@ export function isPercentContained(
   // Early rejection 2: Max possible overlap check
   const maxOverlap = getOverlapArea(innerBounds, outerBounds);
   const innerArea = getArea(inner);
-  
+
   if ((maxOverlap / innerArea) * 100 < minPercent) {
     return false;
   }
@@ -63,13 +63,13 @@ export function isPercentContained(
   const sampleSize = Math.min(10, inner.length);
   const step = Math.floor(inner.length / sampleSize);
   let insideCount = 0;
-  
+
   for (let i = 0; i < inner.length; i += step) {
     if (pointInPolygon(inner[i], outer)) {
       insideCount++;
     }
   }
-  
+
   if ((insideCount / sampleSize) * 100 < minPercent * 0.5) {
     return false;
   }
@@ -77,7 +77,7 @@ export function isPercentContained(
   // Do the actual intersection
   const intersectionResult = polygonClipping.intersection([inner], [outer]);
   if (intersectionResult.length === 0) return false;
-  
+
   const intersectionArea = getArea(intersectionResult[0][0]);
   return (intersectionArea / innerArea) * 100 >= minPercent;
 }
@@ -86,22 +86,28 @@ export function isPercentContained(
 // isPercentContained(polygonA, polygonB, 80) returns true if A is ≥80% inside B
 
 function getBounds(poly: Polygon) {
-  let minX = Infinity, minY = Infinity;
-  let maxX = -Infinity, maxY = -Infinity;
-  
+  let minX = Infinity,
+    minY = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity;
+
   for (const [x, y] of poly) {
     minX = Math.min(minX, x);
     minY = Math.min(minY, y);
     maxX = Math.max(maxX, x);
     maxY = Math.max(maxY, y);
   }
-  
+
   return { minX, minY, maxX, maxY };
 }
 
 function boundsOverlap(a: any, b: any): boolean {
-  return !(a.maxX < b.minX || b.maxX < a.minX || 
-           a.maxY < b.minY || b.maxY < a.minY);
+  return !(
+    a.maxX < b.minX ||
+    b.maxX < a.minX ||
+    a.maxY < b.minY ||
+    b.maxY < a.minY
+  );
 }
 
 function getOverlapArea(a: any, b: any): number {
@@ -123,16 +129,17 @@ function getArea(poly: Polygon): number {
 function pointInPolygon(point: Point, poly: Polygon): boolean {
   const [x, y] = point;
   let inside = false;
-  
+
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const xi = poly[i][0], yi = poly[i][1];
-    const xj = poly[j][0], yj = poly[j][1];
-    
-    if (((yi > y) !== (yj > y)) && 
-        (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+    const xi = poly[i][0],
+      yi = poly[i][1];
+    const xj = poly[j][0],
+      yj = poly[j][1];
+
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
       inside = !inside;
     }
   }
-  
+
   return inside;
 }

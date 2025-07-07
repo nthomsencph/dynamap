@@ -8,16 +8,10 @@ interface LocationPanelProps {
   onBack?: () => void;
 }
 
-export function LocationPanel({ 
-  location, 
-  onClose, 
-  onBack
+export function LocationPanel({
+  location,
+  onClose,
+  onBack,
 }: LocationPanelProps) {
-  return (
-    <BasePanel
-      element={location}
-      onClose={onClose}
-      onBack={onBack}
-    />
-  );
-} 
+  return <BasePanel element={location} onClose={onClose} onBack={onBack} />;
+}

@@ -13,7 +13,9 @@ interface MentionItem {
   elementType: 'region' | 'location';
 }
 
-export function createMentionExtension(getElements: () => (Location | Region)[]) {
+export function createMentionExtension(
+  getElements: () => (Location | Region)[]
+) {
   return Mention.extend({
     addAttributes() {
       return {
@@ -40,65 +42,64 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
           'data-type': node.attrs.type,
           'data-element-type': node.attrs.elementType,
         },
-        `@${node.attrs.name}`
+        `@${node.attrs.name}`,
       ];
     },
     suggestion: {
       items: ({ query }: { query: string }) => {
-      
         const elements = getElements();
-        if (!elements || !Array.isArray(elements) || elements.length === 0) {    
+        if (!elements || !Array.isArray(elements) || elements.length === 0) {
           return [];
         }
 
         try {
           const filteredElements = elements
-            .filter((element) => {
-              const hasValidStructure = element && 
-                                       element.id && 
-                                       element.name && 
-                                       typeof element.name === 'string';
-              
+            .filter(element => {
+              const hasValidStructure =
+                element &&
+                element.id &&
+                element.name &&
+                typeof element.name === 'string';
+
               if (!hasValidStructure) {
                 return false;
               }
-              
+
               const elementName = element.name as string;
-              const matches = elementName.toLowerCase().includes(query.toLowerCase());
+              const matches = elementName
+                .toLowerCase()
+                .includes(query.toLowerCase());
               return matches;
             })
             .slice(0, 5)
-            .map((element) => ({
+            .map(element => ({
               id: element.id!,
               name: element.name!,
               type: element.type!,
               elementType: getElementType(element),
             }));
 
-          
           return filteredElements;
         } catch (error) {
           return [];
         }
       },
       render: () => {
-        
         let component: HTMLDivElement;
         let selectedIndex = 0;
         let currentItems: MentionItem[] = [];
         let currentCommand: ((item: MentionItem) => void) | null = null;
 
         const updateItems = (
-          element: HTMLDivElement, 
-          items: MentionItem[], 
-          command: (item: MentionItem) => void, 
+          element: HTMLDivElement,
+          items: MentionItem[],
+          command: (item: MentionItem) => void,
           selected: number
         ) => {
-          
           element.innerHTML = '';
           currentItems = items; // Store current items for keyboard navigation
           currentCommand = command; // Store current command for keyboard navigation
-          
+
           // Safety check for items
           if (!items || !Array.isArray(items) || items.length === 0) {
             const emptyDiv = document.createElement('div');
@@ -113,7 +114,7 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
             itemDiv.textContent = `${item.name} (${item.type})`;
             itemDiv.className = `mention-item ${index === selected ? 'selected' : ''}`;
             itemDiv.setAttribute('data-index', index.toString());
-            
+
             itemDiv.addEventListener('mouseenter', () => {
               // Update selected index and visual state
               selectedIndex = index;
@@ -122,14 +123,22 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
 
             itemDiv.addEventListener('click', () => {
               // Ensure both id and name are passed to the command
-              command({ id: item.id, name: item.name, type: item.type, elementType: item.elementType });
+              command({
+                id: item.id,
+                name: item.name,
+                type: item.type,
+                elementType: item.elementType,
+              });
             });
 
             element.appendChild(itemDiv);
           });
         };
 
-        const updateVisualSelection = (element: HTMLDivElement, selected: number) => {
+        const updateVisualSelection = (
+          element: HTMLDivElement,
+          selected: number
+        ) => {
           // Remove previous selection styling
           const items = element.querySelectorAll('.mention-item');
           items.forEach((item, index) => {
@@ -145,11 +154,10 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
 
         return {
           onStart: (props: any) => {
-            
             selectedIndex = 0;
             component = document.createElement('div');
             component.className = 'mention-dropdown';
-            
+
             // Only set position styles, let CSS handle the appearance
             component.style.position = 'absolute';
             component.style.zIndex = '10010';
@@ -161,18 +169,30 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
               component.style.left = `${rect.left + window.scrollX}px`;
             }
 
-            updateItems(component, props.items || [], props.command, selectedIndex);            
+            updateItems(
+              component,
+              props.items || [],
+              props.command,
+              selectedIndex
+            );
             document.body.appendChild(component);
-            
           },
 
           onUpdate: (props: any) => {
-            if (!component || !props || !props.items || !Array.isArray(props.items)) {
+            if (
+              !component ||
+              !props ||
+              !props.items ||
+              !Array.isArray(props.items)
+            ) {
               return;
             }
-            
+
             // Ensure selectedIndex is within bounds
-            selectedIndex = Math.min(selectedIndex, Math.max(0, props.items.length - 1));
+            selectedIndex = Math.min(
+              selectedIndex,
+              Math.max(0, props.items.length - 1)
+            );
             updateItems(component, props.items, props.command, selectedIndex);
 
             // Update position if needed
@@ -188,7 +208,7 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
             if (!component) {
               return false;
             }
-            
+
             // Use currentItems instead of props.items for reliability
             if (!currentItems || currentItems.length === 0) {
               return false;
@@ -198,14 +218,16 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
 
             if (event.key === 'ArrowUp') {
               event.preventDefault();
-              selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : currentItems.length - 1;
+              selectedIndex =
+                selectedIndex > 0 ? selectedIndex - 1 : currentItems.length - 1;
               updateVisualSelection(component, selectedIndex);
               return true;
             }
 
             if (event.key === 'ArrowDown') {
               event.preventDefault();
-              selectedIndex = selectedIndex < currentItems.length - 1 ? selectedIndex + 1 : 0;
+              selectedIndex =
+                selectedIndex < currentItems.length - 1 ? selectedIndex + 1 : 0;
               updateVisualSelection(component, selectedIndex);
               return true;
             }
@@ -224,9 +246,9 @@ export function createMentionExtension(getElements: () => (Location | Region)[])
             return false;
           },
 
-          onExit: () => {           
+          onExit: () => {
             if (component && component.parentNode) {
-             component.parentNode.removeChild(component);
+              component.parentNode.removeChild(component);
             }
           },
         };

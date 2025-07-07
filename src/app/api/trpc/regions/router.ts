@@ -9,7 +9,7 @@ import {
   updateRegion,
   deleteRegion,
   getRegionChildren,
-  getRegionParents
+  getRegionParents,
 } from '@/database/regions';
 
 export const regionsRouter = router({
@@ -37,29 +37,25 @@ export const regionsRouter = router({
       }
     }),
 
-  create: publicProcedure
-    .input(RegionDbSchema)
-    .mutation(async ({ input }) => {
-      const db = await getDatabase();
-      const client = await db.connect();
-      try {
-        return await createRegion(client, input);
-      } finally {
-        client.release();
-      }
-    }),
+  create: publicProcedure.input(RegionDbSchema).mutation(async ({ input }) => {
+    const db = await getDatabase();
+    const client = await db.connect();
+    try {
+      return await createRegion(client, input);
+    } finally {
+      client.release();
+    }
+  }),
 
-  update: publicProcedure
-    .input(RegionDbSchema)
-    .mutation(async ({ input }) => {
-      const db = await getDatabase();
-      const client = await db.connect();
-      try {
-        return await updateRegion(client, input);
-      } finally {
-        client.release();
-      }
-    }),
+  update: publicProcedure.input(RegionDbSchema).mutation(async ({ input }) => {
+    const db = await getDatabase();
+    const client = await db.connect();
+    try {
+      return await updateRegion(client, input);
+    } finally {
+      client.release();
+    }
+  }),
 
   delete: publicProcedure
     .input(z.object({ id: z.string() }))
@@ -95,5 +91,5 @@ export const regionsRouter = router({
       } finally {
         client.release();
       }
-    })
-}); 
+    }),
+});

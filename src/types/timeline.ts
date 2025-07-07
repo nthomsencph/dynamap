@@ -98,7 +98,7 @@ export function isEmptyChanges(changes: TimelineChanges): boolean {
 export function createEmptyChanges(): TimelineChanges {
   return {
     modified: { locations: {}, regions: {} },
-    deleted: { locations: [], regions: [] }
+    deleted: { locations: [], regions: [] },
   };
 }
 
@@ -106,4 +106,4 @@ export function createEmptyChanges(): TimelineChanges {
 export interface TimelineData {
   entries: TimelineEntry[];
   epochs: TimelineEpoch[];
-} 
+}

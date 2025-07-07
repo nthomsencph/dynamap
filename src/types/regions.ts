@@ -14,14 +14,14 @@ export const DEFAULT_REGION_TYPES = [
   'Mountains',
   'Lake',
   'Sea',
-  'Desert'
+  'Desert',
 ] as const;
 
 // Region interface
 export interface Region extends MapElement {
-  position: [number, number][];  // Regions must have multiple points forming a polygon
-  showBorder?: boolean;  // Whether to show the border of the region
-  showHighlight?: boolean;  // Whether to show the highlight when hovering
-  area?: number;  // Calculated area of the region
-  areaFadeDuration?: number;  // Duration of the area highlight animation
-} 
+  geom: [number, number][]; // Regions must have multiple points forming a polygon
+  showBorder?: boolean; // Whether to show the border of the region
+  showHighlight?: boolean; // Whether to show the highlight when hovering
+  area?: number; // Calculated area of the region
+  areaFadeDuration?: number; // Duration of the area highlight animation
+}
