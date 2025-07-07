@@ -34,13 +34,15 @@ export async function createRegion(client: PoolClient, input: any): Promise<Regi
   const result = await client.query(
     `INSERT INTO regions (
       id, valid_from, valid_to, name, type, description, image, color, icon, icon_size,
-      show_label, label, label_position, prominence, fields, position, creation_year, destruction_year
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      show_label, label, label_position, prominence, fields, position, show_border, show_highlight,
+      area_fade_duration, area, creation_year, destruction_year
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
     RETURNING *`,
     [
       input.id, input.creationYear, null, input.name, input.type, input.description,
       input.image, input.color, input.icon, input.iconSize, input.showLabel,
       input.label, input.labelPosition, input.prominence, input.fields, input.position,
+      input.showBorder, input.showHighlight, input.areaFadeDuration, input.area,
       input.creationYear, null
     ]
   );
@@ -62,12 +64,13 @@ export async function updateRegion(client: PoolClient, input: any): Promise<Regi
     `UPDATE regions SET
       name = $2, type = $3, description = $4, image = $5, color = $6, icon = $7, icon_size = $8,
       show_label = $9, label = $10, label_position = $11, prominence = $12, fields = $13, position = $14,
-      creation_year = $15
+      show_border = $15, show_highlight = $16, area_fade_duration = $17, area = $18, creation_year = $19
     WHERE id = $1 AND valid_to IS NULL`,
     [
       input.id, input.name, input.type, input.description, input.image, input.color,
       input.icon, input.iconSize, input.showLabel, input.label, input.labelPosition,
-      input.prominence, input.fields, input.position, input.creationYear
+      input.prominence, input.fields, input.position, input.showBorder, input.showHighlight,
+      input.areaFadeDuration, input.area, input.creationYear
     ]
   );
   // Return updated row

@@ -33,10 +33,17 @@ export function RegionDialog({
 
   const handleSave = (regionToSave: Region) => {
     let area = regionToSave.area;
-    if (area === undefined && regionToSave.position && map) {
+    if ((area === undefined || area === null) && regionToSave.position && map) {
       area = calculatePolygonAreaKm(regionToSave.position, map, mapScale);
     }
-    onSave({ ...regionToSave, area });
+    // Only include area if it's a valid number
+    const regionData = { ...regionToSave };
+    if (typeof area === 'number' && !isNaN(area)) {
+      regionData.area = area;
+    } else {
+      delete regionData.area; // Remove area if it's not a valid number
+    }
+    onSave(regionData);
   };
 
   const regionArea = region?.area !== undefined

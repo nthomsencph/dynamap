@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useKeyboardShortcuts } from '@/hooks/ui/useKeyboardShortcuts';
 import type { DialogTab } from '@/types/dialogs';
 import type { MapElement } from '@/types/elements';
@@ -69,7 +69,6 @@ export function useBaseDialog<T extends MapElement>({
   const [activeTab, setActiveTab] = useState<DialogTab>('Content');
   const [newFieldKey, setNewFieldKey] = useState('');
   const [newFieldValue, setNewFieldValue] = useState('');
-  const [iconGalleryBg, setIconGalleryBg] = useState<'light' | 'dark'>('dark');
   const [error, setError] = useState<string | null>(null);
   const [labelAutoInitialized, setLabelAutoInitialized] = useState(false);
   const [showIconGallery, setShowIconGallery] = useState(false);
@@ -122,12 +121,13 @@ export function useBaseDialog<T extends MapElement>({
     setError(null);
   }, [open, element, mode, defaultColor, typeCategory]);
 
-  // Color brightness effect
-  useEffect(() => {
+  // Derived state for icon gallery background
+  const iconGalleryBg = useMemo(() => {
     if (form.color) {
       const brightness = getColorBrightness(form.color);
-      setIconGalleryBg(brightness > 0.5 ? 'dark' : 'light');
+      return brightness > 0.5 ? 'dark' : 'light';
     }
+    return 'light';
   }, [form.color]);
 
   // Zoom to element when dialog opens in edit mode

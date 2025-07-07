@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { FaImage, FaUpload, FaLink, FaRegImages, FaRulerCombined, FaLock, FaUnlock } from 'react-icons/fa';
+import { FaImage, FaLink, FaRegImages, FaRulerCombined, FaLock, FaUnlock } from 'react-icons/fa';
 import '@/css/panels/settings-panel.css'
 import { useSettings, useUpdateSetting } from '@/hooks/useSettings';
 import LabelEditor from '../editor/LabelEditor';
@@ -31,40 +31,8 @@ export function GeneralSettingsDialog({ onClose }: { onClose: () => void }) {
   const [showBgUrlDialog, setShowBgUrlDialog] = React.useState(false);
   const [mapUrlInput, setMapUrlInput] = React.useState('');
   const [bgUrlInput, setBgUrlInput] = React.useState('');
-  const [isMapUploading, setIsMapUploading] = React.useState(false);
-  const [isBgUploading, setIsBgUploading] = React.useState(false);
-  const mapFileInputRef = useRef<HTMLInputElement>(null);
-  const bgFileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleMapFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    setIsMapUploading(true);
-    const formData = new FormData();
-    formData.append('image', file);
-
-    try {
-      const response = await fetch('/api/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const imageUrl = data.url;
-        updateSetting('mapImage', imageUrl);
-        updateSetting('imageGallery', [...imageGallery, imageUrl]);
-      } else {
-        console.error('Upload failed');
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-    } finally {
-      setIsMapUploading(false);
-      if (e.target) e.target.value = '';
-    }
-  };
 
   const handleMapUrlSubmit = () => {
     if (mapUrlInput.trim()) {
@@ -75,36 +43,7 @@ export function GeneralSettingsDialog({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const handleBgFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    setIsBgUploading(true);
-    const formData = new FormData();
-    formData.append('image', file);
-
-    try {
-      const response = await fetch('/api/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const imageUrl = data.url;
-        updateSetting('backgroundImage', imageUrl);
-        updateSetting('backgroundColor', '#000000'); // Reset to default to use image
-        updateSetting('imageGallery', [...imageGallery, imageUrl]);
-      } else {
-        console.error('Upload failed');
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-    } finally {
-      setIsBgUploading(false);
-      if (e.target) e.target.value = '';
-    }
-  };
 
   const handleBgUrlSubmit = () => {
     if (bgUrlInput.trim()) {
@@ -228,27 +167,17 @@ export function GeneralSettingsDialog({ onClose }: { onClose: () => void }) {
           {/* Current Map Image */}
           <div className="current-image">
             <img src={mapImage} alt="Current map" />
-            <div className="image-actions">
-              <button onClick={() => setShowMapGallery(true)}>
-                <FaRegImages /> Gallery
-              </button>
-              <button onClick={() => mapFileInputRef.current?.click()}>
-                <FaUpload /> Upload
-              </button>
-              <button onClick={() => setShowMapUrlDialog(true)}>
-                <FaLink /> URL
-              </button>
-            </div>
+                          <div className="image-actions">
+                <button onClick={() => setShowMapGallery(true)}>
+                  <FaRegImages /> Gallery
+                </button>
+                <button onClick={() => setShowMapUrlDialog(true)}>
+                  <FaLink /> URL
+                </button>
+              </div>
           </div>
 
-          {/* Hidden file input */}
-          <input
-            ref={mapFileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleMapFileUpload}
-            style={{ display: 'none' }}
-          />
+
 
           {/* Map Gallery */}
           {showMapGallery && (
@@ -480,9 +409,6 @@ export function GeneralSettingsDialog({ onClose }: { onClose: () => void }) {
                 <button onClick={() => setShowBgGallery(true)}>
                   <FaRegImages /> Gallery
                 </button>
-                <button onClick={() => bgFileInputRef.current?.click()}>
-                  <FaUpload /> Upload
-                </button>
                 <button onClick={() => setShowBgUrlDialog(true)}>
                   <FaLink /> URL
                 </button>
@@ -490,14 +416,7 @@ export function GeneralSettingsDialog({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {/* Hidden file input */}
-          <input
-            ref={bgFileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleBgFileUpload}
-            style={{ display: 'none' }}
-          />
+
 
           {/* Background Gallery */}
           {showBgGallery && (

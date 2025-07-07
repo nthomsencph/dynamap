@@ -1,18 +1,18 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { TimelineData, TimelineEntry, TimelineChanges, TimelineEpoch, TimelineNote } from '@/types/timeline';
-import type { Location } from '@/types/locations';
-import type { Region } from '@/types/regions';
+import type { TimelineEntry, TimelineEpoch, TimelineNote } from '@/types/timeline';
 import { trpc } from '@/trpc';
 
 export function useTimeline() {
   const [currentYear, setCurrentYear] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Use tRPC queries
-  const { data: timelineData, isLoading: timelineLoading, error: timelineError } = trpc.timeline.getAll.useQuery();
+  const { isLoading: timelineLoading, error: timelineError } = trpc.timeline.getAll.useQuery();
   const { data: epochsData, isLoading: epochsLoading, error: epochsError } = trpc.timeline.getEpochs.useQuery();
   const { data: entriesData, isLoading: entriesLoading, error: entriesError } = trpc.timeline.getEntries.useQuery();
+
+  // Derived state instead of useEffect synchronization
+  const loading = timelineLoading || epochsLoading || entriesLoading;
+  const error = timelineError?.message || epochsError?.message || entriesError?.message || null;
 
   // Use tRPC mutations
   const createEntryMutation = trpc.timeline.upsertEntry.useMutation();
@@ -54,7 +54,7 @@ export function useTimeline() {
       const newEntry = await createEntryMutation.mutateAsync(entry);
       return newEntry;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create timeline entry');
+      // Error is handled by tRPC mutation state
       throw err;
     }
   }, [createEntryMutation]);
@@ -73,7 +73,7 @@ export function useTimeline() {
       });
       return updatedEntry;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update timeline entry');
+      // Error is handled by tRPC mutation state
       throw err;
     }
   }, [updateEntryMutation, entries]);
@@ -94,17 +94,15 @@ export function useTimeline() {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete timeline entry');
+      // Error is handled by tRPC mutation state
       throw err;
     }
   }, [deleteEntryMutation, currentYear, entries]);
 
   // Navigate to a specific year
   const navigateToYear = useCallback(async (year: number) => {
-    console.log('useTimeline: navigateToYear called with year:', year, 'current year was:', currentYear);
     setCurrentYear(year);
-    console.log('useTimeline: setCurrentYear called, new year should be:', year);
-  }, [currentYear]);
+  }, []);
 
   // Get entry for a specific year
   const getEntryForYear = useCallback((year: number) => {
@@ -152,7 +150,7 @@ export function useTimeline() {
       const newEpoch = await createEpochMutation.mutateAsync(epoch);
       return newEpoch;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create epoch');
+      // Error is handled by tRPC mutation state
       throw err;
     }
   }, [createEpochMutation]);
@@ -163,7 +161,7 @@ export function useTimeline() {
       const updatedEpoch = await updateEpochMutation.mutateAsync({ id, updates });
       return updatedEpoch;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update epoch');
+      // Error is handled by tRPC mutation state
       throw err;
     }
   }, [updateEpochMutation]);
@@ -173,7 +171,7 @@ export function useTimeline() {
     try {
       await deleteEpochMutation.mutateAsync({ id });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete epoch');
+      // Error is handled by tRPC mutation state
       throw err;
     }
   }, [deleteEpochMutation]);
@@ -184,16 +182,6 @@ export function useTimeline() {
     // The data will be refetched when the queries are invalidated
   }, []);
 
-  // Set loading and error states based on tRPC queries
-  useEffect(() => {
-    setLoading(timelineLoading || epochsLoading || entriesLoading);
-  }, [timelineLoading, epochsLoading, entriesLoading]);
-
-  useEffect(() => {
-    const errorMessage = timelineError?.message || epochsError?.message || entriesError?.message;
-    setError(errorMessage || null);
-  }, [timelineError, epochsError, entriesError]);
-
   // Set initial current year when data loads
   useEffect(() => {
     if (entries.length > 0 && currentYear === 0) {
@@ -202,11 +190,6 @@ export function useTimeline() {
       setCurrentYear(0);
     }
   }, [entries, currentYear]);
-
-  // Debug: Log when currentYear changes
-  useEffect(() => {
-    console.log('useTimeline: currentYear changed to:', currentYear);
-  }, [currentYear]);
 
   return {
     // New structure
