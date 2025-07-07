@@ -25,7 +25,6 @@ const Dropdown: React.FC<DropdownProps> = ({
   options,
   selected,
   onSelect,
-  placeholder = 'Select...',
   className = '',
   dropdownClassName = '',
   buttonClassName = '',

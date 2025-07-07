@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Bold from '@tiptap/extension-bold';
@@ -7,9 +7,9 @@ import Color from '@tiptap/extension-color';
 import Underline from '@tiptap/extension-underline';
 import FontFamily from '@tiptap/extension-font-family';
 import FontSize from '@tiptap/extension-font-size';
-import { Bold as BoldIcon, Italic, Underline as UnderlineIcon} from 'lucide-react';
+import { Italic, Underline as UnderlineIcon} from 'lucide-react';
 import { AiOutlineFontSize } from 'react-icons/ai';
-import { RxEyeNone, RxFontFamily } from 'react-icons/rx';
+import { RxFontFamily } from 'react-icons/rx';
 import { MdOutlineFormatClear } from 'react-icons/md';
 import { RiLineHeight } from 'react-icons/ri';
 import { getFontSizeForArea } from '@/app/utils/area';

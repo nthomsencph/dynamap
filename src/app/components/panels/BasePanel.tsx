@@ -1,4 +1,4 @@
-import React, { useEffect, ReactNode, useRef, useLayoutEffect, useCallback } from 'react';
+import React, { useEffect, ReactNode, useRef, useCallback } from 'react';
 import { IoArrowBack } from 'react-icons/io5';
 import '@/css/panels/sidepanel.css';
 import type { MapElement } from '@/types/elements';
@@ -67,7 +67,7 @@ export function BasePanel({
   }, [pushPanel]);
   
   // Panel width management
-  const { width, isDragging, handleMouseDown } = usePanelWidth();
+  const { width, handleMouseDown } = usePanelWidth();
 
   // Update refs when data changes
   useEffect(() => {

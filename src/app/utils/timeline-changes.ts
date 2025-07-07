@@ -1,4 +1,4 @@
-import type { TimelineEntry, TimelineChanges, TimelineChange, ElementChange, ChangeMap, TimelineEpoch } from '@/types/timeline';
+import type { TimelineEntry, TimelineChange, ChangeMap, TimelineEpoch } from '@/types/timeline';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
 import { calculateDisplayYear } from '@/app/utils/timeline';

@@ -3,7 +3,6 @@ import { useMap } from 'react-leaflet';
 import { flyToLocationWithPanel, getMapCenter } from '@/app/utils/fly';
 import { MapElement } from '@/types/elements';
 import { calculatePolygonCenter } from '@/app/utils/geometry';
-import { shouldShowElement } from '@/app/utils/zoom';
 import { shouldShowElementInYear } from '@/app/utils/zoom';
 import { useTimelineContext } from '@/app/contexts/TimelineContext';
 import type { PanelEntry } from '@/app/contexts/PanelStackContext';
@@ -108,7 +107,6 @@ export function ElementMarkers<T extends MapElement, U extends MapElement = T>(p
 
   const [previousMapCenter, setPreviousMapCenter] = useState<[number, number] | null>(null);
   const [isZooming, setIsZooming] = useState(false);
-  const [lastStableZoom, setLastStableZoom] = useState(currentZoom);
   const map = useMap();
   const markersRef = useRef<{ [key: string]: any }>({});
   const labelRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -126,7 +124,6 @@ export function ElementMarkers<T extends MapElement, U extends MapElement = T>(p
 
     const handleZoomEnd = () => {
       setIsZooming(false);
-      setLastStableZoom(map.getZoom());
     };
 
     map.on('zoomstart', handleZoomStart);

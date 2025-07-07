@@ -2,15 +2,7 @@ import { trpc } from '@/trpc';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
 
-interface ChildRegionData {
-  region: Region;
-  locations: Location[];
-}
 
-interface RegionChildrenResponse {
-  childRegions: ChildRegionData[];
-  locationsInRegion: Location[];
-}
 
 interface UseRegionChildrenOptions {
   regionId: string;

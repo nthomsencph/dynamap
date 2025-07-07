@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 export function MapImage() {
   const { settings } = useSettings();
-  const { mapImage, mapImageSettings, mapImageRoundness } = settings || {};
+  const { mapImage, mapImageSettings } = settings || {};
   const [imageBounds, setImageBounds] = useState<[[number, number], [number, number]]>([[0, 0], [2000, 2000]]);
   const [imageLoaded, setImageLoaded] = useState(false);
 

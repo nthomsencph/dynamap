@@ -1,13 +1,11 @@
 "use client";
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { FaPlay, FaPause, FaStepForward, FaStepBackward, FaPlus} from 'react-icons/fa';
+import { FaStepForward, FaStepBackward, FaPlus} from 'react-icons/fa';
 import { useTimelineContext } from '@/app/contexts/TimelineContext';
-import { useMapElementsByYear } from '@/hooks/queries/useMapElements';
 import { useSettings } from '@/hooks/useSettings';
 import { toast } from 'react-toastify';
 import { NoteDialog } from '../dialogs/NoteDialog';
 import { NotePanel } from '../panels/timeline/NotePanel';
-import { EpochPanel } from '../panels/timeline/EpochPanel';
 import { TimelineNotes } from './TimelineNotes';
 import { EpochDialog } from '../dialogs/EpochDialog';
 import { formatEpochDateRange, calculateDisplayYear } from '@/app/utils/timeline';

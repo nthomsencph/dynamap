@@ -1,4 +1,4 @@
-import type { MapElement, LabelDirection } from '@/types/elements';
+import type { MapElement } from '@/types/elements';
 
 /**
  * Calculate the offset for a label based on its alignment relative to the element

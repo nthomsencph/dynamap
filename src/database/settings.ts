@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { SettingsSchema, DEFAULT_SETTINGS, SETTINGS_KEY } from '@/app/api/trpc/settings/types';
+import { DEFAULT_SETTINGS, SETTINGS_KEY } from '@/app/api/trpc/settings/types';
 
 export async function getSettings(client: PoolClient) {
   const result = await client.query(

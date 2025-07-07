@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet-draw';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -8,11 +8,6 @@ import type { Region } from '@/types/regions';
 type DrawControl = L.Control & {
   remove: () => L.Control;
 };
-
-interface DrawCreatedEvent extends L.LeafletEvent {
-  layer: L.Layer;
-  layerType: string;
-}
 
 export type DrawingTool = 'polygon' | 'circle' | 'rectangle' | 'polyline';
 

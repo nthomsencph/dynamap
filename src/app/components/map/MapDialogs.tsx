@@ -7,7 +7,6 @@ import { NoteDialog } from '../dialogs/NoteDialog';
 import type { Location } from "@/types/locations";
 import type { Region } from "@/types/regions";
 import type { TimelineNote, TimelineEpoch } from "@/types/timeline";
-import type { PanelEntry } from "@/app/contexts/PanelStackContext";
 
 interface MapDialogsProps {
   // Element dialogs
@@ -75,8 +74,6 @@ export function MapDialogs({
   onCloseRegion,
   onDeleteLocation,
   onDeleteRegion,
-  previewLocation,
-  previewRegion,
   onPreviewLocationChange,
   onPreviewRegionChange,
   deleteConfirm,

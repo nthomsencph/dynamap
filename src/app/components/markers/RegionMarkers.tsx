@@ -3,7 +3,6 @@ import { Polygon, Marker, useMap } from "react-leaflet";
 import L from 'leaflet';
 import type { Region } from "@/types/regions";
 import type { Location } from "@/types/locations";
-import { shouldShowElement } from '@/app/utils/zoom';
 import { findContainingRegions } from '@/app/utils/containment';
 import { ElementMarkers, MarkerErrorBoundary } from './ElementMarkers';
 import type { PanelEntry } from '@/app/contexts/PanelStackContext';

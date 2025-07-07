@@ -20,11 +20,7 @@ function hasMapElementProperties(location: Location): location is Location & Map
   );
 }
 
-// Component for rendering the location icon
-function LocationIcon({ element }: { element: MapElement }) {
-  const IconComponent = ELEMENT_ICONS[element.icon]?.icon || ELEMENT_ICONS.MdCastle.icon;
-  return <IconComponent color={element.color || "#2563eb"} size={32} />;
-}
+
 
 export function useMoveLocation(
   mapRef: React.RefObject<L.Map | null>, 
@@ -32,7 +28,6 @@ export function useMoveLocation(
   onLocationCreate?: (location: Location) => void
 ) {
   const [moveMode, setMoveMode] = useState<MoveMode | null>(null);
-  const cursorUrlRef = useRef<string | null>(null);
 
   // Use refs to avoid dependency issues
   const onLocationUpdateRef = useRef(onLocationUpdate);

@@ -5,12 +5,8 @@ import { ELEMENT_ICONS } from "@/types/elements";
 import type { Location } from "@/types/locations";
 import { DEFAULT_ICON_SIZE } from '@/types/locations';
 
-// Minimum and maximum zoom levels for scaling
+// Minimum zoom level for scaling
 const MIN_ZOOM = 0;
-const MAX_ZOOM = 2;
-// Minimum and maximum icon sizes (adjusted for smaller starting size)
-const MIN_ICON_SIZE = 16;
-const MAX_ICON_SIZE = 48;
 
 export function createLocationIcon(loc: Location, zoom: number = 0) {
   const IconComponent = ELEMENT_ICONS[loc.icon]?.icon || ELEMENT_ICONS.MdCastle.icon;

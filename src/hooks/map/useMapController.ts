@@ -1,9 +1,8 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import L from 'leaflet';
 import { useFitZoom } from "@/hooks/view/useFitZoom";
 import { useSmoothWheelZoom } from "@/hooks/view/useSmoothWheelZoom";
 import { useMapEvents } from "@/hooks/ui/useMapEvents";
-import { useDynamicStyles } from "@/hooks/ui/useDynamicStyles";
 import { useUIStore } from "@/stores/uiStore";
 import { MAP_CENTER } from '@/constants/map';
 

@@ -1,9 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { trpc } from '@/trpc';
 import type { Location } from '@/types/locations';
 import type { Region } from '@/types/regions';
-import type { TimelineEntry } from '@/types/timeline';
 import { buildChangeMap, getLocationStateForYear, getRegionStateForYear } from '@/app/utils/timeline-changes';
 
 // Query keys
